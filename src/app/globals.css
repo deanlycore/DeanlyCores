@@ -181,4 +181,14 @@
     border: 1px solid var(--border);
     box-shadow: var(--shadow-soft-value);
   }
+  .deanly-skeleton {
+    background: linear-gradient(90deg, var(--surface-muted), var(--brand-soft), var(--surface-muted));
+    background-size: 200% 100%;
+    animation: deanly-shimmer 1.2s ease-out infinite;
+  }
+}
+
+@keyframes deanly-shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: 0 0; }
 }

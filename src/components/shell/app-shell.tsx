@@ -2,20 +2,40 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useEffect, useState, useSyncExternalStore } from "react"
 import {
+  Bell,
   ChartNoAxesColumn,
   Home,
   LockKeyhole,
+  LogOut,
+  MoreHorizontal,
   NotebookPen,
+  PanelLeft,
+  Search,
+  Settings,
   SunMedium,
   Wallet,
   type LucideIcon,
 } from "lucide-react"
 
 import { signOut } from "@/lib/actions/auth"
+import { recentActivity } from "@/lib/actions/records"
 import { primaryNav, type IconKey } from "@/lib/navigation"
+import type { SessionView } from "@/lib/data/session"
+import { relativeTime } from "@/lib/home/metrics"
+import { HouseMark } from "@/components/brand/house-mark"
 import { Wordmark } from "@/components/brand/wordmark"
+import { SearchDialog } from "@/components/shell/search-dialog"
+import { Avatar, AvatarFallback, AvatarGroup, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 const icons: Record<IconKey, LucideIcon> = {
   home: Home,
@@ -26,81 +46,260 @@ const icons: Record<IconKey, LucideIcon> = {
   reports: ChartNoAxesColumn,
 }
 
-export function AppShell({
-  displayName,
-  children,
-}: {
-  displayName: string
-  children: React.ReactNode
-}) {
+const mobileTabs = [
+  { href: "/home", label: "Home", icon: Home },
+  { href: "/money", label: "Money", icon: Wallet },
+  { href: "/life", label: "Life", icon: SunMedium },
+  { href: "/notes", label: "Notes", icon: NotebookPen },
+  { href: "/more", label: "More", icon: MoreHorizontal },
+]
+
+function railCollapsed() {
+  return window.localStorage.getItem("deanly-rail") === "collapsed"
+}
+
+function subscribeRail(onStoreChange: () => void) {
+  window.addEventListener("storage", onStoreChange)
+  return () => window.removeEventListener("storage", onStoreChange)
+}
+
+function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("")
+}
+
+export function AppShell({ session, children }: { session: SessionView; children: React.ReactNode }) {
   const pathname = usePathname()
+  const current = pathname.startsWith("/preview") ? "/home" : pathname
+  const storedCollapsed = useSyncExternalStore(subscribeRail, railCollapsed, () => false)
+  const [collapsedOverride, setCollapsedOverride] = useState<boolean | null>(null)
+  const collapsed = collapsedOverride ?? storedCollapsed
+  const [searchOpen, setSearchOpen] = useState(false)
+
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault()
+        setSearchOpen(true)
+      }
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [])
+
+  function toggleRail() {
+    const next = !collapsed
+    window.localStorage.setItem("deanly-rail", next ? "collapsed" : "expanded")
+    setCollapsedOverride(next)
+  }
 
   return (
-    <div className="min-h-full bg-background md:grid md:grid-cols-[240px_1fr]">
+    <div className={`min-h-dvh bg-background md:grid ${collapsed ? "md:grid-cols-[72px_1fr]" : "md:grid-cols-[240px_1fr]"}`}>
       <aside className="hidden border-r border-border bg-surface md:flex md:flex-col">
-        <div className="px-5 py-6">
+        <div className={`flex items-center ${collapsed ? "justify-center px-2 py-5" : "justify-between px-4 py-5"}`}>
           <Link href="/home" aria-label="Deanly — DeanFamily, home">
-            <Wordmark />
+            {collapsed ? <HouseMark className="size-6" /> : <Wordmark />}
           </Link>
+          {collapsed ? null : (
+            <button type="button" onClick={toggleRail} aria-label="Collapse sidebar" className="rounded-lg p-1 text-muted-foreground hover:bg-surface-muted">
+              <PanelLeft className="size-4" />
+            </button>
+          )}
         </div>
-        <nav aria-label="Primary" className="grid gap-1 px-3">
+        {collapsed ? (
+          <button type="button" onClick={toggleRail} aria-label="Expand sidebar" className="mx-auto mb-3 rounded-lg p-2 text-muted-foreground hover:bg-surface-muted">
+            <PanelLeft className="size-4" />
+          </button>
+        ) : (
+          <HouseholdChip session={session} />
+        )}
+        <nav aria-label="Primary" className="grid gap-1 px-2">
           {primaryNav.map((item) => {
             const Icon = icons[item.icon]
-            const active = pathname === item.href || pathname.startsWith(`${item.href}/`)
+            const active = current === item.href || current.startsWith(`${item.href}/`)
             return (
               <Link
                 key={item.href}
                 href={item.href}
+                title={item.label}
                 aria-current={active ? "page" : undefined}
-                className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm ${
-                  active ? "bg-brand-soft text-brand-deep" : "text-ink hover:bg-surface-muted"
-                }`}
+                className={`relative flex items-center gap-3 rounded-xl py-2.5 text-sm transition-colors duration-150 ${
+                  collapsed ? "justify-center px-0" : "px-3"
+                } ${active ? "bg-brand-soft font-medium text-brand-deep" : "text-ink hover:bg-surface-muted"}`}
               >
-                <Icon className="size-4" aria-hidden="true" />
+                <span className={`absolute -left-2 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full ${active ? "bg-brand" : "bg-transparent"}`} />
+                <Icon className="size-5" aria-hidden="true" />
+                {collapsed ? <span className="sr-only">{item.label}</span> : item.label}
+              </Link>
+            )
+          })}
+        </nav>
+        <div className="mt-auto grid gap-1 p-2">
+          <Link
+            href="/settings"
+            title="Settings"
+            className={`flex items-center gap-3 rounded-xl py-2.5 text-sm text-ink hover:bg-surface-muted ${collapsed ? "justify-center" : "px-3"}`}
+          >
+            <Settings className="size-5" />
+            {collapsed ? <span className="sr-only">Settings</span> : "Settings"}
+          </Link>
+          <form action={signOut}>
+            <button
+              type="submit"
+              title="Log out"
+              className={`flex w-full items-center gap-3 rounded-xl py-2.5 text-sm text-ink hover:bg-surface-muted ${collapsed ? "justify-center" : "px-3"}`}
+            >
+              <LogOut className="size-5" />
+              {collapsed ? <span className="sr-only">Log out</span> : "Log out"}
+            </button>
+          </form>
+        </div>
+      </aside>
+
+      <div className="flex min-h-dvh min-w-0 flex-col">
+        <header className="sticky top-0 z-20 hidden items-center gap-3 border-b border-border bg-surface/95 px-6 py-3 backdrop-blur md:flex">
+          <button
+            type="button"
+            onClick={() => setSearchOpen(true)}
+            className="flex h-10 max-w-xl flex-1 items-center gap-2 rounded-xl border border-border bg-background px-3 text-sm text-muted-foreground"
+          >
+            <Search className="size-4" />
+            Search
+            <kbd className="ml-auto rounded-md border border-border px-1.5 py-0.5 text-xs">⌘K</kbd>
+          </button>
+          <Notifications />
+          <AccountMenu session={session} />
+        </header>
+
+        <header className="flex items-center justify-between border-b border-border bg-surface px-4 py-3 md:hidden">
+          <Link href="/home" aria-label="Deanly home" className="inline-flex items-center gap-2">
+            <HouseMark className="size-8" />
+            <span className="font-display text-base font-semibold">Deanly</span>
+          </Link>
+          <div className="flex items-center gap-1">
+            <Button type="button" variant="ghost" size="icon" aria-label="Search" onClick={() => setSearchOpen(true)}>
+              <Search className="size-5" />
+            </Button>
+            <Notifications />
+            <AccountMenu session={session} />
+          </div>
+        </header>
+
+        <main id="main" className="flex-1 px-4 py-6 pb-24 md:px-8 md:pb-8">
+          {children}
+        </main>
+
+        <nav
+          aria-label="Primary"
+          className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-border bg-surface px-1 pt-1 md:hidden"
+          style={{ paddingBottom: "max(0.4rem, env(safe-area-inset-bottom))" }}
+        >
+          {mobileTabs.map((item) => {
+            const active = item.href === "/more" ? current === "/more" : current === item.href || current.startsWith(`${item.href}/`)
+            const Icon = item.icon
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex min-h-11 flex-col items-center justify-center gap-0.5 text-[11px] ${active ? "text-brand-deep" : "text-muted-foreground"}`}
+              >
+                <Icon className="size-5" />
                 {item.label}
               </Link>
             )
           })}
         </nav>
-        <div className="mt-auto grid gap-2 p-4">
-          <Link href="/settings" className="px-3 text-sm text-muted-foreground hover:text-ink">
-            Settings
-          </Link>
-          <form action={signOut}>
-            <Button type="submit" variant="outline" className="w-full rounded-button">
-              Sign out
-            </Button>
-          </form>
-        </div>
-      </aside>
+      </div>
+      <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
+    </div>
+  )
+}
 
-      <div className="flex min-h-full flex-col">
-        <header className="flex items-center justify-between border-b border-border bg-surface px-4 py-3 md:hidden">
-          <Link href="/home" aria-label="Deanly — DeanFamily, home">
-            <Wordmark size="sm" />
-          </Link>
-          <form action={signOut}>
-            <Button type="submit" variant="ghost" size="sm">
-              Sign out
-            </Button>
-          </form>
-        </header>
-        <nav aria-label="Primary" className="flex gap-2 overflow-x-auto border-b border-border bg-surface px-3 py-2 md:hidden">
-          {primaryNav.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="shrink-0 rounded-full px-3 py-1 text-sm text-ink hover:bg-brand-soft"
-            >
-              {item.label}
-            </Link>
+function HouseholdChip({ session }: { session: SessionView }) {
+  const name = session.householdName ?? "DeanFamily"
+  return (
+    <div className="mx-3 mb-4 rounded-xl bg-surface-muted px-3 py-2.5">
+      <p className="truncate text-sm font-medium">{name}</p>
+      <div className="mt-2 flex items-center gap-2">
+        <AvatarGroup>
+          {session.members.slice(0, 4).map((member) => (
+            <Avatar key={member.userId} size="sm">
+              {member.avatarUrl ? <AvatarImage src={member.avatarUrl} alt="" /> : null}
+              <AvatarFallback>{initials(member.displayName)}</AvatarFallback>
+            </Avatar>
           ))}
-        </nav>
-        <main id="main" className="flex-1 px-4 py-6 md:px-6">
-          <p className="sr-only">Signed in as {displayName}</p>
-          {children}
-        </main>
+        </AvatarGroup>
+        <span className="text-xs text-muted-foreground">
+          {session.members.length} {session.members.length === 1 ? "member" : "members"}
+        </span>
       </div>
     </div>
+  )
+}
+
+function AccountMenu({ session }: { session: SessionView }) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button type="button" className="rounded-full" aria-label="Account menu">
+          <Avatar>
+            {session.avatarUrl ? <AvatarImage src={session.avatarUrl} alt="" /> : null}
+            <AvatarFallback>{initials(session.displayName)}</AvatarFallback>
+          </Avatar>
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuItem asChild>
+          <Link href="/settings#profile">Profile</Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/settings#household">Household</Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <form action={signOut} className="w-full">
+            <button type="submit" className="w-full text-left">
+              Sign out
+            </button>
+          </form>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+function Notifications() {
+  const [items, setItems] = useState<{ id: string; summary: string; created_at: string }[] | null>(null)
+  return (
+    <DropdownMenu
+      onOpenChange={(open) => {
+        if (open) recentActivity().then(setItems)
+      }}
+    >
+      <DropdownMenuTrigger asChild>
+        <Button type="button" variant="ghost" size="icon" aria-label="Notifications">
+          <Bell className="size-5" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-80">
+        {!items || items.length === 0 ? (
+          <p className="px-3 py-4 text-sm text-muted-foreground">You’re all caught up.</p>
+        ) : (
+          items.map((item) => (
+            <DropdownMenuItem key={item.id} className="flex flex-col items-start gap-0.5">
+              <span>{item.summary}</span>
+              <span className="text-xs text-muted-foreground">{relativeTime(item.created_at)}</span>
+            </DropdownMenuItem>
+          ))
+        )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/notifications">All activity</Link>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }

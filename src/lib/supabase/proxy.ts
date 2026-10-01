@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from "next/server"
 import { REMEMBER_COOKIE, withRemember } from "@/lib/supabase/cookies"
 import { isSupabaseConfigured, requireSupabaseEnv } from "@/lib/supabase/env"
 
-const PUBLIC_PREFIXES = ["/auth"]
+const PUBLIC_PREFIXES = ["/auth", "/preview"]
 const PUBLIC_PATHS = new Set(["/", "/login", "/forgot-password"])
 
 function isPublic(pathname: string) {

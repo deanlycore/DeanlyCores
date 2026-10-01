@@ -23,6 +23,11 @@ SQL lives in `supabase/migrations` and matches the linked Deanly project:
 
 - `20261001204003_foundation_household_rls.sql` — already applied (profiles, households, members, preferences, categories, RLS helpers `is_household_member` and `can_access_row`)
 - `20261001204307_household_helpers.sql` — already applied (`create_household`, `leave_household`, avatar bucket)
+- `20261001225000_home_v1_schema.sql` — apply name **`home_v1_schema`** on project `dpjzlitklsjtfrfrxvhl`
+
+`home_v1_schema` adds budgets, expenses, bills, goals, calendar events, tasks, notes, vault documents, meals, shopping items, subscriptions, and activity events. Every row has `household_id`, `owner_id`, and `visibility` (`shared` | `private`). RLS uses `can_access_row`, so an owner does not see another person’s Just me rows. A private `vault` storage bucket uses the same rule.
+
+An empty migration named `home_v1_entities` was recorded earlier and should not be replayed.
 
 In the Supabase dashboard, set **Site URL** to your app origin and add `https://<your-host>/auth/callback` to **Redirect URLs**.
 

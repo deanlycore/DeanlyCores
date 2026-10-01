@@ -100,6 +100,22 @@ export const primaryNav: PrimaryNavItem[] = [
         emptyBody: "Shared tasks will show up as a short list when you’re ready to add them.",
       },
       {
+        href: "/life/meals",
+        label: "Meals",
+        description: "What’s for dinner, and the rest of the week.",
+        visibility: "shared",
+        emptyTitle: "No meals planned",
+        emptyBody: "Plan breakfast, lunch, and dinner for the household.",
+      },
+      {
+        href: "/life/shopping",
+        label: "Shopping",
+        description: "A shared list for the next shop.",
+        visibility: "shared",
+        emptyTitle: "The list is clear",
+        emptyBody: "Add what the household needs. New items start as Shared.",
+      },
+      {
         href: "/life/subscriptions",
         label: "Subscriptions",
         description: "The ones you still want.",
@@ -153,17 +169,12 @@ export const primaryNav: PrimaryNavItem[] = [
 ]
 
 export const settingsNav = [
-  { href: "/settings/profile", label: "Profile", blurb: "Your name and photo" },
-  { href: "/settings/password", label: "Password", blurb: "Change how you sign in" },
-  { href: "/settings/notifications", label: "Notifications", blurb: "Soft reminders, on your terms" },
-  { href: "/settings/appearance", label: "Appearance", blurb: "Light, dark, or match the room" },
-  { href: "/settings/currency", label: "Currency", blurb: "How amounts are shown" },
-  { href: "/settings/household", label: "Household", blurb: "DeanFamily members" },
-  { href: "/settings/categories", label: "Categories", blurb: "Starter budget categories" },
-  { href: "/settings/budget", label: "Budget", blurb: "Soft targets, with Money" },
-  { href: "/settings/security", label: "Security", blurb: "Sessions and protection" },
-  { href: "/settings/export", label: "Data export", blurb: "A copy of your foundation data" },
-  { href: "/settings/account", label: "Account", blurb: "Email and sign out" },
+  { href: "/settings#profile", label: "Profile", blurb: "Your name and photo" },
+  { href: "/settings#password", label: "Password", blurb: "Change how you sign in" },
+  { href: "/settings#household", label: "Household", blurb: "DeanFamily members" },
+  { href: "/settings#categories", label: "Categories", blurb: "Starter budget categories" },
+  { href: "/settings#currency", label: "Currency", blurb: "How amounts are shown" },
+  { href: "/settings#account", label: "Account", blurb: "Email and sign out" },
 ] as const
 
 export function findSection(href: string): SectionLink | PrimaryNavItem | undefined {
