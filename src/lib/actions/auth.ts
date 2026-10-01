@@ -17,9 +17,6 @@ function calmAuthError(message: string) {
   if (lower.includes("email not confirmed")) {
     return "Confirm your email first. The link is in your inbox."
   }
-  if (lower.includes("already registered") || lower.includes("already been registered")) {
-    return "An account with that email already exists. Sign in instead."
-  }
   if (lower.includes("password")) return "Use a password between 8 and 72 characters."
   return "Something got in the way. Please try again."
 }
@@ -58,34 +55,6 @@ export async function signIn(_state: FormState, formData: FormData): Promise<For
   const supabase = await createClient({ remember })
   const { error } = await supabase.auth.signInWithPassword({ email, password })
   if (error) return { message: calmAuthError(error.message) }
-  redirect("/home")
-}
-
-export async function signUp(_state: FormState, formData: FormData): Promise<FormState> {
-  if (!isSupabaseConfigured()) {
-    return { message: "Add your Supabase URL and anon key to .env.local, then restart." }
-  }
-  const email = String(formData.get("email") ?? "").trim()
-  const password = String(formData.get("password") ?? "")
-  const displayName = String(formData.get("displayName") ?? "").trim()
-  if (!email || !password) return { message: "Enter an email and a password." }
-  if (password.length < 8 || password.length > 72) {
-    return { message: "Use a password between 8 and 72 characters." }
-  }
-
-  const supabase = await createClient({ remember: true })
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: { display_name: displayName || undefined },
-      emailRedirectTo: `${await origin()}/auth/callback?next=/home`,
-    },
-  })
-  if (error) return { message: calmAuthError(error.message) }
-  if (!data.session) {
-    return { message: "Check your email to confirm, then sign in." }
-  }
   redirect("/home")
 }
 

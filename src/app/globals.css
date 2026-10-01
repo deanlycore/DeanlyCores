@@ -89,7 +89,7 @@
   --popover: var(--surface);
   --popover-foreground: var(--ink);
   --primary: var(--brand);
-  --primary-foreground: var(--ink);
+  --primary-foreground: #ffffff;
   --secondary: var(--surface-muted);
   --secondary-foreground: var(--ink);
   --muted: var(--surface-muted);
