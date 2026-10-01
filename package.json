@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start --hostname 0.0.0.0 --port 43123",
     "lint": "eslint",
-    "test": "node --experimental-strip-types --test src/lib/dashboard/layout.test.ts src/lib/supabase/env.test.ts src/lib/home/metrics.test.ts"
+    "test": "node --experimental-strip-types --test src/lib/dashboard/layout.test.ts src/lib/supabase/env.test.ts src/lib/supabase/proxy.test.ts src/lib/home/metrics.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
