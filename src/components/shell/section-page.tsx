@@ -29,7 +29,7 @@ export function SectionPage({ href }: { href: string }) {
         ) : null}
         <h1 className="mt-3 font-display text-2xl font-semibold tracking-tight">{title}</h1>
         <p className="mt-2 max-w-xl text-sm text-muted-foreground">{body}</p>
-        <p className="mt-4 text-sm font-medium text-ink">Coming soon</p>
+        <p className="mt-4 text-sm text-muted-foreground">Open a section from the sidebar to add something.</p>
         <div className="mt-8">
           <Wordmark size="sm" />
         </div>
