@@ -3,13 +3,7 @@ import { NextResponse, type NextRequest } from "next/server"
 
 import { REMEMBER_COOKIE, withRemember } from "@/lib/supabase/cookies"
 import { isSupabaseConfigured, requireSupabaseEnv } from "@/lib/supabase/env"
-
-const PUBLIC_PREFIXES = ["/auth", "/preview"]
-const PUBLIC_PATHS = new Set(["/", "/login", "/forgot-password"])
-
-function isPublic(pathname: string) {
-  return PUBLIC_PATHS.has(pathname) || PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix))
-}
+import { authRedirectTarget, isPublic } from "@/lib/supabase/redirects"
 
 function copyCookies(from: NextResponse, to: NextResponse) {
   from.cookies.getAll().forEach((cookie) => {
@@ -47,32 +41,25 @@ export async function updateSession(request: NextRequest) {
     },
   })
 
+  // getClaims() only verifies the JWT signature. A signed-out or revoked
+  // session still looks signed in, while the app layout's getUser() does not,
+  // so /login and /home redirect to each other. getUser() uses the same check
+  // and, on session_not_found, clears the dead cookies here where Set-Cookie
+  // can be written. Server Components cannot.
   let signedIn = false
   try {
-    const { data } = await supabase.auth.getClaims()
-    signedIn = Boolean(data?.claims)
+    const { data } = await supabase.auth.getUser()
+    signedIn = Boolean(data.user?.email)
   } catch {
     signedIn = false
   }
 
-  const { pathname } = request.nextUrl
-  const authEntry = pathname === "/login" || pathname === "/forgot-password" || pathname === "/"
+  const destination = authRedirectTarget(request.nextUrl.pathname, signedIn)
+  if (!destination) return supabaseResponse
 
-  if (!signedIn && !isPublic(pathname)) {
-    const url = request.nextUrl.clone()
-    url.pathname = "/login"
-    const redirect = NextResponse.redirect(url)
-    copyCookies(supabaseResponse, redirect)
-    return redirect
-  }
-
-  if (signedIn && authEntry) {
-    const url = request.nextUrl.clone()
-    url.pathname = "/home"
-    const redirect = NextResponse.redirect(url)
-    copyCookies(supabaseResponse, redirect)
-    return redirect
-  }
-
-  return supabaseResponse
+  const redirectUrl = request.nextUrl.clone()
+  redirectUrl.pathname = destination
+  const redirect = NextResponse.redirect(redirectUrl)
+  copyCookies(supabaseResponse, redirect)
+  return redirect
 }
