@@ -5,9 +5,7 @@ import { usePathname } from "next/navigation"
 import { useEffect, useState, useSyncExternalStore } from "react"
 import {
   Bell,
-  ChartNoAxesColumn,
   Home,
-  LockKeyhole,
   LogOut,
   MoreHorizontal,
   NotebookPen,
@@ -16,12 +14,12 @@ import {
   Settings,
   SunMedium,
   Wallet,
-  type LucideIcon,
 } from "lucide-react"
 
 import { signOut } from "@/lib/actions/auth"
 import { recentActivity } from "@/lib/actions/records"
-import { primaryNav, type IconKey } from "@/lib/navigation"
+import { shellPathname } from "@/lib/navigation"
+import { DesktopNav } from "@/components/shell/desktop-nav"
 import type { SessionView } from "@/lib/data/session"
 import { relativeTime } from "@/lib/home/metrics"
 import { LoopMark } from "@/components/brand/loop-mark"
@@ -37,21 +35,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-const icons: Record<IconKey, LucideIcon> = {
-  home: Home,
-  money: Wallet,
-  life: SunMedium,
-  notes: NotebookPen,
-  vault: LockKeyhole,
-  reports: ChartNoAxesColumn,
-}
-
 const mobileTabs = [
-  { href: "/home", label: "Home", icon: Home },
-  { href: "/money", label: "Money", icon: Wallet },
-  { href: "/life", label: "Life", icon: SunMedium },
-  { href: "/notes", label: "Notes", icon: NotebookPen },
-  { href: "/more", label: "More", icon: MoreHorizontal },
+  { href: "/home", label: "Home", icon: Home, match: (path: string) => path === "/home" },
+  { href: "/money/bills", label: "Money", icon: Wallet, match: (path: string) => path === "/money" || path.startsWith("/money/") },
+  { href: "/life/calendar", label: "Life", icon: SunMedium, match: (path: string) => path === "/life" || path.startsWith("/life/") },
+  { href: "/notes", label: "Notes", icon: NotebookPen, match: (path: string) => path === "/notes" || path.startsWith("/notes/") },
+  { href: "/more", label: "More", icon: MoreHorizontal, match: (path: string) => path === "/more" },
 ]
 
 function railCollapsed() {
@@ -73,7 +62,7 @@ function initials(name: string) {
 
 export function AppShell({ session, children }: { session: SessionView; children: React.ReactNode }) {
   const pathname = usePathname()
-  const current = pathname.startsWith("/preview") ? "/home" : pathname
+  const current = shellPathname(pathname)
   const storedCollapsed = useSyncExternalStore(subscribeRail, railCollapsed, () => false)
   const [collapsedOverride, setCollapsedOverride] = useState<boolean | null>(null)
   const collapsed = collapsedOverride ?? storedCollapsed
@@ -98,7 +87,7 @@ export function AppShell({ session, children }: { session: SessionView; children
 
   return (
     <div className={`min-h-dvh bg-background md:grid ${collapsed ? "md:grid-cols-[68px_1fr]" : "md:grid-cols-[220px_1fr]"}`}>
-      <aside className="hidden border-r border-border bg-sidebar md:sticky md:top-0 md:z-20 md:flex md:h-dvh md:flex-col md:self-start md:overflow-y-auto">
+      <aside className="hidden border-r border-border bg-sidebar md:sticky md:top-0 md:z-20 md:flex md:h-dvh md:min-h-0 md:flex-col md:self-start md:overflow-hidden">
         <div className={`flex h-14 items-center ${collapsed ? "justify-center px-2" : "justify-between px-3"}`}>
           <Link
             href="/home"
@@ -119,27 +108,8 @@ export function AppShell({ session, children }: { session: SessionView; children
         ) : (
           <HouseholdChip session={session} />
         )}
-        <nav aria-label="Primary" className="grid gap-1 px-2">
-          {primaryNav.map((item) => {
-            const Icon = icons[item.icon]
-            const active = current === item.href || current.startsWith(`${item.href}/`)
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                title={item.label}
-                aria-current={active ? "page" : undefined}
-                className={`flex h-10 items-center gap-2.5 rounded-[10px] text-[13px] transition-colors duration-150 ${
-                  collapsed ? "justify-center px-0" : "px-2.5"
-                } ${active ? "bg-brand-soft font-medium text-on-brand-soft" : "text-muted-foreground hover:bg-surface-muted hover:text-ink"}`}
-              >
-                <Icon className="size-[18px] shrink-0" aria-hidden="true" />
-                {collapsed ? <span className="sr-only">{item.label}</span> : item.label}
-              </Link>
-            )
-          })}
-        </nav>
-        <div className="mt-auto grid gap-0.5 p-2">
+        <DesktopNav collapsed={collapsed} pathname={current} />
+        <div className="mt-auto grid shrink-0 gap-0.5 p-2">
           <Link
             href="/settings"
             title="Settings"
@@ -202,7 +172,7 @@ export function AppShell({ session, children }: { session: SessionView; children
           style={{ paddingBottom: "max(0.4rem, env(safe-area-inset-bottom))" }}
         >
           {mobileTabs.map((item) => {
-            const active = item.href === "/more" ? current === "/more" : current === item.href || current.startsWith(`${item.href}/`)
+            const active = item.match(current)
             const Icon = item.icon
             return (
               <Link

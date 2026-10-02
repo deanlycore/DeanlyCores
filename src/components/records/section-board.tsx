@@ -382,7 +382,7 @@ export function MoneyBoard({
         <Link href="/money/bills">Bills</Link>
         <Link href="/money/income">Income</Link>
         <Link href="/money/savings">Savings</Link>
-        <Link href="/life/subscriptions">Subscriptions</Link>
+        <Link href="/money/subscriptions">Subscriptions</Link>
       </div>
       <ul className="mt-4 divide-y divide-border">
         {rows.map((row) => (
