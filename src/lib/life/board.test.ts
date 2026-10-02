@@ -1,5 +1,8 @@
 import assert from "node:assert/strict"
+import { readFileSync } from "node:fs"
+import { dirname, join } from "node:path"
 import test from "node:test"
+import { fileURLToPath } from "node:url"
 
 import {
   LIFE_COPY,
@@ -162,4 +165,19 @@ test("shopping stays open-first, Shared-first, and groups quiet stores", () => {
   assert.deepEqual(shoppingPulseItems(items).map((item) => item.id), ["milk"])
   assert.deepEqual(filterLife(items, "private").map((item) => item.id), ["case"])
   assert.equal(filterLife(items, "all").length, 5)
+})
+
+test("phone Tasks and Shopping keep the FAB and clear it below md only", () => {
+  const root = join(dirname(fileURLToPath(import.meta.url)), "../../components/life")
+  const chrome = readFileSync(join(root, "life-chrome.tsx"), "utf8")
+  const tasks = readFileSync(join(root, "tasks-board.tsx"), "utf8")
+  const shopping = readFileSync(join(root, "shopping-board.tsx"), "utf8")
+  assert.match(chrome, /export function PhoneFabClearance/)
+  assert.match(chrome, /h-\[calc\(3rem\+env\(safe-area-inset-bottom\)\)\] md:hidden/)
+  assert.match(chrome, /md:hidden bottom-\[calc\(4\.75rem\+env\(safe-area-inset-bottom\)\)\]/)
+  for (const source of [tasks, shopping]) {
+    assert.match(source, /<PhoneFabClearance \/>/)
+    assert.match(source, /<LifeFab>/)
+    assert.match(source, /className="hidden md:block"/)
+  }
 })

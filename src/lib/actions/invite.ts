@@ -13,6 +13,7 @@ import {
   expiryFromChoice,
   normalizeInviteCode,
   parseMaxUses,
+  shouldReleaseInviteHold,
   validInviteCodeShape,
 } from "@/lib/invite"
 import { getServiceRoleKey } from "@/lib/push/env"
@@ -71,14 +72,18 @@ export async function createAccountWithInvite(
     return { message: "Use a password between 8 and 72 characters." }
   }
 
-  const supabase = await createClient()
-  const { data: stillValid, error: peekError } = await supabase.rpc("peek_household_invite_code", { p_code: code })
-  if (peekError || stillValid !== true) return { message: INVALID_CODE_MESSAGE }
-
   const admin = adminAuth()
   if (!admin) {
     console.warn("Invite signup skipped: set SUPABASE_SERVICE_ROLE_KEY. Leave public sign-up off.")
     return { message: "Something got in the way. Please try again." }
+  }
+
+  const { data: newlyReserved, error: reserveError } = await admin.rpc("reserve_household_invite_account", {
+    p_code: code,
+    p_email: email,
+  })
+  if (reserveError || (newlyReserved !== true && newlyReserved !== false)) {
+    return { message: calmInviteError(reserveError?.message ?? INVALID_CODE_MESSAGE) }
   }
 
   const { error: createError } = await admin.auth.admin.createUser({
@@ -86,7 +91,12 @@ export async function createAccountWithInvite(
     password,
     email_confirm: true,
   })
-  if (createError) return { message: calmAccountError(createError.message) }
+  if (createError) {
+    if (shouldReleaseInviteHold(newlyReserved)) {
+      await admin.rpc("release_household_invite_account", { p_code: code, p_email: email })
+    }
+    return { message: calmAccountError(createError.message) }
+  }
 
   await rememberThisBrowser()
   const signedIn = await createClient({ remember: true })

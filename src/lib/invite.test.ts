@@ -15,6 +15,7 @@ import {
   isActiveInvite,
   normalizeInviteCode,
   parseMaxUses,
+  shouldReleaseInviteHold,
   toActiveInvite,
   validInviteCodeShape,
   type InviteCodeRecord,
@@ -22,6 +23,18 @@ import {
 
 const sql = readFileSync(
   join(dirname(fileURLToPath(import.meta.url)), "../../supabase/migrations/20261002030918_household_invite_codes.sql"),
+  "utf8",
+)
+const revokeSql = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), "../../supabase/migrations/20261002221108_revoke_security_definer_execute.sql"),
+  "utf8",
+)
+const holdSql = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), "../../supabase/migrations/20261002221109_invite_account_mint_holds.sql"),
+  "utf8",
+)
+const inviteAction = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), "actions/invite.ts"),
   "utf8",
 )
 
@@ -109,4 +122,43 @@ test("migration locks create-home codes to owners and a redeem transaction", () 
   assert.match(sql, /grant execute on function public\.peek_household_invite_code\(text\) to anon, authenticated/)
   assert.match(sql, /revoke all on function public\.generate_invite_code\(\) from public, anon, authenticated/)
   assert.doesNotMatch(sql, /join_household/)
+})
+
+test("definer execute revoke matches the live signatures and leaves RLS and peek alone", () => {
+  assert.match(revokeSql, /revoke execute on function public\.seed_default_categories\(uuid\) from public, anon, authenticated/)
+  assert.match(revokeSql, /revoke execute on function public\.handle_new_user\(\) from public, anon, authenticated/)
+  assert.match(revokeSql, /grant execute on function public\.handle_new_user\(\) to supabase_auth_admin/)
+  assert.match(
+    revokeSql,
+    /revoke execute on function public\.can_access_row\(uuid, public\.visibility, uuid\) from public, anon;/,
+  )
+  assert.match(revokeSql, /revoke execute on function public\.is_household_member\(uuid\) from public, anon;/)
+  assert.doesNotMatch(revokeSql, /can_access_row\(uuid, public\.visibility, uuid\) from public, anon, authenticated/)
+  assert.doesNotMatch(revokeSql, /is_household_member\(uuid\) from public, anon, authenticated/)
+  assert.doesNotMatch(revokeSql, /(?:revoke|grant)[^;]*peek_household_invite_code/)
+})
+
+test("one invite code cannot mint a login without taking a remaining hold", () => {
+  assert.match(holdSql, /create table public\.household_invite_account_holds/)
+  assert.match(holdSql, /enable row level security/)
+  assert.match(holdSql, /revoke all on table public\.household_invite_account_holds from public, anon, authenticated, service_role/)
+  assert.match(holdSql, /invite\.uses \+ held >= invite\.max_uses/)
+  assert.match(holdSql, /if not mine and invite\.uses \+ held >= invite\.max_uses/)
+  assert.match(holdSql, /perform public\.seed_default_categories\(new_id\)/)
+  assert.match(holdSql, /set uses = uses \+ 1/)
+  assert.match(holdSql, /grant execute on function public\.reserve_household_invite_account\(text, text\) to service_role/)
+  assert.match(holdSql, /revoke all on function public\.reserve_household_invite_account\(text, text\) from public, anon, authenticated/)
+  assert.match(holdSql, /revoke all on function public\.release_household_invite_account\(text, text\) from public, anon, authenticated/)
+  assert.doesNotMatch(holdSql, /peek_household_invite_code/)
+  assert.doesNotMatch(holdSql, /join_household/)
+  assert.equal(shouldReleaseInviteHold(true), true)
+  assert.equal(shouldReleaseInviteHold(false), false)
+
+  const reserveAt = inviteAction.indexOf("reserve_household_invite_account")
+  const createAt = inviteAction.indexOf("createUser")
+  const releaseAt = inviteAction.indexOf("release_household_invite_account")
+  assert.ok(reserveAt > 0 && createAt > reserveAt && releaseAt > createAt)
+  assert.match(inviteAction, /peek_household_invite_code/)
+  const peekInMint = inviteAction.slice(inviteAction.indexOf("export async function createAccountWithInvite"))
+  assert.equal(peekInMint.includes("peek_household_invite_code"), false)
 })

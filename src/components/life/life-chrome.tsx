@@ -87,6 +87,11 @@ export function LifeFab({ children }: { children: React.ReactNode }) {
   )
 }
 
+/** Phone lists already have pb-24 under the tab bar. This adds the FAB height plus a gap, on small screens only. */
+export function PhoneFabClearance() {
+  return <div aria-hidden="true" className="h-[calc(3rem+env(safe-area-inset-bottom))] md:hidden" />
+}
+
 export function CheckControl({
   checked,
   label,
