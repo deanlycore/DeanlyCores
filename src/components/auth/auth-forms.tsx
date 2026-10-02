@@ -14,8 +14,7 @@ function AuthFrame({ title, children }: { title: string; children: React.ReactNo
     <div className="relative grid min-h-full place-items-center overflow-hidden bg-background px-4 py-10">
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -left-16 -top-20 h-72 w-72"
-        style={{ background: "radial-gradient(closest-side, rgb(213 242 236 / 0.55), transparent 72%)" }}
+        className="deanly-wash-strong pointer-events-none absolute -left-16 -top-20 h-72 w-72"
       />
       <div className="relative w-full max-w-[400px]">
         <div className="mb-8 grid justify-items-center text-center">
@@ -33,7 +32,7 @@ function AuthFrame({ title, children }: { title: string; children: React.ReactNo
 function Message({ state }: { state: FormState }) {
   if (!state?.message) return null
   return (
-    <p role="status" className="rounded-xl bg-brand-soft px-3 py-2 text-sm text-brand-deep">
+    <p role="status" className="rounded-xl bg-brand-soft px-3 py-2 text-sm text-on-brand-soft">
       {state.message}
     </p>
   )
@@ -69,7 +68,7 @@ export function LoginForm({ configured }: { configured: boolean }) {
           />
         </div>
         <label className="flex items-center gap-2 text-sm text-muted-foreground">
-          <input type="checkbox" name="remember" defaultChecked className="size-4 accent-[#249B8A]" />
+          <input type="checkbox" name="remember" defaultChecked className="size-4 accent-brand" />
           Remember this browser
         </label>
         <Message state={state} />

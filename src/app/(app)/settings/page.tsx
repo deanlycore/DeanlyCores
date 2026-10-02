@@ -1,16 +1,20 @@
 import type { Metadata } from "next"
 import Link from "next/link"
+import { cookies } from "next/headers"
 
 import { signOut } from "@/lib/actions/auth"
+import { AppearanceControl } from "@/components/settings/appearance-control"
 import { CurrencyForm, NameForm } from "@/components/settings/settings-forms"
 import { SharedPushToggle } from "@/components/settings/shared-push-toggle"
 import { getSessionView } from "@/lib/data/session"
 import { requireHousehold } from "@/lib/data/context"
 import { getVapidPublicKey } from "@/lib/push/env"
+import { APPEARANCE_COOKIE, parseAppearance } from "@/lib/theme"
 
 export const metadata: Metadata = { title: "Settings" }
 
 export default async function SettingsPage() {
+  const appearance = parseAppearance((await cookies()).get(APPEARANCE_COOKIE)?.value)
   const session = await getSessionView()
   const ctx = await requireHousehold()
   const categories = ctx
@@ -27,12 +31,18 @@ export default async function SettingsPage() {
     <div className="mx-auto grid max-w-3xl gap-4">
       <header>
         <h1 className="font-display text-[28px] font-semibold tracking-tight">Settings</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Profile, household, notifications, and how amounts are shown.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Profile, appearance, household, notifications, and how amounts are shown.</p>
       </header>
 
       <section id="profile" className="deanly-card grid gap-3 p-5">
         <h2 className="font-medium">Profile</h2>
         <NameForm name={session.displayName} />
+      </section>
+
+      <section id="appearance" className="deanly-card grid gap-3 p-5">
+        <h2 className="font-medium">Appearance</h2>
+        <AppearanceControl appearance={appearance} />
+        <p className="text-sm text-muted-foreground">Night is easier on evening shifts.</p>
       </section>
 
       <section id="household" className="deanly-card grid gap-3 p-5">

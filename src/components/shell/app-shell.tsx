@@ -98,7 +98,7 @@ export function AppShell({ session, children }: { session: SessionView; children
 
   return (
     <div className={`min-h-dvh bg-background md:grid ${collapsed ? "md:grid-cols-[68px_1fr]" : "md:grid-cols-[220px_1fr]"}`}>
-      <aside className="hidden border-r border-border bg-surface md:flex md:flex-col">
+      <aside className="hidden border-r border-border bg-sidebar md:flex md:flex-col">
         <div className={`flex h-14 items-center ${collapsed ? "justify-center px-2" : "justify-between px-3"}`}>
           <Link href="/home" aria-label="Deanly Tracking — DeanFamily, home">
             {collapsed ? <LoopMark size={28} /> : <Wordmark />}
@@ -128,7 +128,7 @@ export function AppShell({ session, children }: { session: SessionView; children
                 aria-current={active ? "page" : undefined}
                 className={`flex h-10 items-center gap-2.5 rounded-[10px] text-[13px] transition-colors duration-150 ${
                   collapsed ? "justify-center px-0" : "px-2.5"
-                } ${active ? "bg-brand-soft font-medium text-brand-deep" : "text-muted-foreground hover:bg-surface-muted hover:text-ink"}`}
+                } ${active ? "bg-brand-soft font-medium text-on-brand-soft" : "text-muted-foreground hover:bg-surface-muted hover:text-ink"}`}
               >
                 <Icon className="size-[18px] shrink-0" aria-hidden="true" />
                 {collapsed ? <span className="sr-only">{item.label}</span> : item.label}
@@ -195,7 +195,7 @@ export function AppShell({ session, children }: { session: SessionView; children
 
         <nav
           aria-label="Primary"
-          className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-border bg-surface px-1 pt-1 md:hidden"
+          className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-border bg-sidebar px-1 pt-1 md:hidden"
           style={{ paddingBottom: "max(0.4rem, env(safe-area-inset-bottom))" }}
         >
           {mobileTabs.map((item) => {
