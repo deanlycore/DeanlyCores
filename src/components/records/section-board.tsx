@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 import { documentUrl, markBillPaid, setShoppingChecked, setTaskComplete, updateNote } from "@/lib/actions/records"
 import { RecordDialog } from "@/components/create/record-dialog"
@@ -23,6 +23,16 @@ import type {
 import { billStatus, formatMoney, formatShortDate, formatTime, relativeTime } from "@/lib/home/metrics"
 import type { Visibility } from "@/lib/visibility"
 import { cn } from "cn"
+
+const itemAnchor = "scroll-mt-6 rounded-button [&:target]:bg-brand-soft"
+
+function useScrollToItemHash() {
+  useEffect(() => {
+    const id = window.location.hash.slice(1)
+    if (!id.startsWith("item-")) return
+    document.getElementById(id)?.scrollIntoView({ block: "center" })
+  }, [])
+}
 
 function Frame({
   title,
@@ -76,6 +86,7 @@ export function BillsBoard({
   error?: boolean
 }) {
   const router = useRouter()
+  useScrollToItemHash()
   return (
     <Frame
       title="Bills"
@@ -86,7 +97,7 @@ export function BillsBoard({
       {rows.length === 0 ? <p className="text-sm text-muted-foreground">No bills yet. Add the next one when you know the date.</p> : null}
       <ul className="divide-y divide-border">
         {rows.map((bill) => (
-          <li key={bill.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+          <li id={`item-${bill.id}`} key={bill.id} className={cn("flex flex-wrap items-center justify-between gap-3 py-3", itemAnchor)}>
             <div>
               <p className="font-medium">{bill.name}</p>
               <p className="text-sm text-muted-foreground">{formatShortDate(bill.due_on)} · {formatMoney(bill.amount_cents, currency)}</p>
@@ -128,6 +139,7 @@ export function TasksBoard({
 }) {
   const router = useRouter()
   const [tasks, setTasks] = useState(rows)
+  useScrollToItemHash()
   return (
     <Frame
       title="Tasks"
@@ -138,7 +150,7 @@ export function TasksBoard({
       {tasks.length === 0 ? <p className="text-sm text-muted-foreground">Nothing needs a nudge.</p> : null}
       <ul>
         {tasks.map((task) => (
-          <li key={task.id}>
+          <li id={`item-${task.id}`} key={task.id} className={itemAnchor}>
             <label className="flex min-h-11 items-center gap-3">
               <input
                 type="checkbox"
@@ -179,6 +191,7 @@ export function EventsBoard({
   visibility: Visibility
   error?: boolean
 }) {
+  useScrollToItemHash()
   return (
     <Frame
       title="Calendar"
@@ -189,7 +202,7 @@ export function EventsBoard({
       {rows.length === 0 ? <p className="text-sm text-muted-foreground">The calendar is clear.</p> : null}
       <ul className="divide-y divide-border">
         {rows.map((event) => (
-          <li key={event.id} className="flex items-center justify-between gap-3 py-3">
+          <li id={`item-${event.id}`} key={event.id} className={cn("flex items-center justify-between gap-3 py-3", itemAnchor)}>
             <div>
               <p className="font-medium">{event.title}</p>
               <p className="text-sm text-muted-foreground">
@@ -216,6 +229,7 @@ export function MealsBoard({
   visibility: Visibility
   error?: boolean
 }) {
+  useScrollToItemHash()
   return (
     <Frame
       title="Meals"
@@ -226,7 +240,7 @@ export function MealsBoard({
       {rows.length === 0 ? <p className="text-sm text-muted-foreground">Plan this week’s meals.</p> : null}
       <ul className="divide-y divide-border">
         {rows.map((meal) => (
-          <li key={meal.id} className="flex items-center justify-between gap-3 py-3">
+          <li id={`item-${meal.id}`} key={meal.id} className={cn("flex items-center justify-between gap-3 py-3", itemAnchor)}>
             <div>
               <p className="font-medium">{meal.title}</p>
               <p className="text-sm capitalize text-muted-foreground">
@@ -252,6 +266,7 @@ export function ShoppingBoard({
 }) {
   const router = useRouter()
   const [items, setItems] = useState(rows)
+  useScrollToItemHash()
   return (
     <Frame
       title="Shopping"
@@ -262,7 +277,7 @@ export function ShoppingBoard({
       {items.length === 0 ? <p className="text-sm text-muted-foreground">Start a shopping list.</p> : null}
       <ul>
         {items.map((item) => (
-          <li key={item.id}>
+          <li id={`item-${item.id}`} key={item.id} className={itemAnchor}>
             <label className="flex min-h-11 items-center gap-3">
               <input
                 type="checkbox"

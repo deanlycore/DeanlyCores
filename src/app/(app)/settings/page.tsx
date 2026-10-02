@@ -3,8 +3,10 @@ import Link from "next/link"
 
 import { signOut } from "@/lib/actions/auth"
 import { CurrencyForm, NameForm } from "@/components/settings/settings-forms"
+import { SharedPushToggle } from "@/components/settings/shared-push-toggle"
 import { getSessionView } from "@/lib/data/session"
 import { requireHousehold } from "@/lib/data/context"
+import { getVapidPublicKey } from "@/lib/push/env"
 
 export const metadata: Metadata = { title: "Settings" }
 
@@ -25,7 +27,7 @@ export default async function SettingsPage() {
     <div className="mx-auto grid max-w-3xl gap-4">
       <header>
         <h1 className="font-display text-[28px] font-semibold tracking-tight">Settings</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Profile, household, and how amounts are shown.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Profile, household, notifications, and how amounts are shown.</p>
       </header>
 
       <section id="profile" className="deanly-card grid gap-3 p-5">
@@ -53,6 +55,11 @@ export default async function SettingsPage() {
         <p className="mt-2 text-sm text-muted-foreground">
           {categories.length ? categories.map((category) => category.name).join(" · ") : "Categories appear after the household is created."}
         </p>
+      </section>
+
+      <section id="notifications" className="deanly-card grid gap-3 p-5">
+        <h2 className="font-medium">Notifications</h2>
+        <SharedPushToggle vapidPublicKey={getVapidPublicKey()} />
       </section>
 
       <section id="currency" className="deanly-card grid gap-3 p-5">
