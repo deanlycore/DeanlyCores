@@ -20,6 +20,10 @@ function AuthFrame({ title, children }: { title: string; children: React.ReactNo
       <div className="relative w-full max-w-[400px]">
         <div className="mb-8 grid justify-items-center text-center">
           <LoopMark size={48} />
+          <p className="mt-2.5 leading-none">
+            <span className="block font-display text-[15px] font-semibold tracking-tight text-ink">Deanly</span>
+            <span className="mt-0.5 block text-[11px] text-muted-foreground">DeanFamily</span>
+          </p>
           <p className="mt-3 text-sm text-muted-foreground">Keep life together, effortlessly.</p>
         </div>
         <h1 className="font-display text-2xl font-semibold tracking-tight">{title}</h1>
