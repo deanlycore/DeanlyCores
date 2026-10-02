@@ -9,7 +9,7 @@ import { shouldNotifySharedCreate, type SharedPushKind } from "@/lib/push/shared
 import { defaultVisibilityFor, type Visibility } from "@/lib/visibility"
 import { createClient } from "@/lib/supabase/server"
 
-export type ActionResult = { ok: true } | { ok: false; message: string }
+export type ActionResult = { ok: true; id?: string } | { ok: false; message: string }
 
 function visibilityOf(value: FormDataEntryValue | null, fallback: Visibility): Visibility {
   return value === "private" || value === "shared" ? value : fallback
@@ -56,6 +56,9 @@ function calm(error: { message: string } | null, fallback: string): ActionResult
   const message = error.message.toLowerCase()
   if (message.includes("duplicate") || message.includes("budgets_shared") || message.includes("budgets_private")) {
     return { ok: false, message: "That budget is already set for this month." }
+  }
+  if (message.includes("only the person who added this")) {
+    return { ok: false, message: "Only the person who added this can change who sees it." }
   }
   if (message.includes("row-level") || message.includes("permission")) {
     return { ok: false, message: "You don’t have access to change that." }
@@ -597,7 +600,7 @@ export async function createNote(formData: FormData): Promise<ActionResult> {
   const title = textOf(formData.get("title"), 160)
   const body = String(formData.get("body") ?? "").slice(0, 20000)
   if (!title) return { ok: false, message: "Add a title." }
-  const visibility = visibilityOf(formData.get("visibility"), defaultVisibilityFor("note", ready.ctx.lastVisibility))
+  const visibility = visibilityOf(formData.get("visibility"), defaultVisibilityFor("note"))
   const { data, error } = await ready.ctx.supabase
     .from("notes")
     .insert({
@@ -619,7 +622,8 @@ export async function createNote(formData: FormData): Promise<ActionResult> {
     summary: `${firstName(ready.ctx.displayName)} wrote “${title}”`,
   })
   refresh()
-  return { ok: true }
+  revalidatePath(`/notes/${data.id}`)
+  return { ok: true, id: data.id }
 }
 
 export async function updateNote(id: string, formData: FormData): Promise<ActionResult> {
@@ -632,7 +636,18 @@ export async function updateNote(id: string, formData: FormData): Promise<Action
   const failed = calm(error, "Couldn’t save that note.")
   if (failed) return failed
   refresh()
+  revalidatePath(`/notes/${id}`)
   return { ok: true }
+}
+
+export async function deleteNote(id: string) {
+  return removeRecord("notes", id, "Couldn’t remove that note.")
+}
+
+export async function setNoteVisibility(id: string, visibility: Visibility) {
+  const result = await setRecordVisibility("notes", id, visibility, "Couldn’t update that note.")
+  if (result.ok) revalidatePath(`/notes/${id}`)
+  return result
 }
 
 export async function createSubscription(formData: FormData): Promise<ActionResult> {
@@ -787,7 +802,7 @@ export async function setSubscriptionActive(id: string, active: boolean): Promis
 }
 
 async function removeRecord(
-  table: "bills" | "expenses" | "goals" | "subscriptions" | "tasks" | "calendar_events" | "meals" | "shopping_items",
+  table: "bills" | "expenses" | "goals" | "subscriptions" | "tasks" | "calendar_events" | "meals" | "shopping_items" | "notes",
   id: string,
   fallback: string,
 ): Promise<ActionResult> {
@@ -801,7 +816,7 @@ async function removeRecord(
 }
 
 async function setRecordVisibility(
-  table: "bills" | "expenses" | "goals" | "subscriptions" | "tasks" | "calendar_events" | "meals" | "shopping_items",
+  table: "bills" | "expenses" | "goals" | "subscriptions" | "tasks" | "calendar_events" | "meals" | "shopping_items" | "notes",
   id: string,
   visibility: Visibility,
   fallback: string,

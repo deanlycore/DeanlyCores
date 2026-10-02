@@ -103,7 +103,7 @@ export function MoneyFrame({
             {action}
           </div>
         </header>
-        <div className="flex flex-wrap gap-2">{chips}</div>
+        {chips ? <div className="flex flex-wrap gap-2">{chips}</div> : null}
         {pulse}
         <div className="grid gap-2.5">{children}</div>
       </div>
@@ -170,7 +170,7 @@ export function MetricChip({
   onClick,
 }: {
   children: React.ReactNode
-  tone?: "muted" | "brand" | "danger" | "success"
+  tone?: "muted" | "brand" | "danger" | "success" | "sand"
   pressed?: boolean
   onClick?: () => void
 }) {
@@ -179,6 +179,7 @@ export function MetricChip({
     brand: "border-transparent bg-brand-soft text-on-brand-soft",
     danger: "border-border bg-surface text-danger",
     success: "border-transparent bg-[color-mix(in_srgb,var(--success)_16%,var(--surface))] text-success",
+    sand: "border-transparent bg-sand text-sand-ink",
   }[tone]
   const className = cn(
     "inline-flex h-8 items-center rounded-full border px-3 text-[13px] tabular-nums",
@@ -235,10 +236,13 @@ export function MoneyCard({
   id,
   children,
   onOpen,
+  linked = false,
 }: {
   id?: string
   children: React.ReactNode
   onOpen?: () => void
+  /** Hover lift when the card body is already a link. */
+  linked?: boolean
 }) {
   return (
     <article
@@ -246,7 +250,7 @@ export function MoneyCard({
       onClick={onOpen}
       className={cn(
         "scroll-mt-24 rounded-[12px] border border-border bg-surface px-4 py-3.5 shadow-soft transition-transform duration-150 ease-out",
-        onOpen && "cursor-pointer hover:-translate-y-px",
+        (onOpen || linked) && "cursor-pointer hover:-translate-y-px",
       )}
     >
       {children}
@@ -279,10 +283,10 @@ export function EmptyState({ copy, action }: { copy: string; action: React.React
   )
 }
 
-export function FilterEmpty({ onClear }: { onClear: () => void }) {
+export function FilterEmpty({ onClear, copy = "Nothing matches these filters." }: { onClear: () => void; copy?: string }) {
   return (
     <div className="rounded-[12px] border border-border bg-surface px-5 py-8 text-center shadow-soft">
-      <p className="text-sm text-muted-foreground">Nothing matches these filters.</p>
+      <p className="text-sm text-muted-foreground">{copy}</p>
       <button type="button" onClick={onClear} className="mt-3 text-sm font-medium text-brand-deep">
         Clear filters
       </button>
