@@ -24,7 +24,7 @@ import { recentActivity } from "@/lib/actions/records"
 import { primaryNav, type IconKey } from "@/lib/navigation"
 import type { SessionView } from "@/lib/data/session"
 import { relativeTime } from "@/lib/home/metrics"
-import { HouseMark } from "@/components/brand/house-mark"
+import { LoopMark } from "@/components/brand/loop-mark"
 import { Wordmark } from "@/components/brand/wordmark"
 import { SearchDialog } from "@/components/shell/search-dialog"
 import { Avatar, AvatarFallback, AvatarGroup, AvatarImage } from "@/components/ui/avatar"
@@ -97,20 +97,20 @@ export function AppShell({ session, children }: { session: SessionView; children
   }
 
   return (
-    <div className={`min-h-dvh bg-background md:grid ${collapsed ? "md:grid-cols-[72px_1fr]" : "md:grid-cols-[240px_1fr]"}`}>
+    <div className={`min-h-dvh bg-background md:grid ${collapsed ? "md:grid-cols-[68px_1fr]" : "md:grid-cols-[220px_1fr]"}`}>
       <aside className="hidden border-r border-border bg-surface md:flex md:flex-col">
-        <div className={`flex items-center ${collapsed ? "justify-center px-2 py-5" : "justify-between px-4 py-5"}`}>
+        <div className={`flex h-14 items-center ${collapsed ? "justify-center px-2" : "justify-between px-3"}`}>
           <Link href="/home" aria-label="Deanly — DeanFamily, home">
-            {collapsed ? <HouseMark className="size-6" /> : <Wordmark />}
+            {collapsed ? <LoopMark size={28} /> : <Wordmark />}
           </Link>
           {collapsed ? null : (
-            <button type="button" onClick={toggleRail} aria-label="Collapse sidebar" className="rounded-lg p-1 text-muted-foreground hover:bg-surface-muted">
+            <button type="button" onClick={toggleRail} aria-label="Collapse sidebar" className="rounded-[10px] p-1 text-muted-foreground hover:bg-surface-muted">
               <PanelLeft className="size-4" />
             </button>
           )}
         </div>
         {collapsed ? (
-          <button type="button" onClick={toggleRail} aria-label="Expand sidebar" className="mx-auto mb-3 rounded-lg p-2 text-muted-foreground hover:bg-surface-muted">
+          <button type="button" onClick={toggleRail} aria-label="Expand sidebar" className="mx-auto mb-2 rounded-[10px] p-2 text-muted-foreground hover:bg-surface-muted">
             <PanelLeft className="size-4" />
           </button>
         ) : (
@@ -126,33 +126,32 @@ export function AppShell({ session, children }: { session: SessionView; children
                 href={item.href}
                 title={item.label}
                 aria-current={active ? "page" : undefined}
-                className={`relative flex items-center gap-3 rounded-xl py-2.5 text-sm transition-colors duration-150 ${
-                  collapsed ? "justify-center px-0" : "px-3"
-                } ${active ? "bg-brand-soft font-medium text-brand-deep" : "text-ink hover:bg-surface-muted"}`}
+                className={`flex h-10 items-center gap-2.5 rounded-[10px] text-[13px] transition-colors duration-150 ${
+                  collapsed ? "justify-center px-0" : "px-2.5"
+                } ${active ? "bg-brand-soft font-medium text-brand-deep" : "text-muted-foreground hover:bg-surface-muted hover:text-ink"}`}
               >
-                <span className={`absolute -left-2 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full ${active ? "bg-brand" : "bg-transparent"}`} />
-                <Icon className="size-5" aria-hidden="true" />
+                <Icon className="size-[18px] shrink-0" aria-hidden="true" />
                 {collapsed ? <span className="sr-only">{item.label}</span> : item.label}
               </Link>
             )
           })}
         </nav>
-        <div className="mt-auto grid gap-1 p-2">
+        <div className="mt-auto grid gap-0.5 p-2">
           <Link
             href="/settings"
             title="Settings"
-            className={`flex items-center gap-3 rounded-xl py-2.5 text-sm text-ink hover:bg-surface-muted ${collapsed ? "justify-center" : "px-3"}`}
+            className={`flex items-center gap-2 rounded-[10px] py-2 text-xs text-muted-foreground hover:text-ink ${collapsed ? "justify-center" : "px-2.5"}`}
           >
-            <Settings className="size-5" />
+            <Settings className="size-3.5" />
             {collapsed ? <span className="sr-only">Settings</span> : "Settings"}
           </Link>
           <form action={signOut}>
             <button
               type="submit"
               title="Log out"
-              className={`flex w-full items-center gap-3 rounded-xl py-2.5 text-sm text-ink hover:bg-surface-muted ${collapsed ? "justify-center" : "px-3"}`}
+              className={`flex w-full items-center gap-2 rounded-[10px] py-2 text-xs text-muted-foreground hover:text-ink ${collapsed ? "justify-center" : "px-2.5"}`}
             >
-              <LogOut className="size-5" />
+              <LogOut className="size-3.5" />
               {collapsed ? <span className="sr-only">Log out</span> : "Log out"}
             </button>
           </form>
@@ -160,24 +159,26 @@ export function AppShell({ session, children }: { session: SessionView; children
       </aside>
 
       <div className="flex min-h-dvh min-w-0 flex-col">
-        <header className="sticky top-0 z-20 hidden items-center gap-3 border-b border-border bg-surface/95 px-6 py-3 backdrop-blur md:flex">
+        <header className="sticky top-0 z-20 hidden h-14 items-center gap-3 border-b border-border bg-background/80 px-6 backdrop-blur md:flex">
           <button
             type="button"
             onClick={() => setSearchOpen(true)}
-            className="flex h-10 max-w-xl flex-1 items-center gap-2 rounded-xl border border-border bg-background px-3 text-sm text-muted-foreground"
+            className="flex h-9 w-full max-w-md items-center gap-2 rounded-full border border-border bg-surface px-3 text-sm text-muted-foreground"
           >
-            <Search className="size-4" />
-            Search
+            <Search className="size-4 shrink-0" />
+            <span className="truncate">Search DeanFamily…</span>
             <kbd className="ml-auto rounded-md border border-border px-1.5 py-0.5 text-xs">⌘K</kbd>
           </button>
-          <Notifications />
-          <AccountMenu session={session} />
+          <div className="ml-auto flex items-center gap-1">
+            <Notifications />
+            <AccountMenu session={session} />
+          </div>
         </header>
 
-        <header className="flex items-center justify-between border-b border-border bg-surface px-4 py-3 md:hidden">
+        <header className="flex h-14 items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur md:hidden">
           <Link href="/home" aria-label="Deanly home" className="inline-flex items-center gap-2">
-            <HouseMark className="size-8" />
-            <span className="font-display text-base font-semibold">Deanly</span>
+            <LoopMark size={28} />
+            <span className="font-display text-[15px] font-semibold">Deanly</span>
           </Link>
           <div className="flex items-center gap-1">
             <Button type="button" variant="ghost" size="icon" aria-label="Search" onClick={() => setSearchOpen(true)}>
@@ -188,7 +189,7 @@ export function AppShell({ session, children }: { session: SessionView; children
           </div>
         </header>
 
-        <main id="main" className="flex-1 px-4 py-6 pb-24 md:px-8 md:pb-8">
+        <main id="main" className="mx-auto w-full max-w-[1120px] flex-1 px-4 py-5 pb-24 md:px-6 md:py-6 md:pb-8">
           {children}
         </main>
 
@@ -221,21 +222,19 @@ export function AppShell({ session, children }: { session: SessionView; children
 function HouseholdChip({ session }: { session: SessionView }) {
   const name = session.householdName ?? "DeanFamily"
   return (
-    <div className="mx-3 mb-4 rounded-xl bg-surface-muted px-3 py-2.5">
-      <p className="truncate text-sm font-medium">{name}</p>
-      <div className="mt-2 flex items-center gap-2">
-        <AvatarGroup>
-          {session.members.slice(0, 4).map((member) => (
-            <Avatar key={member.userId} size="sm">
-              {member.avatarUrl ? <AvatarImage src={member.avatarUrl} alt="" /> : null}
-              <AvatarFallback>{initials(member.displayName)}</AvatarFallback>
-            </Avatar>
-          ))}
-        </AvatarGroup>
-        <span className="text-xs text-muted-foreground">
-          {session.members.length} {session.members.length === 1 ? "member" : "members"}
-        </span>
-      </div>
+    <div className="mx-2 mb-3 flex items-center gap-2 px-2">
+      <AvatarGroup>
+        {session.members.slice(0, 4).map((member) => (
+          <Avatar key={member.userId} className="size-5 after:border-brand-soft">
+            {member.avatarUrl ? <AvatarImage src={member.avatarUrl} alt="" /> : null}
+            <AvatarFallback className="text-[9px]">{initials(member.displayName)}</AvatarFallback>
+          </Avatar>
+        ))}
+      </AvatarGroup>
+      <p className="min-w-0 truncate text-[13px] text-ink">
+        {name}
+        <span className="text-muted-foreground"> · {session.members.length}</span>
+      </p>
     </div>
   )
 }
@@ -245,7 +244,7 @@ function AccountMenu({ session }: { session: SessionView }) {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button type="button" className="rounded-full" aria-label="Account menu">
-          <Avatar>
+          <Avatar className="size-7 after:border-brand-soft">
             {session.avatarUrl ? <AvatarImage src={session.avatarUrl} alt="" /> : null}
             <AvatarFallback>{initials(session.displayName)}</AvatarFallback>
           </Avatar>

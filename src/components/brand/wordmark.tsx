@@ -1,4 +1,4 @@
-import { HouseMark } from "@/components/brand/house-mark"
+import { LoopMark } from "@/components/brand/loop-mark"
 
 export function Wordmark({
   size = "md",
@@ -7,17 +7,15 @@ export function Wordmark({
   size?: "sm" | "md" | "lg"
   showHousehold?: boolean
 }) {
-  const mark = size === "lg" ? "size-10" : size === "sm" ? "size-8" : "size-8"
-  const title = size === "lg" ? "text-3xl" : size === "sm" ? "text-base" : "text-lg"
+  const mark = size === "lg" ? 40 : 28
+  const title = size === "lg" ? "text-2xl" : "text-[15px]"
 
   return (
     <span className="inline-flex items-center gap-2.5">
-      <HouseMark className={mark} />
-      <span className="leading-tight">
+      <LoopMark size={mark} />
+      <span className="leading-none">
         <span className={`block font-display font-semibold tracking-tight text-ink ${title}`}>Deanly</span>
-        {showHousehold ? (
-          <span className="block text-xs text-muted-foreground">DeanFamily</span>
-        ) : null}
+        {showHousehold ? <span className="mt-0.5 block text-[11px] text-muted-foreground">DeanFamily</span> : null}
       </span>
     </span>
   )

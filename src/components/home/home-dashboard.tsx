@@ -7,14 +7,21 @@ import {
   CalendarDays,
   Check,
   ListChecks,
+  Plus,
   UtensilsCrossed,
   Wallet,
 } from "lucide-react"
 
 import { createHousehold } from "@/lib/actions/household"
 import { dismissChecklist, setShoppingChecked, setTaskComplete } from "@/lib/actions/records"
-import { RecordDialog } from "@/components/create/record-dialog"
+import { RecordDialog, type RecordKind } from "@/components/create/record-dialog"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { StatusChip, VisibilityPill, WidgetError } from "@/components/ui/pills"
@@ -29,12 +36,15 @@ import {
   formatShortDate,
   formatTime,
   greetingFor,
-  longDate,
+  headerDate,
   relativeTime,
   spentAgainstBudget,
   taskProgress,
   upcomingBills,
 } from "@/lib/home/metrics"
+
+const kpiClass =
+  "rounded-[16px] border border-border bg-surface p-[18px] shadow-[0_1px_2px_rgb(28_25_23/0.03),0_12px_32px_rgb(28_25_23/0.05)] transition-transform duration-150 hover:-translate-y-px lg:rounded-[20px]"
 
 export function HomeDashboard({
   session,
@@ -50,17 +60,24 @@ export function HomeDashboard({
   const currency = data?.currency ?? "USD"
 
   return (
-    <div className="mx-auto grid max-w-[1180px] gap-5">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="font-display text-[28px] font-semibold tracking-tight text-ink sm:text-[32px]">
-            {greetingFor(timeZone, session.displayName)}
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">Here’s what’s happening today.</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <p className="text-sm text-muted-foreground">{longDate(timeZone)}</p>
-          <CustomizeHint />
+    <div className="grid gap-5">
+      <header className="relative">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -left-6 -top-8 h-40 w-72"
+          style={{ background: "radial-gradient(closest-side, rgb(213 242 236 / 0.18), transparent 72%)" }}
+        />
+        <div className="relative flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h1 className="font-display text-[30px] font-semibold tracking-[-0.02em] text-ink">
+              {greetingFor(timeZone, session.displayName)}
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">Here’s what’s happening today.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <p className="text-sm text-muted-foreground">{headerDate(timeZone)}</p>
+            <QuickAdd today={today} visibility={visibility} />
+          </div>
         </div>
       </header>
 
@@ -80,10 +97,10 @@ export function HomeDashboard({
         <Checklist today={today} visibility={visibility} members={session.members.length} />
       ) : null}
 
-      <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <section className="grid grid-cols-2 gap-5 lg:grid-cols-4">
         <BudgetKpi data={data} currency={currency} today={today} visibility={visibility} />
         <CountKpi
-          icon={<CalendarDays className="size-5" />}
+          icon={<CalendarDays className="size-[18px]" />}
           label="Upcoming Bills"
           value={data ? String(billsDueThisWeek(data.bills, data.today).length) : "—"}
           hint="due this week"
@@ -95,7 +112,7 @@ export function HomeDashboard({
           action={<RecordDialog kind="bill" today={today} defaultVisibility={visibility} trigger={<TextLink>Add bill</TextLink>} />}
         />
         <CountKpi
-          icon={<ListChecks className="size-5" />}
+          icon={<ListChecks className="size-[18px]" />}
           label="Today’s Tasks"
           value={data ? `${taskProgress(data.tasks).done} of ${taskProgress(data.tasks).total}` : "—"}
           hint="completed"
@@ -107,7 +124,7 @@ export function HomeDashboard({
           action={<RecordDialog kind="task" today={today} defaultVisibility={visibility} trigger={<TextLink>Add task</TextLink>} />}
         />
         <CountKpi
-          icon={<UtensilsCrossed className="size-5" />}
+          icon={<UtensilsCrossed className="size-[18px]" />}
           label="Meals This Week"
           value={data ? String(data.meals.length) : "—"}
           hint="planned meals"
@@ -120,34 +137,64 @@ export function HomeDashboard({
         />
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-3">
-        <EventsCard data={data} timeZone={timeZone} today={today} visibility={visibility} />
-        <BillsCard data={data} currency={currency} today={today} visibility={visibility} />
-        <MealsCard data={data} today={today} visibility={visibility} />
+      <section className="grid gap-5 lg:grid-cols-12">
+        <EventsCard data={data} timeZone={timeZone} today={today} visibility={visibility} className="lg:col-span-5" />
+        <BillsCard data={data} currency={currency} today={today} visibility={visibility} className="lg:col-span-4" />
+        <MealsCard data={data} today={today} visibility={visibility} className="lg:col-span-3" />
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-3">
-        <GoalsCard data={data} currency={currency} today={today} visibility={visibility} />
-        <ShoppingCard data={data} today={today} visibility={visibility} />
-        <ActivityCard data={data} />
+      <section className="grid gap-5 lg:grid-cols-12">
+        <GoalsCard data={data} currency={currency} today={today} visibility={visibility} className="lg:col-span-4" />
+        <ShoppingCard data={data} today={today} visibility={visibility} className="lg:col-span-4" />
+        <ActivityCard data={data} className="lg:col-span-4" />
       </section>
     </div>
   )
 }
 
-function CustomizeHint() {
+const quickAdds: { kind: RecordKind; label: string }[] = [
+  { kind: "event", label: "Event" },
+  { kind: "bill", label: "Bill" },
+  { kind: "task", label: "Task" },
+  { kind: "meal", label: "Meal" },
+  { kind: "shopping", label: "Shopping item" },
+]
+
+function QuickAdd({ today, visibility }: { today: string; visibility: "shared" | "private" }) {
+  const [kind, setKind] = useState<RecordKind>("task")
   const [open, setOpen] = useState(false)
   return (
-    <div className="relative">
-      <Button type="button" variant="outline" className="h-10 rounded-button" onClick={() => setOpen((value) => !value)}>
-        Customize
-      </Button>
-      {open ? (
-        <p className="absolute right-0 z-10 mt-2 w-56 rounded-xl border border-border bg-surface p-3 text-sm text-muted-foreground shadow-soft">
-          This home layout is set for now.
-        </p>
-      ) : null}
-    </div>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button type="button" className="h-10 rounded-button px-3 text-primary-foreground">
+            <Plus className="size-4" />
+            Quick add
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {quickAdds.map((option) => (
+            <DropdownMenuItem
+              key={option.kind}
+              onSelect={() => {
+                setKind(option.kind)
+                window.setTimeout(() => setOpen(true), 0)
+              }}
+            >
+              {option.label}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <RecordDialog
+        key={`${kind}-${open ? "open" : "closed"}`}
+        kind={kind}
+        today={today}
+        defaultVisibility={visibility}
+        open={open}
+        onOpenChange={setOpen}
+      />
+    </>
   )
 }
 
@@ -195,15 +242,21 @@ function DismissChecklist() {
 }
 
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <article className={`deanly-card p-5 ${className}`}>{children}</article>
+  return (
+    <article
+      className={`rounded-2xl border border-border bg-surface p-5 shadow-[0_1px_2px_rgb(28_25_23/0.03),0_12px_32px_rgb(28_25_23/0.05)] ${className}`}
+    >
+      {children}
+    </article>
+  )
 }
 
-function CardHead({ title, href, link }: { title: string; href: string; link: string }) {
+function CardHead({ title, href }: { title: string; href: string }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <h2 className="text-sm font-medium text-ink">{title}</h2>
-      <Link href={href} className="text-sm font-medium text-brand-deep">
-        {link}
+      <h2 className="text-[13px] font-medium text-ink">{title}</h2>
+      <Link href={href} className="text-[13px] font-medium text-brand">
+        View
       </Link>
     </div>
   )
@@ -231,11 +284,11 @@ function BudgetKpi({
   const spent = data?.budget ? spentAgainstBudget(data.expenses, data.budget.visibility) : 0
   const pulse = budgetPulse(data?.budget?.amountCents ?? null, spent)
   return (
-    <Card>
-      <span className="grid size-10 place-items-center rounded-full bg-brand-soft text-brand-deep">
-        <Wallet className="size-5" />
+    <article className={kpiClass}>
+      <span className="grid size-9 place-items-center rounded-full bg-brand-soft text-brand">
+        <Wallet className="size-[18px]" />
       </span>
-      <p className="mt-3 text-sm text-muted-foreground">Household Budget</p>
+      <p className="mt-3 text-[12px] font-medium uppercase tracking-[0.04em] text-muted-foreground">Household Budget</p>
       {data?.errors.budget ? <WidgetError /> : null}
       {!data?.budget ? (
         <div className="mt-2">
@@ -250,22 +303,19 @@ function BudgetKpi({
             {pulse.over ? formatMoney(Math.abs(pulse.remaining ?? 0), currency) : formatMoney(pulse.remaining ?? 0, currency)}
           </p>
           <p className="text-sm text-muted-foreground">{pulse.over ? "over this month" : "remaining this month"}</p>
-          <div className="mt-3 h-2 overflow-hidden rounded-full bg-surface-muted">
-            <div
-              className={`h-full rounded-full ${pulse.over ? "bg-danger" : "bg-brand"}`}
-              style={{ width: `${Math.round(pulse.ratio * 100)}%` }}
-            />
+          <div className="mt-3 h-1 overflow-hidden rounded-full bg-surface-muted">
+            <div className="h-full rounded-full bg-brand" style={{ width: `${Math.round(pulse.ratio * 100)}%` }} />
           </div>
           <p className="mt-2 text-xs text-muted-foreground tabular-nums">
             {formatMoney(spent, currency)} of {formatMoney(data.budget.amountCents, currency)}
           </p>
         </>
       )}
-      <Link href="/money" className="mt-3 inline-block text-sm font-medium text-brand-deep">
-        Open money
+      <Link href="/money" className="mt-3 inline-block text-[13px] font-medium text-brand">
+        View
       </Link>
       <span className="sr-only">{visibility}</span>
-    </Card>
+    </article>
   )
 }
 
@@ -293,19 +343,19 @@ function CountKpi({
   action: React.ReactNode
 }) {
   return (
-    <Card>
-      <span className="grid size-10 place-items-center rounded-full bg-brand-soft text-brand-deep">{icon}</span>
-      <p className="mt-3 text-sm text-muted-foreground">{label}</p>
+    <article className={kpiClass}>
+      <span className="grid size-9 place-items-center rounded-full bg-brand-soft text-brand">{icon}</span>
+      <p className="mt-3 text-[12px] font-medium uppercase tracking-[0.04em] text-muted-foreground">{label}</p>
       {error ? <WidgetError /> : null}
       <p className="mt-1 font-display text-[26px] font-semibold tabular-nums tracking-tight">{value}</p>
       <p className="text-sm text-muted-foreground">{empty ? emptyText : hint}</p>
       <div className="mt-3 flex items-center gap-3">
-        <Link href={href} className="text-sm font-medium text-brand-deep">
+        <Link href={href} className="text-[13px] font-medium text-brand">
           {link}
         </Link>
         {empty ? action : null}
       </div>
-    </Card>
+    </article>
   )
 }
 
@@ -314,15 +364,17 @@ function EventsCard({
   timeZone,
   today,
   visibility,
+  className = "",
 }: {
   data: HomePayload | null
   timeZone: string
   today: string
   visibility: "shared" | "private"
+  className?: string
 }) {
   return (
-    <Card>
-      <CardHead title="Today’s Events" href="/life/calendar" link="Calendar" />
+    <Card className={className}>
+      <CardHead title="Today’s Events" href="/life/calendar" />
       {data?.errors.events ? <WidgetError /> : null}
       {!data || data.events.length === 0 ? (
         <div className="mt-4">
@@ -332,14 +384,15 @@ function EventsCard({
           </div>
         </div>
       ) : (
-        <ol className="mt-4 grid gap-4 border-l border-border pl-4">
+        <ol className="mt-4 grid gap-3">
           {data.events.map((event) => (
-            <li key={event.id} className="relative">
-              <span className="absolute -left-[21px] top-1 size-2.5 rounded-full bg-brand" />
-              <p className="text-xs tabular-nums text-muted-foreground">{formatTime(event.starts_at, timeZone)}</p>
-              <p className="font-medium">{event.title}</p>
-              <div className="mt-1">
-                <VisibilityPill visibility={event.visibility} />
+            <li key={event.id} className="grid grid-cols-[4.25rem_1fr] gap-3">
+              <p className="text-xs font-medium tabular-nums text-brand-deep">{formatTime(event.starts_at, timeZone)}</p>
+              <div>
+                <p className="font-medium">{event.title}</p>
+                <div className="mt-1">
+                  <VisibilityPill visibility={event.visibility} />
+                </div>
               </div>
             </li>
           ))}
@@ -354,16 +407,18 @@ function BillsCard({
   currency,
   today,
   visibility,
+  className = "",
 }: {
   data: HomePayload | null
   currency: string
   today: string
   visibility: "shared" | "private"
+  className?: string
 }) {
   const rows = data ? upcomingBills(data.bills, data.today) : []
   return (
-    <Card>
-      <CardHead title="Upcoming Bills" href="/money/bills" link="View all" />
+    <Card className={className}>
+      <CardHead title="Upcoming Bills" href="/money/bills" />
       {data?.errors.bills ? <WidgetError /> : null}
       {rows.length === 0 ? (
         <div className="mt-4">
@@ -373,18 +428,18 @@ function BillsCard({
           </div>
         </div>
       ) : (
-        <ul className="mt-3 divide-y divide-border">
+        <ul className="mt-2 divide-y divide-border">
           {rows.map((bill) => (
-            <li key={bill.id} className="flex items-start justify-between gap-3 py-3">
+            <li key={bill.id} className="flex items-start justify-between gap-3 py-2">
               <div>
-                <p className="font-medium">{bill.name}</p>
+                <p className="text-sm font-medium">{bill.name}</p>
                 <p className="text-xs text-muted-foreground">{formatShortDate(bill.due_on)}</p>
                 <div className="mt-1 flex flex-wrap gap-1.5">
-                  <StatusChip status={billStatus(bill, data?.today ?? today)} />
+                  <StatusChip status={billStatus(bill, data?.today ?? today)} muted />
                   <VisibilityPill visibility={bill.visibility} />
                 </div>
               </div>
-              <p className="tabular-nums font-medium">{formatMoney(bill.amount_cents, currency)}</p>
+              <p className="text-sm tabular-nums font-medium">{formatMoney(bill.amount_cents, currency)}</p>
             </li>
           ))}
         </ul>
@@ -397,26 +452,29 @@ function MealsCard({
   data,
   today,
   visibility,
+  className = "",
 }: {
   data: HomePayload | null
   today: string
   visibility: "shared" | "private"
+  className?: string
 }) {
   const meal = data ? featuredMeal(data.meals, data.today) : null
   const label =
     meal && data && meal.meal_on === data.today && meal.slot === "dinner"
-      ? "Dinner tonight"
+      ? "Tonight"
       : meal
         ? `${meal.slot[0]?.toUpperCase()}${meal.slot.slice(1)}`
         : "This week"
   return (
-    <Card>
-      <CardHead title="Weekly Meal Plan" href="/life/meals" link="View plan" />
+    <Card className={className}>
+      <CardHead title="Dinner tonight" href="/life/meals" />
       {data?.errors.meals ? <WidgetError /> : null}
-      <div className="mt-4 flex min-h-36 flex-col justify-end rounded-2xl bg-surface-muted p-4">
+      <div className="mt-4 flex min-h-36 flex-col justify-end rounded-2xl bg-brand-soft p-4">
+        <UtensilsCrossed className="mb-3 size-5 text-brand" aria-hidden="true" />
         {meal ? (
           <>
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+            <p className="text-xs font-medium text-brand-deep">{label}</p>
             <p className="font-display text-2xl font-semibold tracking-tight">{meal.title}</p>
             <div className="mt-2">
               <VisibilityPill visibility={meal.visibility} />
@@ -440,15 +498,17 @@ function GoalsCard({
   currency,
   today,
   visibility,
+  className = "",
 }: {
   data: HomePayload | null
   currency: string
   today: string
   visibility: "shared" | "private"
+  className?: string
 }) {
   return (
-    <Card>
-      <CardHead title="Family Goals" href="/money/savings" link="View all" />
+    <Card className={className}>
+      <CardHead title="Family Goals" href="/money/savings" />
       {data?.errors.goals ? <WidgetError /> : null}
       {!data || data.goals.length === 0 ? (
         <div className="mt-4">
@@ -471,7 +531,7 @@ function GoalsCard({
                 <p className="mt-1 text-sm tabular-nums text-muted-foreground">
                   {formatMoney(goal.current_cents, currency)} / {formatMoney(goal.target_cents, currency)} · {percent}%
                 </p>
-                <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface-muted">
+                <div className="mt-2 h-1 overflow-hidden rounded-full bg-surface-muted">
                   <div className="h-full rounded-full bg-brand" style={{ width: `${percent}%` }} />
                 </div>
               </li>
@@ -487,10 +547,12 @@ function ShoppingCard({
   data,
   today,
   visibility,
+  className = "",
 }: {
   data: HomePayload | null
   today: string
   visibility: "shared" | "private"
+  className?: string
 }) {
   const signature = (data?.shopping ?? []).map((item) => `${item.id}:${item.checked_at ?? ""}`).join("|")
   const [seen, setSeen] = useState(signature)
@@ -503,8 +565,8 @@ function ShoppingCard({
   const ordered = [...rows].sort((a, b) => Number(Boolean(a.checked_at)) - Number(Boolean(b.checked_at)))
 
   return (
-    <Card>
-      <CardHead title="Shopping List" href="/life/shopping" link="View all" />
+    <Card className={className}>
+      <CardHead title="Shopping" href="/life/shopping" />
       {data?.errors.shopping ? <WidgetError /> : null}
       {ordered.length === 0 ? (
         <div className="mt-4">
@@ -544,10 +606,10 @@ function ShoppingCard({
   )
 }
 
-function ActivityCard({ data }: { data: HomePayload | null }) {
+function ActivityCard({ data, className = "" }: { data: HomePayload | null; className?: string }) {
   return (
-    <Card>
-      <CardHead title="Recent Activity" href="/notifications" link="View all" />
+    <Card className={className}>
+      <CardHead title="Recent Activity" href="/notifications" />
       {data?.errors.activity ? <WidgetError /> : null}
       {!data || data.activity.length === 0 ? (
         <p className="mt-4 text-sm text-muted-foreground">Quiet for now. Household updates will gather here.</p>

@@ -59,16 +59,26 @@ export function RecordDialog({
   trigger,
   defaultVisibility,
   today,
+  open: openProp,
+  onOpenChange,
 }: {
   kind: RecordKind
-  trigger: React.ReactNode
+  trigger?: React.ReactNode
   defaultVisibility: Visibility
   today: string
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }) {
   const router = useRouter()
-  const [open, setOpen] = useState(false)
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false)
+  const open = openProp ?? uncontrolledOpen
   const [message, setMessage] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
+
+  function setOpen(next: boolean) {
+    setUncontrolledOpen(next)
+    onOpenChange?.(next)
+  }
   const visibilityDefault =
     kind === "shopping" || kind === "budget" ? "shared" : kind === "note" || kind === "upload" ? "private" : defaultVisibility
 
@@ -91,7 +101,7 @@ export function RecordDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      {trigger ? <DialogTrigger asChild>{trigger}</DialogTrigger> : null}
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="font-display">{titles[kind]}</DialogTitle>

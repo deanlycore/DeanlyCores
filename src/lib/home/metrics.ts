@@ -18,7 +18,16 @@ export function greetingFor(timeZone: string, name: string, now = new Date()) {
     new Intl.DateTimeFormat("en-US", { timeZone, hour: "numeric", hourCycle: "h23" }).format(now),
   )
   const hello = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening"
-  return `${hello}, ${firstName(name)}!`
+  return `${hello}, ${firstName(name)}`
+}
+
+export function headerDate(timeZone: string, now = new Date()) {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  }).format(now)
 }
 
 export function longDate(timeZone: string, now = new Date()) {
