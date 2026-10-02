@@ -25,6 +25,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { StatusChip, VisibilityPill, WidgetError } from "@/components/ui/pills"
+import { cn } from "cn"
 import type { HomePayload, ShoppingRow, TaskRow } from "@/lib/data/home"
 import type { SessionView } from "@/lib/data/session"
 import {
@@ -262,9 +263,9 @@ function CardHead({ title, href }: { title: string; href: string }) {
   )
 }
 
-function TextLink({ children }: { children: React.ReactNode }) {
+function TextLink({ children, className, type = "button", ...props }: React.ComponentProps<"button">) {
   return (
-    <button type="button" className="text-sm font-medium text-brand-deep">
+    <button type={type} className={cn("text-sm font-medium text-brand-deep", className)} {...props}>
       {children}
     </button>
   )
