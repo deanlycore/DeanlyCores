@@ -33,7 +33,7 @@ test("shared push copy stays calm and deep-links to the item", () => {
   ]
   const banned = [/overdue/i, /urgent/i, /alert/i, /warning/i, /failed/i, /debt/i, /past due/i, /\$/]
   for (const message of messages) {
-    assert.equal(message.title, "Deanly")
+    assert.equal(message.title, "Deanly Tracking")
     assert.equal(message.body.includes("Alex"), true)
     assert.equal(message.url.startsWith("/"), true)
     assert.equal(message.url.includes(`#item-${ITEM}`), true)

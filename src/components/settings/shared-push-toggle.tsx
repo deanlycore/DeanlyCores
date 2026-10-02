@@ -132,7 +132,7 @@ export function SharedPushToggle({ vapidPublicKey }: { vapidPublicKey: string | 
       setEnabled(false)
       setMessage(
         blockedNow
-          ? "Notifications are blocked for Deanly. You can allow them in the browser settings when you want."
+          ? "Notifications are blocked for Deanly Tracking. You can allow them in the browser settings when you want."
           : "Couldn’t turn notifications on from here.",
       )
     } finally {
@@ -147,8 +147,8 @@ export function SharedPushToggle({ vapidPublicKey }: { vapidPublicKey: string | 
       </p>
       {guidance?.showIosHomeScreen ? (
         <p className="text-sm text-muted-foreground">
-          On iPhone, notifications start after Deanly is on your Home Screen. Open the Share menu, choose Add to Home
-          Screen, then open Deanly from that icon and turn this on.
+          On iPhone, notifications start after Deanly Tracking is on your Home Screen. Open the Share menu, choose Add to
+          Home Screen, then open Deanly Tracking from that icon and turn this on.
         </p>
       ) : null}
       {guidance?.showIosTooOld ? (
@@ -158,7 +158,7 @@ export function SharedPushToggle({ vapidPublicKey }: { vapidPublicKey: string | 
         <p className="text-sm text-muted-foreground">This browser can’t deliver those notifications.</p>
       ) : null}
       {guidance?.showNotConfigured ? (
-        <p className="text-sm text-muted-foreground">Notifications aren’t available on this Deanly yet.</p>
+        <p className="text-sm text-muted-foreground">Notifications aren’t available on this Deanly Tracking yet.</p>
       ) : null}
       {guidance?.canSubscribe ? (
         <label className="flex items-center justify-between gap-4">
@@ -173,7 +173,7 @@ export function SharedPushToggle({ vapidPublicKey }: { vapidPublicKey: string | 
       ) : null}
       {denied && guidance?.canSubscribe ? (
         <p className="text-sm text-muted-foreground">
-          Notifications are blocked for Deanly. You can allow them in the browser settings when you want.
+          Notifications are blocked for Deanly Tracking. You can allow them in the browser settings when you want.
         </p>
       ) : null}
       {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}

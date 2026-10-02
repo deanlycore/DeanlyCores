@@ -12,7 +12,7 @@ export function SectionPage({ href }: { href: string }) {
       ? section.emptyBody
       : undefined) ??
     ("description" in (section ?? {}) ? section?.description : undefined) ??
-    "This part of Deanly is next."
+    "This part of Deanly Tracking is next."
   const visibility = section && "visibility" in section ? (section.visibility as Visibility | undefined) : undefined
 
   return (

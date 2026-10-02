@@ -61,7 +61,7 @@ export function iosAtLeast164(version: { major: number; minor: number }) {
 
 /**
  * iOS Safari tabs cannot subscribe. There is no beforeinstallprompt on iOS;
- * the person adds Deanly from the Share sheet, then turns notifications on
+ * the person adds Deanly Tracking from the Share sheet, then turns notifications on
  * inside the Home Screen app.
  */
 export function pushGuidance(facts: PushClientFacts): PushGuidance {
@@ -127,7 +127,7 @@ export function sharedPushMessage(input: {
     shopping: `${who} added ${label} to the shopping list.`,
   }[input.kind]
   return {
-    title: "Deanly",
+    title: "Deanly Tracking",
     body,
     url,
     tag: `${input.kind}:${input.entityId}`.slice(0, 120),

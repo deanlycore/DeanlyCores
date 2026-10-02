@@ -38,7 +38,7 @@ export default async function SettingsPage() {
       <section id="household" className="deanly-card grid gap-3 p-5">
         <h2 className="font-medium">{session.householdName ?? "Household"}</h2>
         <p className="text-sm text-muted-foreground">
-          Deanly is invite-only. A household owner shares a login that was already created. There is no public sign-up.
+          Deanly Tracking is invite-only. A household owner shares a login that was already created. There is no public sign-up.
         </p>
         <ul className="grid gap-2">
           {session.members.map((member) => (
