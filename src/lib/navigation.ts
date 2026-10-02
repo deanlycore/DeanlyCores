@@ -2,6 +2,16 @@ import { DEFAULT_VISIBILITY, type Visibility } from "@/lib/visibility"
 
 export type IconKey = "home" | "money" | "life" | "notes" | "vault" | "reports"
 
+export type RailIcon =
+  | "receipt"
+  | "trending-up"
+  | "piggy-bank"
+  | "repeat"
+  | "calendar"
+  | "tasks"
+  | "meals"
+  | "shopping"
+
 export type SectionLink = {
   href: string
   label: string
@@ -9,6 +19,9 @@ export type SectionLink = {
   visibility?: Visibility
   emptyTitle: string
   emptyBody: string
+  /** Shown as a desktop rail child. Budget, debt, and vault sections stay off the rail. */
+  rail?: boolean
+  icon?: RailIcon
 }
 
 export type PrimaryNavItem = {
@@ -19,6 +32,8 @@ export type PrimaryNavItem = {
   visibility?: Visibility
   emptyTitle?: string
   emptyBody?: string
+  /** Click expands children. The row is not a destination. */
+  expandOnly?: boolean
   children?: SectionLink[]
 }
 
@@ -34,15 +49,8 @@ export const primaryNav: PrimaryNavItem[] = [
     label: "Money",
     icon: "money",
     description: "A calm look at the household. Totals first.",
+    expandOnly: true,
     children: [
-      {
-        href: "/money/budget",
-        label: "Budget",
-        description: "Soft monthly targets, with room to breathe.",
-        visibility: DEFAULT_VISIBILITY.budget,
-        emptyTitle: "Budget is on its way",
-        emptyBody: "Soft targets and a buffer will live here. Nothing will shout if a week runs long.",
-      },
       {
         href: "/money/bills",
         label: "Bills",
@@ -50,6 +58,8 @@ export const primaryNav: PrimaryNavItem[] = [
         visibility: DEFAULT_VISIBILITY.bills,
         emptyTitle: "No bills yet",
         emptyBody: "When you add one, it starts as Shared. A reminder will sound like “Electric is due in 3 days.”",
+        rail: true,
+        icon: "receipt",
       },
       {
         href: "/money/income",
@@ -58,6 +68,8 @@ export const primaryNav: PrimaryNavItem[] = [
         visibility: DEFAULT_VISIBILITY.income,
         emptyTitle: "Income comes later",
         emptyBody: "Pay and other incoming money will sit here, shared with the household.",
+        rail: true,
+        icon: "trending-up",
       },
       {
         href: "/money/savings",
@@ -66,6 +78,26 @@ export const primaryNav: PrimaryNavItem[] = [
         visibility: DEFAULT_VISIBILITY.savings,
         emptyTitle: "Savings can wait",
         emptyBody: "Shared goals and what you’re setting aside will gather here.",
+        rail: true,
+        icon: "piggy-bank",
+      },
+      {
+        href: "/money/subscriptions",
+        label: "Subscriptions",
+        description: "The ones you still want.",
+        visibility: DEFAULT_VISIBILITY.subscriptions,
+        emptyTitle: "Subscriptions later",
+        emptyBody: "The ones you keep will be listed here, quietly, as Shared household records.",
+        rail: true,
+        icon: "repeat",
+      },
+      {
+        href: "/money/budget",
+        label: "Budget",
+        description: "Soft monthly targets, with room to breathe.",
+        visibility: DEFAULT_VISIBILITY.budget,
+        emptyTitle: "Budget is on its way",
+        emptyBody: "Soft targets and a buffer will live here. Nothing will shout if a week runs long.",
       },
       {
         href: "/money/debt",
@@ -82,6 +114,7 @@ export const primaryNav: PrimaryNavItem[] = [
     label: "Life",
     icon: "life",
     description: "The days, the tasks, the things you keep.",
+    expandOnly: true,
     children: [
       {
         href: "/life/calendar",
@@ -90,6 +123,8 @@ export const primaryNav: PrimaryNavItem[] = [
         visibility: DEFAULT_VISIBILITY.calendar,
         emptyTitle: "The calendar is clear",
         emptyBody: "Family plans start as Shared. You’ll see what’s coming up, not a wall of alerts.",
+        rail: true,
+        icon: "calendar",
       },
       {
         href: "/life/tasks",
@@ -98,6 +133,8 @@ export const primaryNav: PrimaryNavItem[] = [
         visibility: DEFAULT_VISIBILITY.tasks,
         emptyTitle: "Nothing needs a nudge",
         emptyBody: "Shared tasks will show up as a short list when you’re ready to add them.",
+        rail: true,
+        icon: "tasks",
       },
       {
         href: "/life/meals",
@@ -106,6 +143,8 @@ export const primaryNav: PrimaryNavItem[] = [
         visibility: "shared",
         emptyTitle: "No meals planned",
         emptyBody: "Plan breakfast, lunch, and dinner for the household.",
+        rail: true,
+        icon: "meals",
       },
       {
         href: "/life/shopping",
@@ -114,14 +153,8 @@ export const primaryNav: PrimaryNavItem[] = [
         visibility: "shared",
         emptyTitle: "The list is clear",
         emptyBody: "Add what the household needs. New items start as Shared.",
-      },
-      {
-        href: "/life/subscriptions",
-        label: "Subscriptions",
-        description: "The ones you still want.",
-        visibility: DEFAULT_VISIBILITY.subscriptions,
-        emptyTitle: "Subscriptions later",
-        emptyBody: "The ones you keep will be listed here, quietly, as Shared household records.",
+        rail: true,
+        icon: "shopping",
       },
     ],
   },
@@ -179,6 +212,23 @@ export const settingsNav = [
   { href: "/settings#account", label: "Account", blurb: "Email and sign out" },
 ] as const
 
+export function railChildren(item: PrimaryNavItem) {
+  if (!item.expandOnly) return []
+  return (item.children ?? []).filter((child) => child.rail)
+}
+
+export function pathMatches(pathname: string, href: string) {
+  return pathname === href || pathname.startsWith(`${href}/`)
+}
+
+/** Preview routes reuse the signed-in shell. `/preview/home` stays Home. */
+export function shellPathname(pathname: string) {
+  if (!pathname.startsWith("/preview")) return pathname
+  const rest = pathname.slice("/preview".length)
+  if (rest === "" || rest === "/") return "/home"
+  return rest
+}
+
 export function findSection(href: string): SectionLink | PrimaryNavItem | undefined {
   for (const item of primaryNav) {
     if (item.href === href) return item
@@ -191,7 +241,11 @@ export function findSection(href: string): SectionLink | PrimaryNavItem | undefi
 export function commandLinks() {
   const links: { href: string; label: string; group: string }[] = []
   for (const item of primaryNav) {
-    links.push({ href: item.href, label: item.label, group: "Home" })
+    if (!item.expandOnly) {
+      links.push({ href: item.href, label: item.label, group: "Home" })
+    } else if (item.href === "/money") {
+      links.push({ href: item.href, label: item.label, group: item.label })
+    }
     for (const child of item.children ?? []) {
       links.push({ href: child.href, label: child.label, group: item.label })
     }

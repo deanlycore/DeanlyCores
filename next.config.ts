@@ -2,6 +2,12 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["web-push"],
+  async redirects() {
+    return [
+      { source: "/life", destination: "/life/calendar", permanent: false },
+      { source: "/life/subscriptions", destination: "/money/subscriptions", permanent: false },
+    ]
+  },
   async headers() {
     return [
       {
