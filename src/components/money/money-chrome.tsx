@@ -173,8 +173,7 @@ export function MetricChip({
   const className = cn(
     "inline-flex h-8 items-center rounded-full border px-3 text-[13px] tabular-nums",
     toneClass,
-    pressed && tone === "danger" && "ring-1 ring-danger/40",
-    pressed && tone !== "danger" && "ring-1 ring-brand/40",
+    pressed && "ring-1 ring-brand/40",
   )
   if (!onClick) return <span className={className}>{children}</span>
   return (
