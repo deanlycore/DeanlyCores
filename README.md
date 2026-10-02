@@ -31,11 +31,43 @@ An empty migration named `home_v1_entities` was recorded earlier and should not 
 
 In the Supabase dashboard, set **Site URL** to your app origin and add `https://<your-host>/auth/callback` to **Redirect URLs**.
 
+## Web Push
+
+Shared creates (bills, tasks, calendar events, meals, shopping) can notify the other household member. Just me items and notes do not. This is Web Push on the installed PWA. It is not native APNs.
+
+Apply migration **`push_subscriptions`** (`supabase/migrations/20261002021603_push_subscriptions.sql`) on project `dpjzlitklsjtfrfrxvhl`. It is already applied there. A member can manage only their own subscription row.
+
+Generate a VAPID key pair once:
+
+```bash
+npx web-push generate-vapid-keys
+```
+
+Mist sets these in **Vercel** (Production and Preview). Do not commit the real values.
+
+| Variable | Where | Notes |
+|---|---|---|
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Vercel | Browser uses this to subscribe |
+| `VAPID_PRIVATE_KEY` | Vercel, server only | Signs each push |
+| `VAPID_SUBJECT` | Vercel, server only | `mailto:` or `https:` contact you control |
+| `SUPABASE_SERVICE_ROLE_KEY` | Vercel, server only | Reads the other member’s endpoint. RLS hides that row from the browser |
+
+Redeploy after saving the variables. Placeholders in `.env.example` are not live keys.
+
+### Try it with two accounts
+
+1. Apply the migration and set the four variables, then redeploy.
+2. On each phone, open https://deanlycores.vercel.app in Safari, tap Share, then **Add to Home Screen**. iOS only delivers Web Push from that icon, on iOS 16.4 or later. A Safari tab cannot subscribe, and there is no install prompt.
+3. Open Deanly from the Home Screen icon, sign in, and in Settings turn on **Notify me when something Shared is added**. Allow notifications when asked.
+4. From the other account, add a shared bill, task, calendar event, meal, or shopping item. The first account should get a calm note. A Just me note, or the same item saved as Just me, should not.
+5. Tap the notification. It opens the matching section and scrolls to that item.
+6. On a desktop browser, localhost is enough for Chrome. Skip Add to Home Screen there. iPhone still needs the deployed HTTPS site and the Home Screen icon.
+
 ## Public preview (GitHub + Vercel)
 
 1. Push this branch to a GitHub repo under **@deanlycore**.
 2. In Vercel, import that repo (framework: Next.js).
-3. Set the same `NEXT_PUBLIC_*` variables from `.env.example` in the Vercel project. Do not commit real keys.
+3. Set the same `NEXT_PUBLIC_*` variables from `.env.example` in the Vercel project, plus the server-only Web Push variables in the section above. Do not commit real keys.
 4. Set `NEXT_PUBLIC_SITE_URL` to the Vercel URL.
 5. Deploy. Add that URL and `/auth/callback` in Supabase Auth redirect settings.
 

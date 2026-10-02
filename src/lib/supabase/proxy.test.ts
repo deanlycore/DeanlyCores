@@ -14,6 +14,8 @@ const PATHS = [
   "/auth/update-password",
   "/preview/home",
   "/money",
+  "/sw.js",
+  "/manifest.webmanifest",
 ]
 
 function settles(start: string, signedIn: boolean) {
@@ -44,6 +46,8 @@ test("logged-out visitors reach login and stay there", () => {
   assert.equal(authRedirectTarget("/forgot-password", false), null)
   assert.equal(authRedirectTarget("/auth/update-password", false), null)
   assert.equal(authRedirectTarget("/preview/home", false), null)
+  assert.equal(authRedirectTarget("/sw.js", false), null)
+  assert.equal(authRedirectTarget("/manifest.webmanifest", false), null)
 })
 
 test("logged-in visitors reach home and stay there", () => {
@@ -53,6 +57,8 @@ test("logged-in visitors reach home and stay there", () => {
   assert.equal(authRedirectTarget("/home", true), null)
   assert.equal(authRedirectTarget("/settings", true), null)
   assert.equal(authRedirectTarget("/auth/update-password", true), null)
+  assert.equal(authRedirectTarget("/sw.js", true), null)
+  assert.equal(authRedirectTarget("/manifest.webmanifest", true), null)
 })
 
 test("forgetting the browser still deletes auth cookies", () => {

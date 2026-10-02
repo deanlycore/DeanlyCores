@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache"
 
 import { requireHousehold } from "@/lib/data/context"
 import { firstName, parseCents, parseDate, zonedDate, zonedDateTimeToIso } from "@/lib/home/metrics"
+import { notifySharedCreate } from "@/lib/push/send"
+import { shouldNotifySharedCreate, type SharedPushKind } from "@/lib/push/shared"
 import { defaultVisibilityFor, type Visibility } from "@/lib/visibility"
 import { createClient } from "@/lib/supabase/server"
 
@@ -52,6 +54,21 @@ async function remember(ctx: NonNullable<Awaited<ReturnType<typeof requireHouseh
   await ctx.supabase.from("user_preferences").update({ last_visibility: visibility }).eq("user_id", ctx.userId)
 }
 
+async function notifyShared(
+  ctx: NonNullable<Awaited<ReturnType<typeof requireHousehold>>>,
+  input: { kind: SharedPushKind; visibility: Visibility; entityId: string; label: string },
+) {
+  if (!shouldNotifySharedCreate(input.kind, input.visibility)) return
+  await notifySharedCreate({
+    householdId: ctx.householdId,
+    actorId: ctx.userId,
+    actorName: ctx.displayName,
+    kind: input.kind,
+    entityId: input.entityId,
+    label: input.label,
+  })
+}
+
 async function log(
   ctx: NonNullable<Awaited<ReturnType<typeof requireHousehold>>>,
   input: { visibility: Visibility; summary: string; entityType: string; entityId?: string },
@@ -96,6 +113,7 @@ export async function createBill(formData: FormData): Promise<ActionResult> {
     entityId: data.id,
     summary: `${firstName(ready.ctx.displayName)} added ${name}`,
   })
+  await notifyShared(ready.ctx, { kind: "bill", visibility, entityId: data.id, label: name })
   refresh()
   return { ok: true }
 }
@@ -150,6 +168,7 @@ export async function createTask(formData: FormData): Promise<ActionResult> {
     entityId: data.id,
     summary: `${firstName(ready.ctx.displayName)} added “${title}”`,
   })
+  await notifyShared(ready.ctx, { kind: "task", visibility, entityId: data.id, label: title })
   refresh()
   return { ok: true }
 }
@@ -209,6 +228,7 @@ export async function createEvent(formData: FormData): Promise<ActionResult> {
     entityId: data.id,
     summary: `${firstName(ready.ctx.displayName)} added ${title}`,
   })
+  await notifyShared(ready.ctx, { kind: "event", visibility, entityId: data.id, label: title })
   refresh()
   return { ok: true }
 }
@@ -247,6 +267,7 @@ export async function createMeal(formData: FormData): Promise<ActionResult> {
     entityId: data.id,
     summary: `${firstName(ready.ctx.displayName)} planned ${title}`,
   })
+  await notifyShared(ready.ctx, { kind: "meal", visibility, entityId: data.id, label: title })
   refresh()
   return { ok: true }
 }
@@ -275,6 +296,7 @@ export async function createShoppingItem(formData: FormData): Promise<ActionResu
     entityId: data.id,
     summary: `${firstName(ready.ctx.displayName)} added ${name} to the shopping list`,
   })
+  await notifyShared(ready.ctx, { kind: "shopping", visibility, entityId: data.id, label: name })
   refresh()
   return { ok: true }
 }

@@ -172,6 +172,7 @@ export const settingsNav = [
   { href: "/settings#profile", label: "Profile", blurb: "Your name and photo" },
   { href: "/settings#password", label: "Password", blurb: "Change how you sign in" },
   { href: "/settings#household", label: "Household", blurb: "DeanFamily members" },
+  { href: "/settings#notifications", label: "Notifications", blurb: "When something Shared is added" },
   { href: "/settings#categories", label: "Categories", blurb: "Starter budget categories" },
   { href: "/settings#currency", label: "Currency", blurb: "How amounts are shown" },
   { href: "/settings#account", label: "Account", blurb: "Email and sign out" },
