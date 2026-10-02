@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 
-import { ShoppingBoard } from "@/components/records/section-board"
+import { ShoppingBoard } from "@/components/life/shopping-board"
 import { listShopping } from "@/lib/data/lists"
 import { pageClock } from "@/lib/data/timezone"
 

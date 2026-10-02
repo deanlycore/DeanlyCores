@@ -2,34 +2,16 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 
-import { documentUrl, setShoppingChecked, setTaskComplete, updateNote } from "@/lib/actions/records"
+import { documentUrl, updateNote } from "@/lib/actions/records"
 import { RecordDialog } from "@/components/create/record-dialog"
 import { Button } from "@/components/ui/button"
 import { VisibilityPill, WidgetError } from "@/components/ui/pills"
-import type {
-  EventRow,
-  ExpenseRow,
-  MealRow,
-  NoteRow,
-  ShoppingRow,
-  TaskRow,
-  VaultRow,
-} from "@/lib/data/home"
-import { formatMoney, formatShortDate, formatTime, relativeTime } from "@/lib/home/metrics"
+import type { ExpenseRow, NoteRow, VaultRow } from "@/lib/data/home"
+import { formatMoney, formatShortDate, relativeTime } from "@/lib/home/metrics"
 import type { Visibility } from "@/lib/visibility"
 import { cn } from "cn"
-
-const itemAnchor = "scroll-mt-6 rounded-button [&:target]:bg-brand-soft"
-
-function useScrollToItemHash() {
-  useEffect(() => {
-    const id = window.location.hash.slice(1)
-    if (!id.startsWith("item-")) return
-    document.getElementById(id)?.scrollIntoView({ block: "center" })
-  }, [])
-}
 
 function Frame({
   title,
@@ -66,184 +48,6 @@ function AddButton({ children, className, type = "button", ...props }: React.Com
     <Button type={type} className={cn("h-11 rounded-button text-primary-foreground", className)} {...props}>
       {children}
     </Button>
-  )
-}
-
-export function TasksBoard({
-  rows,
-  today,
-  visibility,
-  error,
-}: {
-  rows: TaskRow[]
-  today: string
-  visibility: Visibility
-  error?: boolean
-}) {
-  const router = useRouter()
-  const [tasks, setTasks] = useState(rows)
-  useScrollToItemHash()
-  return (
-    <Frame
-      title="Tasks"
-      body="A short list, not a pile."
-      error={error}
-      action={<RecordDialog kind="task" today={today} defaultVisibility={visibility} trigger={<AddButton>Add task</AddButton>} />}
-    >
-      {tasks.length === 0 ? <p className="text-sm text-muted-foreground">Nothing needs a nudge.</p> : null}
-      <ul>
-        {tasks.map((task) => (
-          <li id={`item-${task.id}`} key={task.id} className={itemAnchor}>
-            <label className="flex min-h-11 items-center gap-3">
-              <input
-                type="checkbox"
-                className="size-5 accent-brand"
-                checked={Boolean(task.completed_at)}
-                onChange={async (event) => {
-                  const complete = event.target.checked
-                  setTasks((current) =>
-                    current.map((row) =>
-                      row.id === task.id ? { ...row, completed_at: complete ? new Date().toISOString() : null } : row,
-                    ),
-                  )
-                  const result = await setTaskComplete(task.id, complete)
-                  if (!result.ok) router.refresh()
-                }}
-              />
-              <span className={task.completed_at ? "text-muted-foreground line-through" : ""}>{task.title}</span>
-              {task.due_on ? <span className="text-xs text-muted-foreground">{formatShortDate(task.due_on)}</span> : null}
-              <VisibilityPill visibility={task.visibility} />
-            </label>
-          </li>
-        ))}
-      </ul>
-    </Frame>
-  )
-}
-
-export function EventsBoard({
-  rows,
-  today,
-  timeZone,
-  visibility,
-  error,
-}: {
-  rows: EventRow[]
-  today: string
-  timeZone: string
-  visibility: Visibility
-  error?: boolean
-}) {
-  useScrollToItemHash()
-  return (
-    <Frame
-      title="Calendar"
-      body="What’s on for the household."
-      error={error}
-      action={<RecordDialog kind="event" today={today} defaultVisibility={visibility} trigger={<AddButton>Add event</AddButton>} />}
-    >
-      {rows.length === 0 ? <p className="text-sm text-muted-foreground">The calendar is clear.</p> : null}
-      <ul className="divide-y divide-border">
-        {rows.map((event) => (
-          <li id={`item-${event.id}`} key={event.id} className={cn("flex items-center justify-between gap-3 py-3", itemAnchor)}>
-            <div>
-              <p className="font-medium">{event.title}</p>
-              <p className="text-sm text-muted-foreground">
-                {formatTime(event.starts_at, timeZone)}
-                {event.location ? ` · ${event.location}` : ""}
-              </p>
-            </div>
-            <VisibilityPill visibility={event.visibility} />
-          </li>
-        ))}
-      </ul>
-    </Frame>
-  )
-}
-
-export function MealsBoard({
-  rows,
-  today,
-  visibility,
-  error,
-}: {
-  rows: MealRow[]
-  today: string
-  visibility: Visibility
-  error?: boolean
-}) {
-  useScrollToItemHash()
-  return (
-    <Frame
-      title="Meals"
-      body="Dinner, and the rest of the week."
-      error={error}
-      action={<RecordDialog kind="meal" today={today} defaultVisibility={visibility} trigger={<AddButton>Add meal</AddButton>} />}
-    >
-      {rows.length === 0 ? <p className="text-sm text-muted-foreground">Plan this week’s meals.</p> : null}
-      <ul className="divide-y divide-border">
-        {rows.map((meal) => (
-          <li id={`item-${meal.id}`} key={meal.id} className={cn("flex items-center justify-between gap-3 py-3", itemAnchor)}>
-            <div>
-              <p className="font-medium">{meal.title}</p>
-              <p className="text-sm capitalize text-muted-foreground">
-                {formatShortDate(meal.meal_on)} · {meal.slot}
-              </p>
-            </div>
-            <VisibilityPill visibility={meal.visibility} />
-          </li>
-        ))}
-      </ul>
-    </Frame>
-  )
-}
-
-export function ShoppingBoard({
-  rows,
-  today,
-  error,
-}: {
-  rows: ShoppingRow[]
-  today: string
-  error?: boolean
-}) {
-  const router = useRouter()
-  const [items, setItems] = useState(rows)
-  useScrollToItemHash()
-  return (
-    <Frame
-      title="Shopping"
-      body="Shared by default. Check items off as you go."
-      error={error}
-      action={<RecordDialog kind="shopping" today={today} defaultVisibility="shared" trigger={<AddButton>Add item</AddButton>} />}
-    >
-      {items.length === 0 ? <p className="text-sm text-muted-foreground">Start a shopping list.</p> : null}
-      <ul>
-        {items.map((item) => (
-          <li id={`item-${item.id}`} key={item.id} className={itemAnchor}>
-            <label className="flex min-h-11 items-center gap-3">
-              <input
-                type="checkbox"
-                className="size-5 accent-brand"
-                checked={Boolean(item.checked_at)}
-                onChange={async (event) => {
-                  const checked = event.target.checked
-                  setItems((current) =>
-                    current.map((row) =>
-                      row.id === item.id ? { ...row, checked_at: checked ? new Date().toISOString() : null } : row,
-                    ),
-                  )
-                  const result = await setShoppingChecked(item.id, checked)
-                  if (!result.ok) router.refresh()
-                }}
-              />
-              <span className={item.checked_at ? "text-muted-foreground line-through" : ""}>{item.name}</span>
-              <VisibilityPill visibility={item.visibility} />
-            </label>
-          </li>
-        ))}
-      </ul>
-    </Frame>
   )
 }
 

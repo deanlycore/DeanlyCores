@@ -15,15 +15,21 @@ import {
   createTask,
   saveBudget,
   updateBill,
+  updateEvent,
   updateExpense,
   updateGoal,
+  updateMeal,
+  updateShoppingItem,
   updateSubscription,
+  updateTask,
   uploadDocument,
   type ActionResult,
 } from "@/lib/actions/records"
 import { defaultVisibilityFor, type Visibility } from "@/lib/visibility"
+import { phoneSheetClass } from "@/components/money/money-chrome"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { cn } from "cn"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
@@ -67,6 +73,15 @@ export type RecordInitial = {
   current?: string
   target?: string
   body?: string
+  endDate?: string
+  time?: string
+  location?: string
+  slot?: string
+  notes?: string
+  store?: string
+  storeOther?: string
+  needSoon?: boolean
+  allDay?: boolean
   visibility?: Visibility
 }
 
@@ -76,6 +91,10 @@ const editTitles: Partial<Record<RecordKind, string>> = {
   goal: "Edit goal",
   subscription: "Edit subscription",
   expense: "Edit spending",
+  task: "Edit task",
+  event: "Edit event",
+  meal: "Edit meal",
+  shopping: "Edit item",
 }
 
 const saveLabels: Partial<Record<RecordKind, string>> = {
@@ -83,6 +102,10 @@ const saveLabels: Partial<Record<RecordKind, string>> = {
   income: "Save income",
   goal: "Save goal",
   subscription: "Save subscription",
+  task: "Save task",
+  event: "Save event",
+  meal: "Save meal",
+  shopping: "Save item",
 }
 
 export function RecordDialog({
@@ -93,6 +116,7 @@ export function RecordDialog({
   open: openProp,
   onOpenChange,
   initial,
+  sheetOnPhone = false,
 }: {
   kind: RecordKind
   trigger?: React.ReactNode
@@ -101,6 +125,7 @@ export function RecordDialog({
   open?: boolean
   onOpenChange?: (open: boolean) => void
   initial?: RecordInitial
+  sheetOnPhone?: boolean
 }) {
   const router = useRouter()
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false)
@@ -113,6 +138,7 @@ export function RecordDialog({
     onOpenChange?.(next)
   }
   const formId = useId()
+  const [allDay, setAllDay] = useState(Boolean(initial?.allDay))
   const visibilityDefault = initial?.visibility ?? defaultVisibilityFor(kind, defaultVisibility)
 
   async function onSubmit(formData: FormData) {
@@ -141,7 +167,8 @@ export function RecordDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {trigger ? <DialogTrigger asChild>{trigger}</DialogTrigger> : null}
-      <DialogContent className="sm:max-w-[440px]">
+      <DialogContent className={cn("sm:max-w-[440px]", sheetOnPhone && phoneSheetClass)}>
+        {sheetOnPhone ? <div aria-hidden="true" className="mx-auto h-1 w-10 rounded-full bg-border md:hidden" /> : null}
         <DialogHeader>
           <DialogTitle className="font-display">{initial ? (editTitles[kind] ?? titles[kind]) : titles[kind]}</DialogTitle>
         </DialogHeader>
@@ -155,34 +182,60 @@ export function RecordDialog({
           ) : null}
           {kind === "task" ? (
             <>
-              <Field label="Task" name="title" />
-              <Field label="Due" name="due_on" type="date" defaultValue={today} />
+              <Field id={`${formId}-title`} label="Task" name="title" defaultValue={initial?.title} />
+              <Field id={`${formId}-due`} label="Due" name="due_on" type="date" required={false} defaultValue={initial?.date ?? ""} />
             </>
           ) : null}
           {kind === "event" ? (
             <>
-              <Field label="Title" name="title" />
-              <Field label="Date" name="date" type="date" defaultValue={today} />
-              <Field label="Time" name="time" type="time" defaultValue="09:00" />
-              <Field label="Place" name="location" required={false} />
+              <Field id={`${formId}-title`} label="Title" name="title" defaultValue={initial?.title} />
+              <Field id={`${formId}-date`} label="Date" name="date" type="date" defaultValue={initial?.date ?? today} />
+              <Field id={`${formId}-end`} label="End date" name="end_date" type="date" required={false} defaultValue={initial?.endDate ?? ""} />
+              <label className="inline-flex min-h-11 items-center gap-2 text-sm">
+                <input type="checkbox" name="all_day" checked={allDay} onChange={(event) => setAllDay(event.target.checked)} />
+                All day
+              </label>
+              {allDay ? null : (
+                <Field id={`${formId}-time`} label="Time" name="time" type="time" required={false} defaultValue={initial?.time ?? "09:00"} />
+              )}
+              <Field id={`${formId}-place`} label="Place" name="location" required={false} defaultValue={initial?.location} />
             </>
           ) : null}
           {kind === "meal" ? (
             <>
-              <Field label="Meal" name="title" />
-              <Field label="Day" name="meal_on" type="date" defaultValue={today} />
+              <Field id={`${formId}-title`} label="Dish" name="title" defaultValue={initial?.title} />
+              <Field id={`${formId}-day`} label="Day" name="meal_on" type="date" defaultValue={initial?.date ?? today} />
               <label className="grid gap-1.5 text-sm">
                 Slot
-                <select name="slot" defaultValue="dinner" className={field}>
+                <select name="slot" defaultValue={initial?.slot ?? "dinner"} className={field}>
                   <option value="breakfast">Breakfast</option>
                   <option value="lunch">Lunch</option>
                   <option value="dinner">Dinner</option>
                   <option value="snack">Snack</option>
                 </select>
               </label>
+              <Field id={`${formId}-notes`} label="Leftovers" name="notes" required={false} defaultValue={initial?.notes} placeholder="Soft note, if any" />
             </>
           ) : null}
-          {kind === "shopping" ? <Field label="Item" name="name" /> : null}
+          {kind === "shopping" ? (
+            <>
+              <Field id={`${formId}-name`} label="Item" name="name" defaultValue={initial?.name} />
+              <label className="grid gap-1.5 text-sm">
+                Store
+                <select name="store" defaultValue={initial?.store ?? ""} className={field}>
+                  <option value="">No store</option>
+                  <option value="Costco">Costco</option>
+                  <option value="Smith's">Smith&apos;s</option>
+                  <option value="other">Other</option>
+                </select>
+              </label>
+              <Field id={`${formId}-store-other`} label="Other store" name="store_other" required={false} defaultValue={initial?.storeOther} />
+              <label className="inline-flex min-h-11 items-center gap-2 text-sm">
+                <input type="checkbox" name="need_soon" defaultChecked={Boolean(initial?.needSoon)} />
+                Need soon
+              </label>
+            </>
+          ) : null}
           {kind === "goal" ? (
             <>
               <Field id={`${formId}-goal`} label="Goal" name="name" defaultValue={initial?.name} />
@@ -256,6 +309,10 @@ const updates: Partial<Record<RecordKind, (id: string, formData: FormData) => Pr
   income: updateExpense,
   goal: updateGoal,
   subscription: updateSubscription,
+  task: updateTask,
+  event: updateEvent,
+  meal: updateMeal,
+  shopping: updateShoppingItem,
 }
 
 const actions: Record<RecordKind, (formData: FormData) => Promise<ActionResult>> = {

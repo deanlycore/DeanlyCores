@@ -74,7 +74,7 @@ export async function listEvents() {
   return listed<EventRow>(
     ctx.supabase
       .from("calendar_events")
-      .select("id, title, starts_at, location, visibility")
+      .select("id, title, starts_at, ends_at, location, visibility")
       .eq("household_id", ctx.householdId)
       .order("starts_at", { ascending: true })
       .limit(80),
@@ -97,6 +97,17 @@ export async function listMeals() {
 export async function listShopping() {
   const ctx = await requireHousehold()
   if (!ctx) return listed<ShoppingRow>(Promise.resolve({ data: [], error: null }))
+  const full = await ctx.supabase
+    .from("shopping_items")
+    .select("id, name, checked_at, visibility, store, need_soon")
+    .eq("household_id", ctx.householdId)
+    .order("created_at", { ascending: false })
+    .limit(80)
+  if (!full.error) {
+    return { rows: full.data ?? [], error: false, currency: ctx.currency, visibility: ctx.lastVisibility }
+  }
+  const missingStore = /column/i.test(full.error.message) && /does not exist/i.test(full.error.message)
+  if (!missingStore) return { rows: [] as ShoppingRow[], error: true, currency: ctx.currency, visibility: ctx.lastVisibility }
   return listed<ShoppingRow>(
     ctx.supabase
       .from("shopping_items")

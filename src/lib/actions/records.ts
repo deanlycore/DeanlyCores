@@ -21,6 +21,36 @@ function textOf(value: FormDataEntryValue | null, max: number) {
   return text
 }
 
+function columnMissing(error: { message: string } | null) {
+  return Boolean(error && /column/i.test(error.message) && /does not exist/i.test(error.message))
+}
+
+function storeOf(formData: FormData) {
+  const choice = String(formData.get("store") ?? "").trim()
+  if (!choice) return null
+  if (choice === "other") return textOf(formData.get("store_other"), 40)
+  return textOf(choice, 40)
+}
+
+function needSoonOf(formData: FormData) {
+  const value = formData.get("need_soon")
+  return value === "on" || value === "1" || value === "true"
+}
+
+function eventSchedule(formData: FormData) {
+  const timeZone = String(formData.get("timeZone") ?? "UTC")
+  const date = parseDate(formData.get("date"))
+  const endDate = parseDate(formData.get("end_date"))
+  const allDay = formData.get("all_day") === "on" || formData.get("all_day") === "1"
+  const time = String(formData.get("time") ?? "")
+  const clock = allDay ? "00:00" : /^\d{2}:\d{2}$/.test(time) ? time : "09:00"
+  if (date && endDate && endDate < date) return { starts: null, ends: null, invalidEnd: true }
+  const starts = date ? zonedDateTimeToIso(date, clock, timeZone) : null
+  const endDay = endDate ?? (allDay ? date : null)
+  const ends = endDay ? zonedDateTimeToIso(endDay, allDay ? "23:59" : clock, timeZone) : null
+  return { starts, ends: allDay || endDate ? ends : null, invalidEnd: false }
+}
+
 function calm(error: { message: string } | null, fallback: string): ActionResult | null {
   if (!error) return null
   const message = error.message.toLowerCase()
@@ -196,15 +226,38 @@ export async function setTaskComplete(id: string, complete: boolean): Promise<Ac
   return { ok: true }
 }
 
+export async function updateTask(id: string, formData: FormData): Promise<ActionResult> {
+  const ready = await gate()
+  if (!ready.ctx) return ready
+  const title = textOf(formData.get("title"), 160)
+  if (!title) return { ok: false, message: "Add a task title." }
+  const visibility = visibilityOf(formData.get("visibility"), "shared")
+  const { error } = await ready.ctx.supabase
+    .from("tasks")
+    .update({ title, due_on: parseDate(formData.get("due_on")), visibility })
+    .eq("id", id)
+  const failed = calm(error, "Couldn’t save that task.")
+  if (failed) return failed
+  await remember(ready.ctx, visibility)
+  refresh()
+  return { ok: true }
+}
+
+export async function deleteTask(id: string) {
+  return removeRecord("tasks", id, "Couldn’t remove that task.")
+}
+
+export async function setTaskVisibility(id: string, visibility: Visibility) {
+  return setRecordVisibility("tasks", id, visibility, "Couldn’t update that task.")
+}
+
 export async function createEvent(formData: FormData): Promise<ActionResult> {
   const ready = await gate()
   if (!ready.ctx) return ready
   const title = textOf(formData.get("title"), 140)
-  const date = parseDate(formData.get("date"))
-  const time = String(formData.get("time") ?? "")
-  const timeZone = String(formData.get("timeZone") ?? "UTC")
-  const starts = date ? zonedDateTimeToIso(date, /^\d{2}:\d{2}$/.test(time) ? time : "09:00", timeZone) : null
-  if (!title || !starts) return { ok: false, message: "Add a title and a date." }
+  const schedule = eventSchedule(formData)
+  if (schedule.invalidEnd) return { ok: false, message: "End date needs to follow the start." }
+  if (!title || !schedule.starts) return { ok: false, message: "Add a title and a date." }
   const visibility = visibilityOf(formData.get("visibility"), defaultVisibilityFor("event", ready.ctx.lastVisibility))
   const location = textOf(formData.get("location"), 160)
   const { data, error } = await ready.ctx.supabase
@@ -214,7 +267,8 @@ export async function createEvent(formData: FormData): Promise<ActionResult> {
       owner_id: ready.ctx.userId,
       visibility,
       title,
-      starts_at: starts,
+      starts_at: schedule.starts,
+      ends_at: schedule.ends,
       location,
     })
     .select("id")
@@ -231,6 +285,40 @@ export async function createEvent(formData: FormData): Promise<ActionResult> {
   await notifyShared(ready.ctx, { kind: "event", visibility, entityId: data.id, label: title })
   refresh()
   return { ok: true }
+}
+
+export async function updateEvent(id: string, formData: FormData): Promise<ActionResult> {
+  const ready = await gate()
+  if (!ready.ctx) return ready
+  const title = textOf(formData.get("title"), 140)
+  const schedule = eventSchedule(formData)
+  if (schedule.invalidEnd) return { ok: false, message: "End date needs to follow the start." }
+  if (!title || !schedule.starts) return { ok: false, message: "Add a title and a date." }
+  const visibility = visibilityOf(formData.get("visibility"), "shared")
+  const location = textOf(formData.get("location"), 160)
+  const { error } = await ready.ctx.supabase
+    .from("calendar_events")
+    .update({
+      title,
+      starts_at: schedule.starts,
+      ends_at: schedule.ends,
+      location,
+      visibility,
+    })
+    .eq("id", id)
+  const failed = calm(error, "Couldn’t save that event.")
+  if (failed) return failed
+  await remember(ready.ctx, visibility)
+  refresh()
+  return { ok: true }
+}
+
+export async function deleteEvent(id: string) {
+  return removeRecord("calendar_events", id, "Couldn’t remove that event.")
+}
+
+export async function setEventVisibility(id: string, visibility: Visibility) {
+  return setRecordVisibility("calendar_events", id, visibility, "Couldn’t update that event.")
 }
 
 export async function createMeal(formData: FormData): Promise<ActionResult> {
@@ -272,22 +360,67 @@ export async function createMeal(formData: FormData): Promise<ActionResult> {
   return { ok: true }
 }
 
+export async function updateMeal(id: string, formData: FormData): Promise<ActionResult> {
+  const ready = await gate()
+  if (!ready.ctx) return ready
+  const title = textOf(formData.get("title"), 140)
+  const mealOn = parseDate(formData.get("meal_on"))
+  const slot = String(formData.get("slot") ?? "dinner")
+  if (!title || !mealOn) return { ok: false, message: "Add a meal and a day." }
+  if (!["breakfast", "lunch", "dinner", "snack"].includes(slot)) {
+    return { ok: false, message: "Choose breakfast, lunch, dinner, or a snack." }
+  }
+  const visibility = visibilityOf(formData.get("visibility"), "shared")
+  const { error } = await ready.ctx.supabase
+    .from("meals")
+    .update({ title, meal_on: mealOn, slot, notes: textOf(formData.get("notes"), 2000), visibility })
+    .eq("id", id)
+  const failed = calm(error, "Couldn’t save that meal.")
+  if (failed) return failed
+  await remember(ready.ctx, visibility)
+  refresh()
+  return { ok: true }
+}
+
+export async function deleteMeal(id: string) {
+  return removeRecord("meals", id, "Couldn’t remove that meal.")
+}
+
+export async function setMealVisibility(id: string, visibility: Visibility) {
+  return setRecordVisibility("meals", id, visibility, "Couldn’t update that meal.")
+}
+
 export async function createShoppingItem(formData: FormData): Promise<ActionResult> {
   const ready = await gate()
   if (!ready.ctx) return ready
   const name = textOf(formData.get("name"), 140)
   if (!name) return { ok: false, message: "Add an item." }
   const visibility = visibilityOf(formData.get("visibility"), defaultVisibilityFor("shopping", ready.ctx.lastVisibility))
-  const { data, error } = await ready.ctx.supabase
+  const extras = { store: storeOf(formData), need_soon: needSoonOf(formData) }
+  let result = await ready.ctx.supabase
     .from("shopping_items")
     .insert({
       household_id: ready.ctx.householdId,
       owner_id: ready.ctx.userId,
       visibility,
       name,
+      ...extras,
     })
     .select("id")
     .single()
+  if (columnMissing(result.error)) {
+    result = await ready.ctx.supabase
+      .from("shopping_items")
+      .insert({
+        household_id: ready.ctx.householdId,
+        owner_id: ready.ctx.userId,
+        visibility,
+        name,
+      })
+      .select("id")
+      .single()
+  }
+  const { data, error } = result
   const failed = calm(error, "Couldn’t add that item.")
   if (failed || !data) return failed ?? { ok: false, message: "Couldn’t add that item." }
   await log(ready.ctx, {
@@ -299,6 +432,33 @@ export async function createShoppingItem(formData: FormData): Promise<ActionResu
   await notifyShared(ready.ctx, { kind: "shopping", visibility, entityId: data.id, label: name })
   refresh()
   return { ok: true }
+}
+
+export async function updateShoppingItem(id: string, formData: FormData): Promise<ActionResult> {
+  const ready = await gate()
+  if (!ready.ctx) return ready
+  const name = textOf(formData.get("name"), 140)
+  if (!name) return { ok: false, message: "Add an item." }
+  const visibility = visibilityOf(formData.get("visibility"), "shared")
+  const extras = { store: storeOf(formData), need_soon: needSoonOf(formData) }
+  let { error } = await ready.ctx.supabase.from("shopping_items").update({ name, visibility, ...extras }).eq("id", id)
+  if (columnMissing(error)) {
+    const retry = await ready.ctx.supabase.from("shopping_items").update({ name, visibility }).eq("id", id)
+    error = retry.error
+  }
+  const failed = calm(error, "Couldn’t save that item.")
+  if (failed) return failed
+  await remember(ready.ctx, visibility)
+  refresh()
+  return { ok: true }
+}
+
+export async function deleteShoppingItem(id: string) {
+  return removeRecord("shopping_items", id, "Couldn’t remove that item.")
+}
+
+export async function setShoppingVisibility(id: string, visibility: Visibility) {
+  return setRecordVisibility("shopping_items", id, visibility, "Couldn’t update that item.")
 }
 
 export async function setShoppingChecked(id: string, checked: boolean): Promise<ActionResult> {
@@ -627,7 +787,7 @@ export async function setSubscriptionActive(id: string, active: boolean): Promis
 }
 
 async function removeRecord(
-  table: "bills" | "expenses" | "goals" | "subscriptions",
+  table: "bills" | "expenses" | "goals" | "subscriptions" | "tasks" | "calendar_events" | "meals" | "shopping_items",
   id: string,
   fallback: string,
 ): Promise<ActionResult> {
@@ -641,7 +801,7 @@ async function removeRecord(
 }
 
 async function setRecordVisibility(
-  table: "bills" | "expenses" | "goals" | "subscriptions",
+  table: "bills" | "expenses" | "goals" | "subscriptions" | "tasks" | "calendar_events" | "meals" | "shopping_items",
   id: string,
   visibility: Visibility,
   fallback: string,
