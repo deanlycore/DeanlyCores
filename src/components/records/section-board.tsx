@@ -22,6 +22,7 @@ import type {
 } from "@/lib/data/home"
 import { billStatus, formatMoney, formatShortDate, formatTime, relativeTime } from "@/lib/home/metrics"
 import type { Visibility } from "@/lib/visibility"
+import { cn } from "cn"
 
 function Frame({
   title,
@@ -53,8 +54,12 @@ function Frame({
   )
 }
 
-function AddButton({ children }: { children: React.ReactNode }) {
-  return <Button className="h-11 rounded-button text-primary-foreground">{children}</Button>
+function AddButton({ children, className, type = "button", ...props }: React.ComponentProps<"button">) {
+  return (
+    <Button type={type} className={cn("h-11 rounded-button text-primary-foreground", className)} {...props}>
+      {children}
+    </Button>
+  )
 }
 
 export function BillsBoard({

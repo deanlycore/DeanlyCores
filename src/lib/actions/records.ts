@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache"
 
 import { requireHousehold } from "@/lib/data/context"
 import { firstName, parseCents, parseDate, zonedDate, zonedDateTimeToIso } from "@/lib/home/metrics"
-import type { Visibility } from "@/lib/visibility"
+import { defaultVisibilityFor, type Visibility } from "@/lib/visibility"
 import { createClient } from "@/lib/supabase/server"
 
 export type ActionResult = { ok: true } | { ok: false; message: string }
@@ -74,7 +74,7 @@ export async function createBill(formData: FormData): Promise<ActionResult> {
   const amount = parseCents(formData.get("amount"))
   const due = parseDate(formData.get("due_on"))
   if (!name || amount == null || !due) return { ok: false, message: "Add a name, amount, and due date." }
-  const visibility = visibilityOf(formData.get("visibility"), ready.ctx.lastVisibility)
+  const visibility = visibilityOf(formData.get("visibility"), defaultVisibilityFor("bill", ready.ctx.lastVisibility))
   const { data, error } = await ready.ctx.supabase
     .from("bills")
     .insert({
@@ -129,7 +129,7 @@ export async function createTask(formData: FormData): Promise<ActionResult> {
   const title = textOf(formData.get("title"), 160)
   const due = parseDate(formData.get("due_on"))
   if (!title) return { ok: false, message: "Add a task title." }
-  const visibility = visibilityOf(formData.get("visibility"), ready.ctx.lastVisibility)
+  const visibility = visibilityOf(formData.get("visibility"), defaultVisibilityFor("task", ready.ctx.lastVisibility))
   const { data, error } = await ready.ctx.supabase
     .from("tasks")
     .insert({
@@ -186,7 +186,7 @@ export async function createEvent(formData: FormData): Promise<ActionResult> {
   const timeZone = String(formData.get("timeZone") ?? "UTC")
   const starts = date ? zonedDateTimeToIso(date, /^\d{2}:\d{2}$/.test(time) ? time : "09:00", timeZone) : null
   if (!title || !starts) return { ok: false, message: "Add a title and a date." }
-  const visibility = visibilityOf(formData.get("visibility"), ready.ctx.lastVisibility)
+  const visibility = visibilityOf(formData.get("visibility"), defaultVisibilityFor("event", ready.ctx.lastVisibility))
   const location = textOf(formData.get("location"), 160)
   const { data, error } = await ready.ctx.supabase
     .from("calendar_events")
@@ -223,7 +223,7 @@ export async function createMeal(formData: FormData): Promise<ActionResult> {
   if (!["breakfast", "lunch", "dinner", "snack"].includes(slot)) {
     return { ok: false, message: "Choose breakfast, lunch, dinner, or a snack." }
   }
-  const visibility = visibilityOf(formData.get("visibility"), ready.ctx.lastVisibility)
+  const visibility = visibilityOf(formData.get("visibility"), defaultVisibilityFor("meal", ready.ctx.lastVisibility))
   const notes = textOf(formData.get("notes"), 2000)
   const { data, error } = await ready.ctx.supabase
     .from("meals")
@@ -256,7 +256,7 @@ export async function createShoppingItem(formData: FormData): Promise<ActionResu
   if (!ready.ctx) return ready
   const name = textOf(formData.get("name"), 140)
   if (!name) return { ok: false, message: "Add an item." }
-  const visibility = visibilityOf(formData.get("visibility"), "shared")
+  const visibility = visibilityOf(formData.get("visibility"), defaultVisibilityFor("shopping", ready.ctx.lastVisibility))
   const { data, error } = await ready.ctx.supabase
     .from("shopping_items")
     .insert({
@@ -309,7 +309,7 @@ export async function createGoal(formData: FormData): Promise<ActionResult> {
   const target = parseCents(formData.get("target"))
   const current = parseCents(formData.get("current")) ?? 0
   if (!name || target == null || target <= 0) return { ok: false, message: "Add a name and a target amount." }
-  const visibility = visibilityOf(formData.get("visibility"), ready.ctx.lastVisibility)
+  const visibility = visibilityOf(formData.get("visibility"), defaultVisibilityFor("goal", ready.ctx.lastVisibility))
   const { data, error } = await ready.ctx.supabase
     .from("goals")
     .insert({
@@ -340,7 +340,7 @@ export async function saveBudget(formData: FormData): Promise<ActionResult> {
   if (!ready.ctx) return ready
   const amount = parseCents(formData.get("amount"))
   if (amount == null) return { ok: false, message: "Enter a monthly budget." }
-  const visibility = visibilityOf(formData.get("visibility"), "shared")
+  const visibility = visibilityOf(formData.get("visibility"), defaultVisibilityFor("budget", ready.ctx.lastVisibility))
   const timeZone = String(formData.get("timeZone") ?? "UTC")
   const period = `${zonedDate(timeZone).slice(0, 8)}01`
   const existing = await ready.ctx.supabase
@@ -382,7 +382,7 @@ export async function createExpense(formData: FormData): Promise<ActionResult> {
   if (!name || amount == null || amount <= 0 || !spent) {
     return { ok: false, message: "Add a name, amount, and date." }
   }
-  const visibility = visibilityOf(formData.get("visibility"), ready.ctx.lastVisibility)
+  const visibility = visibilityOf(formData.get("visibility"), defaultVisibilityFor("expense", ready.ctx.lastVisibility))
   const { data, error } = await ready.ctx.supabase
     .from("expenses")
     .insert({
@@ -415,7 +415,7 @@ export async function createNote(formData: FormData): Promise<ActionResult> {
   const title = textOf(formData.get("title"), 160)
   const body = String(formData.get("body") ?? "").slice(0, 20000)
   if (!title) return { ok: false, message: "Add a title." }
-  const visibility = visibilityOf(formData.get("visibility"), "private")
+  const visibility = visibilityOf(formData.get("visibility"), defaultVisibilityFor("note", ready.ctx.lastVisibility))
   const { data, error } = await ready.ctx.supabase
     .from("notes")
     .insert({
@@ -460,7 +460,7 @@ export async function createSubscription(formData: FormData): Promise<ActionResu
   const amount = parseCents(formData.get("amount"))
   const renews = parseDate(formData.get("renews_on"))
   if (!name || amount == null || !renews) return { ok: false, message: "Add a name, amount, and renewal date." }
-  const visibility = visibilityOf(formData.get("visibility"), ready.ctx.lastVisibility)
+  const visibility = visibilityOf(formData.get("visibility"), defaultVisibilityFor("subscription", ready.ctx.lastVisibility))
   const { data, error } = await ready.ctx.supabase
     .from("subscriptions")
     .insert({
@@ -492,7 +492,7 @@ export async function uploadDocument(formData: FormData): Promise<ActionResult> 
   const file = formData.get("file")
   if (!(file instanceof File) || file.size === 0) return { ok: false, message: "Choose a file to upload." }
   if (file.size > 26_214_400) return { ok: false, message: "Choose a file under 25 MB." }
-  const visibility = visibilityOf(formData.get("visibility"), "private")
+  const visibility = visibilityOf(formData.get("visibility"), defaultVisibilityFor("upload", ready.ctx.lastVisibility))
   const id = crypto.randomUUID()
   const safeName = file.name.replace(/[^\w.\- ]+/g, "").trim().slice(0, 160) || "document"
   const path = `${ready.ctx.householdId}/${visibility}/${ready.ctx.userId}/${id}/${safeName}`

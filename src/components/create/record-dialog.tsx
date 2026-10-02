@@ -17,7 +17,7 @@ import {
   uploadDocument,
   type ActionResult,
 } from "@/lib/actions/records"
-import type { Visibility } from "@/lib/visibility"
+import { defaultVisibilityFor, type Visibility } from "@/lib/visibility"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -79,24 +79,27 @@ export function RecordDialog({
     setUncontrolledOpen(next)
     onOpenChange?.(next)
   }
-  const visibilityDefault =
-    kind === "shopping" || kind === "budget" ? "shared" : kind === "note" || kind === "upload" ? "private" : defaultVisibility
+  const visibilityDefault = defaultVisibilityFor(kind, defaultVisibility)
 
   async function onSubmit(formData: FormData) {
     setPending(true)
     setMessage(null)
-    formData.set("timeZone", Intl.DateTimeFormat().resolvedOptions().timeZone)
-    if (kind === "income") formData.set("kind", "income")
-    if (kind === "expense") formData.set("kind", "expense")
-    const action = actions[kind]
-    const result = await action(formData)
-    setPending(false)
-    if (!result.ok) {
-      setMessage(result.message)
-      return
+    try {
+      formData.set("timeZone", Intl.DateTimeFormat().resolvedOptions().timeZone)
+      if (kind === "income") formData.set("kind", "income")
+      if (kind === "expense") formData.set("kind", "expense")
+      const result = await actions[kind](formData)
+      if (!result.ok) {
+        setMessage(result.message)
+        return
+      }
+      setOpen(false)
+      router.refresh()
+    } catch {
+      setMessage("Couldn’t save that. Try again.")
+    } finally {
+      setPending(false)
     }
-    setOpen(false)
-    router.refresh()
   }
 
   return (
