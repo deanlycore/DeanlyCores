@@ -7,7 +7,7 @@ import { getSessionView } from "@/lib/data/session"
 import { isSupabaseConfigured } from "@/lib/supabase/env"
 
 export const dynamic = "force-dynamic"
-export const metadata: Metadata = { title: "Have a code?" }
+export const metadata: Metadata = { title: { absolute: "Deanly Tracking" } }
 
 export default async function JoinPage({
   searchParams,

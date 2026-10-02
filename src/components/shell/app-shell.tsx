@@ -98,7 +98,7 @@ export function AppShell({ session, children }: { session: SessionView; children
 
   return (
     <div className={`min-h-dvh bg-background md:grid ${collapsed ? "md:grid-cols-[68px_1fr]" : "md:grid-cols-[220px_1fr]"}`}>
-      <aside className="hidden border-r border-border bg-sidebar md:flex md:flex-col">
+      <aside className="hidden border-r border-border bg-sidebar md:sticky md:top-0 md:z-20 md:flex md:h-dvh md:flex-col md:self-start md:overflow-y-auto">
         <div className={`flex h-14 items-center ${collapsed ? "justify-center px-2" : "justify-between px-3"}`}>
           <Link
             href="/home"
