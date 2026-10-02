@@ -8,6 +8,7 @@ const PATHS = [
   "/",
   "/login",
   "/forgot-password",
+  "/join",
   "/home",
   "/settings",
   "/auth/callback",
@@ -44,6 +45,7 @@ test("logged-out visitors reach login and stay there", () => {
   assert.equal(authRedirectTarget("/home", false), "/login")
   assert.equal(authRedirectTarget("/login", false), null)
   assert.equal(authRedirectTarget("/forgot-password", false), null)
+  assert.equal(authRedirectTarget("/join", false), null)
   assert.equal(authRedirectTarget("/auth/update-password", false), null)
   assert.equal(authRedirectTarget("/preview/home", false), null)
   assert.equal(authRedirectTarget("/sw.js", false), null)
@@ -54,6 +56,7 @@ test("logged-in visitors reach home and stay there", () => {
   assert.equal(authRedirectTarget("/login", true), "/home")
   assert.equal(authRedirectTarget("/", true), "/home")
   assert.equal(authRedirectTarget("/forgot-password", true), "/home")
+  assert.equal(authRedirectTarget("/join", true), null)
   assert.equal(authRedirectTarget("/home", true), null)
   assert.equal(authRedirectTarget("/settings", true), null)
   assert.equal(authRedirectTarget("/auth/update-password", true), null)

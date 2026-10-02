@@ -4,11 +4,13 @@ import { cookies } from "next/headers"
 
 import { signOut } from "@/lib/actions/auth"
 import { AppearanceControl } from "@/components/settings/appearance-control"
-import { CurrencyForm, NameForm } from "@/components/settings/settings-forms"
+import { InviteCodesCard } from "@/components/settings/invite-codes-card"
+import { CurrencyForm, HouseholdNameForm, NameForm } from "@/components/settings/settings-forms"
 import { SharedPushToggle } from "@/components/settings/shared-push-toggle"
 import { getSessionView } from "@/lib/data/session"
 import { requireHousehold } from "@/lib/data/context"
 import { getVapidPublicKey } from "@/lib/push/env"
+import { toActiveInvite, type InviteCodeRecord, type InviteCodeView } from "@/lib/invite"
 import { APPEARANCE_COOKIE, parseAppearance } from "@/lib/theme"
 
 export const metadata: Metadata = { title: "Settings" }
@@ -26,6 +28,24 @@ export default async function SettingsPage() {
           .order("sort_order", { ascending: true })
       ).data ?? []
     : []
+
+  let inviteCodes: InviteCodeView[] = []
+  let inviteCodesReady = true
+  if (ctx && session.role === "owner") {
+    const { data, error } = await ctx.supabase
+      .from("household_invite_codes")
+      .select("id, code, created_at, expires_at, max_uses, uses, revoked_at, purpose")
+      .eq("household_id", ctx.householdId)
+      .order("created_at", { ascending: false })
+    if (error) {
+      inviteCodesReady = false
+    } else {
+      inviteCodes = (data ?? []).flatMap((row) => {
+        const view = toActiveInvite(row as InviteCodeRecord)
+        return view ? [view] : []
+      })
+    }
+  }
 
   return (
     <div className="mx-auto grid max-w-3xl gap-4">
@@ -45,19 +65,25 @@ export default async function SettingsPage() {
         <p className="text-sm text-muted-foreground">Night is easier on evening shifts.</p>
       </section>
 
-      <section id="household" className="deanly-card grid gap-3 p-5">
-        <h2 className="font-medium">{session.householdName ?? "Household"}</h2>
-        <p className="text-sm text-muted-foreground">
-          Deanly Tracking is invite-only. A household owner shares a login that was already created. There is no public sign-up.
-        </p>
-        <ul className="grid gap-2">
-          {session.members.map((member) => (
-            <li key={member.userId} className="flex items-center justify-between text-sm">
-              <span>{member.displayName}</span>
-              <span className="text-muted-foreground">{member.role === "owner" ? "Owner" : "Member"}</span>
-            </li>
-          ))}
-        </ul>
+      <section id="household" className="grid gap-4">
+        <div className="deanly-card grid gap-3 p-5">
+          <h2 className="font-medium">Household</h2>
+          {session.role === "owner" ? (
+            <HouseholdNameForm name={session.householdName ?? "My household"} />
+          ) : (
+            <p className="text-sm font-medium">{session.householdName ?? "Household"}</p>
+          )}
+          <p className="text-sm text-muted-foreground">People listed here share this household.</p>
+          <ul className="grid gap-2">
+            {session.members.map((member) => (
+              <li key={member.userId} className="flex items-center justify-between text-sm">
+                <span>{member.displayName}</span>
+                <span className="text-muted-foreground">{member.role === "owner" ? "Owner" : "Member"}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        {session.role === "owner" ? <InviteCodesCard codes={inviteCodes} ready={inviteCodesReady} /> : null}
       </section>
 
       <section id="categories" className="deanly-card p-5">

@@ -12,7 +12,6 @@ import {
   Wallet,
 } from "lucide-react"
 
-import { createHousehold } from "@/lib/actions/household"
 import { dismissChecklist, setShoppingChecked, setTaskComplete } from "@/lib/actions/records"
 import { RecordDialog, type RecordKind } from "@/components/create/record-dialog"
 import { Button } from "@/components/ui/button"
@@ -22,8 +21,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { StatusChip, VisibilityPill, WidgetError } from "@/components/ui/pills"
 import { cn } from "cn"
 import type { HomePayload, ShoppingRow, TaskRow } from "@/lib/data/home"
@@ -82,15 +79,15 @@ export function HomeDashboard({
       </header>
 
       {!session.householdId ? (
-        <form action={createHousehold} className="deanly-card grid gap-3 p-5 sm:grid-cols-[1fr_auto] sm:items-end">
-          <div className="grid gap-2">
-            <Label htmlFor="household-name">Name your household</Label>
-            <Input id="household-name" name="name" defaultValue="DeanFamily" className="h-11 rounded-button bg-surface px-3" />
-          </div>
-          <Button type="submit" className="h-11 rounded-button text-primary-foreground">
-            Create household
-          </Button>
-        </form>
+        <div className="deanly-card grid gap-2 p-5">
+          <h2 className="font-medium">Have a code?</h2>
+          <p className="text-sm text-muted-foreground">
+            This code starts a new home for you — separate from anyone else’s.
+          </p>
+          <Link href="/join" className="text-sm font-medium text-brand">
+            Create your household
+          </Link>
+        </div>
       ) : null}
 
       {data && !data.checklistDismissed && data.bills.length === 0 ? (

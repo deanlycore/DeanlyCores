@@ -29,6 +29,31 @@ SQL lives in `supabase/migrations` and matches the linked Deanly project:
 
 An empty migration named `home_v1_entities` was recorded earlier and should not be replayed.
 
+## Invite codes (create a new household)
+
+Apply migration **`household_invite_codes`** (`supabase/migrations/20261002030918_household_invite_codes.sql`) on project `dpjzlitklsjtfrfrxvhl`. It is not applied there yet.
+
+In the Supabase SQL editor, open that file and run it once. Or, with the Supabase CLI linked to that project:
+
+```bash
+supabase db push
+```
+
+What it adds:
+
+- `household_invite_codes` — code, issuer, issuer `household_id`, nullable `expires_at`, `max_uses` (default 1), `uses`, `revoked_at`, `purpose` (`create_household` only)
+- RLS so only an **owner** of the issuer household can list, create, or revoke codes
+- `redeem_household_invite_code` — locks the code, creates a **new** household, adds the redeemer as owner, seeds the same categories as DeanFamily, then increments `uses`
+- Direct inserts into `households` and `household_members` are closed, so a code cannot be used to join DeanFamily
+
+Auth stays invite-only:
+
+- Leave **Allow new users to sign up** off. DeanFamily logins created in the Supabase dashboard still sign in as they do today.
+- `SUPABASE_SERVICE_ROLE_KEY` must be set on the server (already required for Web Push). **Have a code?** creates the auth user with that key only after the code checks out, confirms the email, then signs them in.
+- Do not add a public Create account form. There is no signup without a valid create-home code.
+
+New households use the same Shared defaults as DeanFamily: bills, calendar, meals, shopping, and budget start Shared; notes and uploads start Just me. The redeemer names the household (default “My household”). Owners can rename it in Settings.
+
 In the Supabase dashboard, set **Site URL** to your app origin and add `https://<your-host>/auth/callback` to **Redirect URLs**.
 
 ## Web Push
