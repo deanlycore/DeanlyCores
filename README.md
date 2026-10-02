@@ -31,13 +31,7 @@ An empty migration named `home_v1_entities` was recorded earlier and should not 
 
 ## Invite codes (create a new household)
 
-Apply migration **`household_invite_codes`** (`supabase/migrations/20261002030918_household_invite_codes.sql`) on project `dpjzlitklsjtfrfrxvhl`. It is not applied there yet.
-
-In the Supabase SQL editor, open that file and run it once. Or, with the Supabase CLI linked to that project:
-
-```bash
-supabase db push
-```
+Migration **`household_invite_codes`** (`supabase/migrations/20261002030918_household_invite_codes.sql`) is applied on project `dpjzlitklsjtfrfrxvhl`. Do not run it again there. A fresh database can apply it with the Supabase CLI (`supabase db push`) or by running that file once in the SQL editor.
 
 What it adds:
 
