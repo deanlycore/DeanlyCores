@@ -508,6 +508,154 @@ export async function createSubscription(formData: FormData): Promise<ActionResu
   return { ok: true }
 }
 
+export async function updateBill(id: string, formData: FormData): Promise<ActionResult> {
+  const ready = await gate()
+  if (!ready.ctx) return ready
+  const name = textOf(formData.get("name"), 120)
+  const amount = parseCents(formData.get("amount"))
+  const due = parseDate(formData.get("due_on"))
+  if (!name || amount == null || !due) return { ok: false, message: "Add a name, amount, and due date." }
+  const visibility = visibilityOf(formData.get("visibility"), "shared")
+  const { error } = await ready.ctx.supabase
+    .from("bills")
+    .update({ name, amount_cents: amount, due_on: due, visibility })
+    .eq("id", id)
+  const failed = calm(error, "Couldn’t save that bill.")
+  if (failed) return failed
+  await remember(ready.ctx, visibility)
+  refresh()
+  return { ok: true }
+}
+
+export async function deleteBill(id: string) {
+  return removeRecord("bills", id, "Couldn’t remove that bill.")
+}
+
+export async function setBillVisibility(id: string, visibility: Visibility) {
+  return setRecordVisibility("bills", id, visibility, "Couldn’t update that bill.")
+}
+
+export async function updateExpense(id: string, formData: FormData): Promise<ActionResult> {
+  const ready = await gate()
+  if (!ready.ctx) return ready
+  const name = textOf(formData.get("name"), 120)
+  const amount = parseCents(formData.get("amount"))
+  const spent = parseDate(formData.get("spent_on"))
+  if (!name || amount == null || amount <= 0 || !spent) return { ok: false, message: "Add a name, amount, and date." }
+  const visibility = visibilityOf(formData.get("visibility"), "shared")
+  const { error } = await ready.ctx.supabase
+    .from("expenses")
+    .update({ name, amount_cents: amount, spent_on: spent, visibility })
+    .eq("id", id)
+  const failed = calm(error, "Couldn’t save that.")
+  if (failed) return failed
+  await remember(ready.ctx, visibility)
+  refresh()
+  return { ok: true }
+}
+
+export async function deleteExpense(id: string) {
+  return removeRecord("expenses", id, "Couldn’t remove that.")
+}
+
+export async function setExpenseVisibility(id: string, visibility: Visibility) {
+  return setRecordVisibility("expenses", id, visibility, "Couldn’t update that.")
+}
+
+export async function updateGoal(id: string, formData: FormData): Promise<ActionResult> {
+  const ready = await gate()
+  if (!ready.ctx) return ready
+  const name = textOf(formData.get("name"), 120)
+  const target = parseCents(formData.get("target"))
+  const current = parseCents(formData.get("current")) ?? 0
+  if (!name || target == null || target <= 0) return { ok: false, message: "Add a name and a target amount." }
+  const visibility = visibilityOf(formData.get("visibility"), "shared")
+  const { error } = await ready.ctx.supabase
+    .from("goals")
+    .update({ name, target_cents: target, current_cents: current, visibility })
+    .eq("id", id)
+  const failed = calm(error, "Couldn’t save that goal.")
+  if (failed) return failed
+  await remember(ready.ctx, visibility)
+  refresh()
+  return { ok: true }
+}
+
+export async function deleteGoal(id: string) {
+  return removeRecord("goals", id, "Couldn’t remove that goal.")
+}
+
+export async function setGoalVisibility(id: string, visibility: Visibility) {
+  return setRecordVisibility("goals", id, visibility, "Couldn’t update that goal.")
+}
+
+export async function updateSubscription(id: string, formData: FormData): Promise<ActionResult> {
+  const ready = await gate()
+  if (!ready.ctx) return ready
+  const name = textOf(formData.get("name"), 120)
+  const amount = parseCents(formData.get("amount"))
+  const renews = parseDate(formData.get("renews_on"))
+  if (!name || amount == null || !renews) return { ok: false, message: "Add a name, amount, and renewal date." }
+  const visibility = visibilityOf(formData.get("visibility"), "shared")
+  const { error } = await ready.ctx.supabase
+    .from("subscriptions")
+    .update({ name, amount_cents: amount, renews_on: renews, visibility })
+    .eq("id", id)
+  const failed = calm(error, "Couldn’t save that subscription.")
+  if (failed) return failed
+  await remember(ready.ctx, visibility)
+  refresh()
+  return { ok: true }
+}
+
+export async function deleteSubscription(id: string) {
+  return removeRecord("subscriptions", id, "Couldn’t remove that subscription.")
+}
+
+export async function setSubscriptionVisibility(id: string, visibility: Visibility) {
+  return setRecordVisibility("subscriptions", id, visibility, "Couldn’t update that subscription.")
+}
+
+export async function setSubscriptionActive(id: string, active: boolean): Promise<ActionResult> {
+  const ready = await gate()
+  if (!ready.ctx) return ready
+  const { error } = await ready.ctx.supabase.from("subscriptions").update({ active }).eq("id", id)
+  const failed = calm(error, "Couldn’t update that subscription.")
+  if (failed) return failed
+  refresh()
+  return { ok: true }
+}
+
+async function removeRecord(
+  table: "bills" | "expenses" | "goals" | "subscriptions",
+  id: string,
+  fallback: string,
+): Promise<ActionResult> {
+  const ready = await gate()
+  if (!ready.ctx) return ready
+  const { error } = await ready.ctx.supabase.from(table).delete().eq("id", id)
+  const failed = calm(error, fallback)
+  if (failed) return failed
+  refresh()
+  return { ok: true }
+}
+
+async function setRecordVisibility(
+  table: "bills" | "expenses" | "goals" | "subscriptions",
+  id: string,
+  visibility: Visibility,
+  fallback: string,
+): Promise<ActionResult> {
+  const ready = await gate()
+  if (!ready.ctx) return ready
+  const { error } = await ready.ctx.supabase.from(table).update({ visibility }).eq("id", id)
+  const failed = calm(error, fallback)
+  if (failed) return failed
+  await remember(ready.ctx, visibility)
+  refresh()
+  return { ok: true }
+}
+
 export async function uploadDocument(formData: FormData): Promise<ActionResult> {
   const ready = await gate()
   if (!ready.ctx) return ready

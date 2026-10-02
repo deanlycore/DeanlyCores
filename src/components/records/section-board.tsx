@@ -4,23 +4,20 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 
-import { documentUrl, markBillPaid, setShoppingChecked, setTaskComplete, updateNote } from "@/lib/actions/records"
+import { documentUrl, setShoppingChecked, setTaskComplete, updateNote } from "@/lib/actions/records"
 import { RecordDialog } from "@/components/create/record-dialog"
 import { Button } from "@/components/ui/button"
-import { StatusChip, VisibilityPill, WidgetError } from "@/components/ui/pills"
+import { VisibilityPill, WidgetError } from "@/components/ui/pills"
 import type {
-  BillRow,
   EventRow,
   ExpenseRow,
-  GoalRow,
   MealRow,
   NoteRow,
   ShoppingRow,
-  SubscriptionRow,
   TaskRow,
   VaultRow,
 } from "@/lib/data/home"
-import { billStatus, formatMoney, formatShortDate, formatTime, relativeTime } from "@/lib/home/metrics"
+import { formatMoney, formatShortDate, formatTime, relativeTime } from "@/lib/home/metrics"
 import type { Visibility } from "@/lib/visibility"
 import { cn } from "cn"
 
@@ -69,60 +66,6 @@ function AddButton({ children, className, type = "button", ...props }: React.Com
     <Button type={type} className={cn("h-11 rounded-button text-primary-foreground", className)} {...props}>
       {children}
     </Button>
-  )
-}
-
-export function BillsBoard({
-  rows,
-  currency,
-  today,
-  visibility,
-  error,
-}: {
-  rows: BillRow[]
-  currency: string
-  today: string
-  visibility: Visibility
-  error?: boolean
-}) {
-  const router = useRouter()
-  useScrollToItemHash()
-  return (
-    <Frame
-      title="Bills"
-      body="What’s due, said calmly."
-      error={error}
-      action={<RecordDialog kind="bill" today={today} defaultVisibility={visibility} trigger={<AddButton>Add bill</AddButton>} />}
-    >
-      {rows.length === 0 ? <p className="text-sm text-muted-foreground">No bills yet. Add the next one when you know the date.</p> : null}
-      <ul className="divide-y divide-border">
-        {rows.map((bill) => (
-          <li id={`item-${bill.id}`} key={bill.id} className={cn("flex flex-wrap items-center justify-between gap-3 py-3", itemAnchor)}>
-            <div>
-              <p className="font-medium">{bill.name}</p>
-              <p className="text-sm text-muted-foreground">{formatShortDate(bill.due_on)} · {formatMoney(bill.amount_cents, currency)}</p>
-              <div className="mt-1 flex gap-1.5">
-                <StatusChip status={billStatus(bill, today)} />
-                <VisibilityPill visibility={bill.visibility} />
-              </div>
-            </div>
-            {bill.paid_at ? null : (
-              <Button
-                type="button"
-                variant="outline"
-                className="rounded-button"
-                onClick={async () => {
-                  await markBillPaid(bill.id, true)
-                  router.refresh()
-                }}
-              >
-                Mark paid
-              </Button>
-            )}
-          </li>
-        ))}
-      </ul>
-    </Frame>
   )
 }
 
@@ -304,50 +247,6 @@ export function ShoppingBoard({
   )
 }
 
-export function GoalsBoard({
-  rows,
-  currency,
-  today,
-  visibility,
-  error,
-}: {
-  rows: GoalRow[]
-  currency: string
-  today: string
-  visibility: Visibility
-  error?: boolean
-}) {
-  return (
-    <Frame
-      title="Savings"
-      body="What you’re setting aside."
-      error={error}
-      action={<RecordDialog kind="goal" today={today} defaultVisibility={visibility} trigger={<AddButton>Add goal</AddButton>} />}
-    >
-      {rows.length === 0 ? <p className="text-sm text-muted-foreground">Add a savings goal.</p> : null}
-      <ul className="grid gap-4">
-        {rows.map((goal) => {
-          const percent = Math.round(Math.min(goal.current_cents / goal.target_cents, 1) * 100)
-          return (
-            <li key={goal.id}>
-              <div className="flex items-center justify-between">
-                <p className="font-medium">{goal.name}</p>
-                <VisibilityPill visibility={goal.visibility} />
-              </div>
-              <p className="text-sm tabular-nums text-muted-foreground">
-                {formatMoney(goal.current_cents, currency)} / {formatMoney(goal.target_cents, currency)} · {percent}%
-              </p>
-              <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface-muted">
-                <div className="h-full rounded-full bg-brand" style={{ width: `${percent}%` }} />
-              </div>
-            </li>
-          )
-        })}
-      </ul>
-    </Frame>
-  )
-}
-
 export function MoneyBoard({
   rows,
   currency,
@@ -387,51 +286,6 @@ export function MoneyBoard({
       <ul className="mt-4 divide-y divide-border">
         {rows.map((row) => (
           <li key={row.id} className="flex items-center justify-between gap-3 py-3">
-            <div>
-              <p className="font-medium">{row.name}</p>
-              <p className="text-sm text-muted-foreground">{formatShortDate(row.spent_on)}</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <VisibilityPill visibility={row.visibility} />
-              <span className="tabular-nums">{formatMoney(row.amount_cents, currency)}</span>
-            </div>
-          </li>
-        ))}
-      </ul>
-    </Frame>
-  )
-}
-
-export function LedgerBoard({
-  title,
-  body,
-  kind,
-  rows,
-  currency,
-  today,
-  visibility,
-  error,
-}: {
-  title: string
-  body: string
-  kind: "income" | "expense"
-  rows: ExpenseRow[]
-  currency: string
-  today: string
-  visibility: Visibility
-  error?: boolean
-}) {
-  return (
-    <Frame
-      title={title}
-      body={body}
-      error={error}
-      action={<RecordDialog kind={kind} today={today} defaultVisibility={visibility} trigger={<AddButton>{kind === "income" ? "Log income" : "Log spending"}</AddButton>} />}
-    >
-      {rows.length === 0 ? <p className="text-sm text-muted-foreground">Nothing logged yet.</p> : null}
-      <ul className="divide-y divide-border">
-        {rows.map((row) => (
-          <li key={row.id} className="flex items-center justify-between py-3">
             <div>
               <p className="font-medium">{row.name}</p>
               <p className="text-sm text-muted-foreground">{formatShortDate(row.spent_on)}</p>
@@ -551,48 +405,6 @@ export function VaultBoard({
               >
                 Open
               </Button>
-            </div>
-          </li>
-        ))}
-      </ul>
-    </Frame>
-  )
-}
-
-export function SubscriptionsBoard({
-  rows,
-  currency,
-  today,
-  visibility,
-  error,
-}: {
-  rows: SubscriptionRow[]
-  currency: string
-  today: string
-  visibility: Visibility
-  error?: boolean
-}) {
-  const monthly = rows.filter((row) => row.active).reduce((sum, row) => sum + row.amount_cents, 0)
-  return (
-    <Frame
-      title="Subscriptions"
-      body="The ones you still want."
-      error={error}
-      action={<RecordDialog kind="subscription" today={today} defaultVisibility={visibility} trigger={<AddButton>Add subscription</AddButton>} />}
-    >
-      <p className="font-display text-3xl font-semibold tabular-nums">{formatMoney(monthly, currency)}</p>
-      <p className="text-sm text-muted-foreground">Active monthly total</p>
-      {rows.length === 0 ? <p className="mt-3 text-sm text-muted-foreground">No subscriptions yet.</p> : null}
-      <ul className="mt-3 divide-y divide-border">
-        {rows.map((row) => (
-          <li key={row.id} className="flex items-center justify-between py-3">
-            <div>
-              <p className="font-medium">{row.name}</p>
-              <p className="text-sm text-muted-foreground">Renews {formatShortDate(row.renews_on)}</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <VisibilityPill visibility={row.visibility} />
-              <span className="tabular-nums">{formatMoney(row.amount_cents, currency)}</span>
             </div>
           </li>
         ))}

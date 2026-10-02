@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { Geist_Mono, Inter, Plus_Jakarta_Sans } from "next/font/google"
 import { cookies } from "next/headers"
 
+import { Toaster } from "@/components/ui/sonner"
 import { ThemeProvider } from "@/components/theme/theme-provider"
 import { appearanceBootScript, APPEARANCE_COOKIE, parseAppearance } from "@/lib/theme"
 
@@ -57,6 +58,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <ThemeProvider>
           <ServiceWorkerRegister />
           {children}
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>

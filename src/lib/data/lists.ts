@@ -1,4 +1,5 @@
 import { requireHousehold } from "@/lib/data/context"
+import { monthStart } from "@/lib/home/metrics"
 import type {
   BillRow,
   EventRow,
@@ -24,6 +25,21 @@ async function listed<T>(
     currency: ctx.currency,
     visibility: ctx.lastVisibility,
   }
+}
+
+export async function listMonthBudget(today: string) {
+  const ctx = await requireHousehold()
+  if (!ctx) return { amountCents: null as number | null, error: false }
+  const { data, error } = await ctx.supabase
+    .from("budgets")
+    .select("amount_cents, visibility, owner_id")
+    .eq("household_id", ctx.householdId)
+    .eq("period_month", monthStart(today))
+  if (error) return { amountCents: null, error: true }
+  const shared = (data ?? []).find((row) => row.visibility === "shared")
+  const personal = (data ?? []).find((row) => row.visibility === "private" && row.owner_id === ctx.userId)
+  const chosen = shared ?? personal ?? null
+  return { amountCents: chosen ? chosen.amount_cents : null, error: false }
 }
 
 export async function listBills() {
