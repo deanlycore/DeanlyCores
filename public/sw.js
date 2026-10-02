@@ -1,4 +1,4 @@
-/* Deanly Web Push service worker.
+/* Deanly Tracking Web Push service worker.
  * Push-only: no fetch handler, so Next.js pages and auth cookies are left alone.
  * Every push calls showNotification. Safari drops silent pushes.
  */
@@ -18,7 +18,7 @@ function safePath(value) {
 
 function readPayload(event) {
   const fallback = {
-    title: "Deanly",
+    title: "Deanly Tracking",
     body: "Something shared was added at home.",
     url: "/home",
     tag: "deanly-shared",
@@ -48,7 +48,7 @@ self.addEventListener("push", (event) => {
   })
   event.waitUntil(
     show.catch(() =>
-      self.registration.showNotification("Deanly", {
+      self.registration.showNotification("Deanly Tracking", {
         body: "Something shared was added at home.",
         icon: "/icons/icon-192.png",
         data: { url: "/home" },

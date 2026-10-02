@@ -100,7 +100,7 @@ export function AppShell({ session, children }: { session: SessionView; children
     <div className={`min-h-dvh bg-background md:grid ${collapsed ? "md:grid-cols-[68px_1fr]" : "md:grid-cols-[220px_1fr]"}`}>
       <aside className="hidden border-r border-border bg-surface md:flex md:flex-col">
         <div className={`flex h-14 items-center ${collapsed ? "justify-center px-2" : "justify-between px-3"}`}>
-          <Link href="/home" aria-label="Deanly — DeanFamily, home">
+          <Link href="/home" aria-label="Deanly Tracking — DeanFamily, home">
             {collapsed ? <LoopMark size={28} /> : <Wordmark />}
           </Link>
           {collapsed ? null : (
@@ -176,9 +176,9 @@ export function AppShell({ session, children }: { session: SessionView; children
         </header>
 
         <header className="flex h-14 items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur md:hidden">
-          <Link href="/home" aria-label="Deanly home" className="inline-flex items-center gap-2">
+          <Link href="/home" aria-label="Deanly Tracking home" className="inline-flex items-center gap-2">
             <LoopMark size={28} />
-            <span className="font-display text-[15px] font-semibold">Deanly</span>
+            <span className="whitespace-nowrap font-display text-[15px] font-semibold">Deanly Tracking</span>
           </Link>
           <div className="flex items-center gap-1">
             <Button type="button" variant="ghost" size="icon" aria-label="Search" onClick={() => setSearchOpen(true)}>

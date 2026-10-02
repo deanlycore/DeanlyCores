@@ -14,7 +14,7 @@ export function Wordmark({
     <span className="inline-flex items-center gap-2.5">
       <LoopMark size={mark} />
       <span className="leading-none">
-        <span className={`block font-display font-semibold tracking-tight text-ink ${title}`}>Deanly</span>
+        <span className={`block whitespace-nowrap font-display font-semibold tracking-tight text-ink ${title}`}>Deanly Tracking</span>
         {showHousehold ? <span className="mt-0.5 block text-[11px] text-muted-foreground">DeanFamily</span> : null}
       </span>
     </span>

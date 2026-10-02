@@ -1,4 +1,4 @@
-# Deanly — DeanFamily
+# Deanly Tracking — DeanFamily
 
 Private household command center. Foundation shell: sign in, password reset, and a branded home with empty Money, Tasks, Calendar, Goals, and Reminders cards.
 
@@ -58,7 +58,7 @@ Redeploy after saving the variables. Placeholders in `.env.example` are not live
 
 1. Apply the migration and set the four variables, then redeploy.
 2. On each phone, open https://deanlycores.vercel.app in Safari, tap Share, then **Add to Home Screen**. iOS only delivers Web Push from that icon, on iOS 16.4 or later. A Safari tab cannot subscribe, and there is no install prompt.
-3. Open Deanly from the Home Screen icon, sign in, and in Settings turn on **Notify me when something Shared is added**. Allow notifications when asked.
+3. Open Deanly Tracking from the Home Screen icon, sign in, and in Settings turn on **Notify me when something Shared is added**. Allow notifications when asked.
 4. From the other account, add a shared bill, task, calendar event, meal, or shopping item. The first account should get a calm note. A Just me note, or the same item saved as Just me, should not.
 5. Tap the notification. It opens the matching section and scrolls to that item.
 6. On a desktop browser, localhost is enough for Chrome. Skip Add to Home Screen there. iPhone still needs the deployed HTTPS site and the Home Screen icon.

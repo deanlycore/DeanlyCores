@@ -15,14 +15,14 @@ const mono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" })
 
 export const metadata: Metadata = {
   title: {
-    default: "Deanly — DeanFamily",
-    template: "%s · Deanly — DeanFamily",
+    default: "Deanly Tracking — DeanFamily",
+    template: "%s · Deanly Tracking — DeanFamily",
   },
   description: "Keep life together, effortlessly.",
-  applicationName: "Deanly — DeanFamily",
+  applicationName: "Deanly Tracking",
   appleWebApp: {
     capable: true,
-    title: "Deanly",
+    title: "Deanly Tracking",
     statusBarStyle: "default",
   },
   icons: {

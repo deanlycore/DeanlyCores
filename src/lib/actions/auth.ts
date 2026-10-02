@@ -63,7 +63,7 @@ export async function requestReset(_state: FormState, formData: FormData): Promi
     return { message: "Supabase isn’t configured yet." }
   }
   const email = String(formData.get("email") ?? "").trim()
-  if (!email) return { message: "Enter the email you use for Deanly." }
+  if (!email) return { message: "Enter the email you use for Deanly Tracking." }
   const supabase = await createClient()
   await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${await origin()}/auth/callback?next=/auth/update-password`,
