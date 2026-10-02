@@ -154,7 +154,7 @@ export function TasksBoard({
             <label className="flex min-h-11 items-center gap-3">
               <input
                 type="checkbox"
-                className="size-5 accent-[#249B8A]"
+                className="size-5 accent-brand"
                 checked={Boolean(task.completed_at)}
                 onChange={async (event) => {
                   const complete = event.target.checked
@@ -281,7 +281,7 @@ export function ShoppingBoard({
             <label className="flex min-h-11 items-center gap-3">
               <input
                 type="checkbox"
-                className="size-5 accent-[#249B8A]"
+                className="size-5 accent-brand"
                 checked={Boolean(item.checked_at)}
                 onChange={async (event) => {
                   const checked = event.target.checked

@@ -45,7 +45,7 @@ import {
 } from "@/lib/home/metrics"
 
 const kpiClass =
-  "rounded-[16px] border border-border bg-surface p-[18px] shadow-[0_1px_2px_rgb(28_25_23/0.03),0_12px_32px_rgb(28_25_23/0.05)] transition-transform duration-150 hover:-translate-y-px lg:rounded-[20px]"
+  "rounded-[16px] border border-border bg-surface p-[18px] shadow-soft transition-transform duration-150 hover:-translate-y-px lg:rounded-[20px]"
 
 export function HomeDashboard({
   session,
@@ -65,8 +65,7 @@ export function HomeDashboard({
       <header className="relative">
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -left-6 -top-8 h-40 w-72"
-          style={{ background: "radial-gradient(closest-side, rgb(213 242 236 / 0.18), transparent 72%)" }}
+          className="deanly-wash pointer-events-none absolute -left-6 -top-8 h-40 w-72"
         />
         <div className="relative flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -245,7 +244,7 @@ function DismissChecklist() {
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
     <article
-      className={`rounded-2xl border border-border bg-surface p-5 shadow-[0_1px_2px_rgb(28_25_23/0.03),0_12px_32px_rgb(28_25_23/0.05)] ${className}`}
+      className={`rounded-2xl border border-border bg-surface p-5 shadow-soft ${className}`}
     >
       {children}
     </article>
@@ -475,7 +474,7 @@ function MealsCard({
         <UtensilsCrossed className="mb-3 size-5 text-brand" aria-hidden="true" />
         {meal ? (
           <>
-            <p className="text-xs font-medium text-brand-deep">{label}</p>
+            <p className="text-xs font-medium text-on-brand-soft">{label}</p>
             <p className="font-display text-2xl font-semibold tracking-tight">{meal.title}</p>
             <div className="mt-2">
               <VisibilityPill visibility={meal.visibility} />
@@ -580,7 +579,7 @@ function ShoppingCard({
               <label className="flex min-h-11 items-center gap-3 py-1">
                 <input
                   type="checkbox"
-                  className="size-5 accent-[#249B8A]"
+                  className="size-5 accent-brand"
                   checked={Boolean(item.checked_at)}
                   onChange={async (event) => {
                     const checked = event.target.checked
@@ -618,7 +617,7 @@ function ActivityCard({ data, className = "" }: { data: HomePayload | null; clas
         <ul className="mt-3 grid gap-3">
           {data.activity.map((item) => (
             <li key={item.id} className="flex gap-3">
-              <span className="grid size-8 shrink-0 place-items-center rounded-full bg-brand-soft text-brand-deep">
+              <span className="grid size-8 shrink-0 place-items-center rounded-full bg-brand-soft text-on-brand-soft">
                 <Check className="size-4" />
               </span>
               <div>
@@ -646,7 +645,7 @@ export function TaskChecks({ tasks, today }: { tasks: TaskRow[]; today: string }
           <label className="flex min-h-11 items-center gap-3">
             <input
               type="checkbox"
-              className="size-5 accent-[#249B8A]"
+              className="size-5 accent-brand"
               checked={Boolean(task.completed_at)}
               onChange={async (event) => {
                 const complete = event.target.checked

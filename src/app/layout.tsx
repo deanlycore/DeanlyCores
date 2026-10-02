@@ -1,5 +1,9 @@
 import type { Metadata } from "next"
 import { Geist_Mono, Inter, Plus_Jakarta_Sans } from "next/font/google"
+import { cookies } from "next/headers"
+
+import { ThemeProvider } from "@/components/theme/theme-provider"
+import { appearanceBootScript, APPEARANCE_COOKIE, parseAppearance } from "@/lib/theme"
 
 import { ServiceWorkerRegister } from "@/components/pwa/service-worker-register"
 
@@ -37,12 +41,23 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const appearance = parseAppearance((await cookies()).get(APPEARANCE_COOKIE)?.value)
+
   return (
-    <html lang="en" className={`${inter.variable} ${display.variable} ${mono.variable} h-full antialiased`}>
+    <html
+      lang="en"
+      className={`${inter.variable} ${display.variable} ${mono.variable} h-full antialiased${appearance === "dark" ? " dark" : ""}`}
+      suppressHydrationWarning
+    >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: appearanceBootScript }} />
+      </head>
       <body className="min-h-full bg-background text-foreground">
-        <ServiceWorkerRegister />
-        {children}
+        <ThemeProvider>
+          <ServiceWorkerRegister />
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   )

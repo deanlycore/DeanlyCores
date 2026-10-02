@@ -21,7 +21,7 @@ export function SectionPage({ href }: { href: string }) {
         {visibility ? (
           <span
             className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
-              visibility === "private" ? "bg-sand text-sand-ink" : "bg-brand-soft text-brand-deep"
+              visibility === "private" ? "bg-sand text-sand-ink" : "bg-brand-soft text-on-brand-soft"
             }`}
           >
             {visibilityLabel(visibility)}

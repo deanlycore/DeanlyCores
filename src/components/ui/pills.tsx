@@ -6,7 +6,7 @@ export function VisibilityPill({ visibility }: { visibility: Visibility }) {
   return (
     <span
       className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-        shared ? "bg-brand-soft text-brand-deep" : "bg-sand text-sand-ink"
+        shared ? "bg-brand-soft text-on-brand-soft" : "bg-sand text-sand-ink"
       }`}
     >
       {visibilityLabel(shared ? "shared" : "private")}
@@ -15,10 +15,10 @@ export function VisibilityPill({ visibility }: { visibility: Visibility }) {
 }
 
 const chipStyle: Record<BillStatus, { background: string; color: string }> = {
-  paid: { background: "color-mix(in srgb, var(--success) 16%, white)", color: "var(--success)" },
-  due_soon: { background: "color-mix(in srgb, var(--warn) 20%, white)", color: "#6b5344" },
+  paid: { background: "color-mix(in srgb, var(--success) 16%, var(--surface))", color: "var(--success)" },
+  due_soon: { background: "color-mix(in srgb, var(--warn) 20%, var(--surface))", color: "var(--sand-ink)" },
   on_time: { background: "var(--surface-muted)", color: "var(--ink-muted)" },
-  overdue: { background: "color-mix(in srgb, var(--danger) 16%, white)", color: "var(--danger)" },
+  overdue: { background: "color-mix(in srgb, var(--danger) 16%, var(--surface))", color: "var(--danger)" },
 }
 
 export function StatusChip({ status, muted = false }: { status: BillStatus; muted?: boolean }) {

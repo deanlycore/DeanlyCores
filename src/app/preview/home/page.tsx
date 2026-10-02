@@ -1,9 +1,12 @@
+import { cookies } from "next/headers"
 import { notFound } from "next/navigation"
 
 import { HomeDashboard } from "@/components/home/home-dashboard"
+import { AppearanceControl } from "@/components/settings/appearance-control"
 import { AppShell } from "@/components/shell/app-shell"
 import type { HomePayload } from "@/lib/data/home"
 import type { SessionView } from "@/lib/data/session"
+import { APPEARANCE_COOKIE, parseAppearance } from "@/lib/theme"
 
 export const dynamic = "force-dynamic"
 
@@ -66,10 +69,15 @@ const data: HomePayload = {
   errors: {},
 }
 
-export default function PreviewHome() {
+export default async function PreviewHome() {
   if (process.env.NODE_ENV === "production") notFound()
+  const appearance = parseAppearance((await cookies()).get(APPEARANCE_COOKIE)?.value)
   return (
     <AppShell session={session}>
+      <div className="mb-5 flex flex-wrap items-center gap-4">
+        <AppearanceControl appearance={appearance} />
+        <p className="text-sm text-muted-foreground">Night is easier on evening shifts.</p>
+      </div>
       <HomeDashboard session={session} data={data} timeZone="America/New_York" />
     </AppShell>
   )
