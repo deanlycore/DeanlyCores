@@ -116,6 +116,11 @@ export function calmInviteError(message: string) {
   return "Something got in the way. Please try again."
 }
 
+/** Release a hold only when this request created it and the login was not created. */
+export function shouldReleaseInviteHold(newlyReserved: boolean) {
+  return newlyReserved
+}
+
 export function calmAccountError(message: string) {
   const lower = message.toLowerCase()
   if (lower.includes("already") || lower.includes("registered") || lower.includes("exists")) {

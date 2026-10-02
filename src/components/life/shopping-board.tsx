@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
 import { RecordDialog } from "@/components/create/record-dialog"
-import { CheckControl, LifeFab, useLifeVisibility } from "@/components/life/life-chrome"
+import { CheckControl, LifeFab, PhoneFabClearance, useLifeVisibility } from "@/components/life/life-chrome"
 import { VisibilityPill, WidgetError } from "@/components/ui/pills"
 import {
   ConfirmRemove,
@@ -252,6 +252,7 @@ export function ShoppingBoard({
             router.refresh()
           }}
         />
+        <PhoneFabClearance />
       </MoneyFrame>
       <LifeFab>
         <MoneyAddButton className="h-11 px-4 shadow-soft" onClick={() => setAdding(true)}>
