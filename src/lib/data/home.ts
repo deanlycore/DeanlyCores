@@ -39,6 +39,7 @@ export type EventRow = {
   id: string
   title: string
   starts_at: string
+  ends_at?: string | null
   location: string | null
   visibility: Visibility
 }
@@ -56,6 +57,8 @@ export type ShoppingRow = {
   name: string
   checked_at: string | null
   visibility: Visibility
+  store?: string | null
+  need_soon?: boolean | null
 }
 
 export type ActivityRow = {

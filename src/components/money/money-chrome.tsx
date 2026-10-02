@@ -18,6 +18,10 @@ import { cn } from "cn"
 
 const FILTER_KEY = "deanly-money-visibility"
 
+/** Phone sheets sit on the bottom edge. Desktop dialogs stay centered. */
+export const phoneSheetClass =
+  "max-md:top-auto! max-md:right-0! max-md:bottom-0! max-md:left-0! max-md:w-full! max-md:max-w-none! max-md:translate-x-0! max-md:translate-y-0! max-md:rounded-t-2xl! max-md:rounded-b-none! max-md:max-h-[92dvh]! max-md:overflow-y-auto! max-md:pb-[max(1.25rem,env(safe-area-inset-bottom))]!"
+
 export type MoneyVisibility = "all" | "shared" | "private"
 
 function subscribeVisibility(onStoreChange: () => void) {
@@ -72,6 +76,7 @@ export function MoneyFrame({
   chips,
   pulse,
   children,
+  phoneTouch = false,
 }: {
   title: string
   subtitle: string
@@ -81,6 +86,8 @@ export function MoneyFrame({
   chips: React.ReactNode
   pulse: React.ReactNode
   children: React.ReactNode
+  /** Life phone boards raise the visibility control to a 44px target. Money stays as-is. */
+  phoneTouch?: boolean
 }) {
   return (
     <div className="relative grid gap-5">
@@ -92,7 +99,7 @@ export function MoneyFrame({
             <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
           </div>
           <div className="flex flex-col items-stretch gap-3 sm:items-end">
-            <VisibilityFilter value={filter} onChange={onFilter} />
+            <VisibilityFilter value={filter} onChange={onFilter} phoneTouch={phoneTouch} />
             {action}
           </div>
         </header>
@@ -113,12 +120,14 @@ const filterOptions: { id: MoneyVisibility; label: string }[] = [
 export function VisibilityFilter({
   value,
   onChange,
+  phoneTouch = false,
 }: {
   value: MoneyVisibility
   onChange: (next: MoneyVisibility) => void
+  phoneTouch?: boolean
 }) {
   return (
-    <div role="radiogroup" aria-label="Visibility" className="inline-flex rounded-full border border-border bg-surface p-0.5">
+    <div role="radiogroup" aria-label="Visibility" className="inline-flex max-w-full rounded-full border border-border bg-surface p-0.5">
       {filterOptions.map((option) => {
         const selected = value === option.id
         return (
@@ -130,6 +139,7 @@ export function VisibilityFilter({
             onClick={() => onChange(option.id)}
             className={cn(
               "h-8 rounded-full px-3 text-[13px] font-medium transition-colors duration-150",
+              phoneTouch && "max-md:min-h-11 max-md:px-3.5",
               selected && option.id === "shared" && "bg-brand-soft text-on-brand-soft",
               selected && option.id === "private" && "bg-sand text-sand-ink",
               selected && option.id === "all" && "bg-surface-muted text-ink",
@@ -287,6 +297,7 @@ export function RowMenu({
   onVisibility,
   onRemove,
   extra,
+  className,
 }: {
   label: string
   visibility: Visibility
@@ -294,6 +305,7 @@ export function RowMenu({
   onVisibility: (next: Visibility) => void
   onRemove: () => void
   extra?: React.ReactNode
+  className?: string
 }) {
   return (
     <DropdownMenu>
@@ -303,7 +315,7 @@ export function RowMenu({
           variant="ghost"
           size="icon"
           aria-label={`${label} actions`}
-          className="text-muted-foreground"
+          className={cn("text-muted-foreground", className)}
           onClick={(event) => event.stopPropagation()}
         >
           <MoreHorizontal className="size-4" />
@@ -327,16 +339,19 @@ export function ConfirmRemove({
   pending,
   onOpenChange,
   onConfirm,
+  sheetOnPhone = false,
 }: {
   open: boolean
   title: string
   pending?: boolean
   onOpenChange: (open: boolean) => void
   onConfirm: () => void
+  sheetOnPhone?: boolean
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[440px]">
+      <DialogContent className={cn("sm:max-w-[440px]", sheetOnPhone && phoneSheetClass)}>
+        {sheetOnPhone ? <div aria-hidden="true" className="mx-auto h-1 w-10 rounded-full bg-border md:hidden" /> : null}
         <DialogHeader>
           <DialogTitle className="font-display text-lg">{title}</DialogTitle>
         </DialogHeader>
