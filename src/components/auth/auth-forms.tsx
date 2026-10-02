@@ -76,9 +76,12 @@ export function LoginForm({ configured }: { configured: boolean }) {
           {pending ? "One moment…" : "Sign in"}
         </Button>
       </form>
-      <div className="mt-4 text-sm">
+      <div className="mt-4 flex items-center justify-between text-sm">
         <Link href="/forgot-password" className="text-muted-foreground hover:text-ink">
           Forgot password
+        </Link>
+        <Link href="/join" className="text-muted-foreground hover:text-ink">
+          Have a code?
         </Link>
       </div>
     </AuthFrame>

@@ -1,5 +1,5 @@
 const PUBLIC_PREFIXES = ["/auth", "/preview"]
-const PUBLIC_PATHS = new Set(["/", "/login", "/forgot-password", "/sw.js", "/manifest.webmanifest"])
+const PUBLIC_PATHS = new Set(["/", "/login", "/forgot-password", "/join", "/sw.js", "/manifest.webmanifest"])
 
 export function isPublic(pathname: string) {
   return PUBLIC_PATHS.has(pathname) || PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix))

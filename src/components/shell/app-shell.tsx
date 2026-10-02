@@ -100,8 +100,11 @@ export function AppShell({ session, children }: { session: SessionView; children
     <div className={`min-h-dvh bg-background md:grid ${collapsed ? "md:grid-cols-[68px_1fr]" : "md:grid-cols-[220px_1fr]"}`}>
       <aside className="hidden border-r border-border bg-sidebar md:flex md:flex-col">
         <div className={`flex h-14 items-center ${collapsed ? "justify-center px-2" : "justify-between px-3"}`}>
-          <Link href="/home" aria-label="Deanly Tracking — DeanFamily, home">
-            {collapsed ? <LoopMark size={28} /> : <Wordmark />}
+          <Link
+            href="/home"
+            aria-label={session.householdName ? `Deanly Tracking — ${session.householdName}` : "Deanly Tracking"}
+          >
+            {collapsed ? <LoopMark size={28} /> : <Wordmark household={session.householdName} />}
           </Link>
           {collapsed ? null : (
             <button type="button" onClick={toggleRail} aria-label="Collapse sidebar" className="rounded-[10px] p-1 text-muted-foreground hover:bg-surface-muted">
@@ -166,7 +169,7 @@ export function AppShell({ session, children }: { session: SessionView; children
             className="flex h-9 w-full max-w-md items-center gap-2 rounded-full border border-border bg-surface px-3 text-sm text-muted-foreground"
           >
             <Search className="size-4 shrink-0" />
-            <span className="truncate">Search DeanFamily…</span>
+            <span className="truncate">Search…</span>
             <kbd className="ml-auto rounded-md border border-border px-1.5 py-0.5 text-xs">⌘K</kbd>
           </button>
           <div className="ml-auto flex items-center gap-1">
@@ -220,7 +223,7 @@ export function AppShell({ session, children }: { session: SessionView; children
 }
 
 function HouseholdChip({ session }: { session: SessionView }) {
-  const name = session.householdName ?? "DeanFamily"
+  const name = session.householdName ?? "Household"
   return (
     <div className="mx-2 mb-3 flex items-center gap-2 px-2">
       <AvatarGroup>
