@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useId, useState } from "react"
 import { useRouter } from "next/navigation"
 
 import {
@@ -14,12 +14,16 @@ import {
   createSubscription,
   createTask,
   saveBudget,
+  updateBill,
+  updateExpense,
+  updateGoal,
+  updateSubscription,
   uploadDocument,
   type ActionResult,
 } from "@/lib/actions/records"
 import { defaultVisibilityFor, type Visibility } from "@/lib/visibility"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
@@ -46,13 +50,40 @@ const titles: Record<RecordKind, string> = {
   goal: "Add a savings goal",
   budget: "Set this month’s budget",
   expense: "Log spending",
-  income: "Log income",
+  income: "Add income",
   note: "New note",
   upload: "Upload a document",
   subscription: "Add a subscription",
 }
 
 const field = "h-11 rounded-button bg-surface px-3"
+
+export type RecordInitial = {
+  id: string
+  name?: string
+  title?: string
+  amount?: string
+  date?: string
+  current?: string
+  target?: string
+  body?: string
+  visibility?: Visibility
+}
+
+const editTitles: Partial<Record<RecordKind, string>> = {
+  bill: "Edit bill",
+  income: "Edit income",
+  goal: "Edit goal",
+  subscription: "Edit subscription",
+  expense: "Edit spending",
+}
+
+const saveLabels: Partial<Record<RecordKind, string>> = {
+  bill: "Save bill",
+  income: "Save income",
+  goal: "Save goal",
+  subscription: "Save subscription",
+}
 
 export function RecordDialog({
   kind,
@@ -61,6 +92,7 @@ export function RecordDialog({
   today,
   open: openProp,
   onOpenChange,
+  initial,
 }: {
   kind: RecordKind
   trigger?: React.ReactNode
@@ -68,6 +100,7 @@ export function RecordDialog({
   today: string
   open?: boolean
   onOpenChange?: (open: boolean) => void
+  initial?: RecordInitial
 }) {
   const router = useRouter()
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false)
@@ -79,7 +112,8 @@ export function RecordDialog({
     setUncontrolledOpen(next)
     onOpenChange?.(next)
   }
-  const visibilityDefault = defaultVisibilityFor(kind, defaultVisibility)
+  const formId = useId()
+  const visibilityDefault = initial?.visibility ?? defaultVisibilityFor(kind, defaultVisibility)
 
   async function onSubmit(formData: FormData) {
     setPending(true)
@@ -88,7 +122,9 @@ export function RecordDialog({
       formData.set("timeZone", Intl.DateTimeFormat().resolvedOptions().timeZone)
       if (kind === "income") formData.set("kind", "income")
       if (kind === "expense") formData.set("kind", "expense")
-      const result = await actions[kind](formData)
+      const recordId = initial?.id
+      const update = recordId ? updates[kind] : undefined
+      const result = update && recordId ? await update(recordId, formData) : await actions[kind](formData)
       if (!result.ok) {
         setMessage(result.message)
         return
@@ -105,16 +141,16 @@ export function RecordDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {trigger ? <DialogTrigger asChild>{trigger}</DialogTrigger> : null}
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-[440px]">
         <DialogHeader>
-          <DialogTitle className="font-display">{titles[kind]}</DialogTitle>
+          <DialogTitle className="font-display">{initial ? (editTitles[kind] ?? titles[kind]) : titles[kind]}</DialogTitle>
         </DialogHeader>
-        <form action={onSubmit} className="grid gap-3">
+        <form key={initial?.id ?? "new"} action={onSubmit} className="grid gap-3">
           {kind === "bill" ? (
             <>
-              <Field label="Name" name="name" />
-              <Field label="Amount" name="amount" inputMode="decimal" placeholder="0.00" />
-              <Field label="Due" name="due_on" type="date" defaultValue={today} />
+              <Field id={`${formId}-name`} label="Name" name="name" defaultValue={initial?.name} />
+              <Field id={`${formId}-amount`} label="Amount" name="amount" inputMode="decimal" placeholder="0.00" defaultValue={initial?.amount} />
+              <Field id={`${formId}-due`} label="Due" name="due_on" type="date" defaultValue={initial?.date ?? today} />
             </>
           ) : null}
           {kind === "task" ? (
@@ -149,17 +185,17 @@ export function RecordDialog({
           {kind === "shopping" ? <Field label="Item" name="name" /> : null}
           {kind === "goal" ? (
             <>
-              <Field label="Goal" name="name" />
-              <Field label="Target" name="target" inputMode="decimal" placeholder="0.00" />
-              <Field label="Already saved" name="current" inputMode="decimal" placeholder="0.00" required={false} />
+              <Field id={`${formId}-goal`} label="Goal" name="name" defaultValue={initial?.name} />
+              <Field id={`${formId}-target`} label="Target" name="target" inputMode="decimal" placeholder="0.00" defaultValue={initial?.target} />
+              <Field id={`${formId}-current`} label="Already saved" name="current" inputMode="decimal" placeholder="0.00" required={false} defaultValue={initial?.current} />
             </>
           ) : null}
           {kind === "budget" ? <Field label="Monthly budget" name="amount" inputMode="decimal" placeholder="0.00" /> : null}
           {kind === "expense" || kind === "income" ? (
             <>
-              <Field label="Name" name="name" />
-              <Field label="Amount" name="amount" inputMode="decimal" placeholder="0.00" />
-              <Field label="Date" name="spent_on" type="date" defaultValue={today} />
+              <Field id={`${formId}-name`} label="Name" name="name" defaultValue={initial?.name} />
+              <Field id={`${formId}-amount`} label="Amount" name="amount" inputMode="decimal" placeholder="0.00" defaultValue={initial?.amount} />
+              <Field id={`${formId}-date`} label="Date" name="spent_on" type="date" defaultValue={initial?.date ?? today} />
             </>
           ) : null}
           {kind === "note" ? (
@@ -179,9 +215,9 @@ export function RecordDialog({
           ) : null}
           {kind === "subscription" ? (
             <>
-              <Field label="Name" name="name" />
-              <Field label="Amount" name="amount" inputMode="decimal" placeholder="0.00" />
-              <Field label="Renews" name="renews_on" type="date" defaultValue={today} />
+              <Field id={`${formId}-name`} label="Name" name="name" defaultValue={initial?.name} />
+              <Field id={`${formId}-amount`} label="Amount" name="amount" inputMode="decimal" placeholder="0.00" defaultValue={initial?.amount} />
+              <Field id={`${formId}-renews`} label="Renews" name="renews_on" type="date" defaultValue={initial?.date ?? today} />
             </>
           ) : null}
           <fieldset className="grid gap-2">
@@ -198,13 +234,28 @@ export function RecordDialog({
             </div>
           </fieldset>
           {message ? <p className="text-sm text-danger">{message}</p> : null}
-          <Button type="submit" disabled={pending} className="h-11 rounded-button text-primary-foreground">
-            {pending ? "Saving…" : "Save"}
-          </Button>
+          <div className="flex items-center justify-end gap-2">
+            <DialogClose asChild>
+              <Button type="button" variant="outline" className="h-10 rounded-button">
+                Cancel
+              </Button>
+            </DialogClose>
+            <Button type="submit" disabled={pending} className="h-10 rounded-button text-primary-foreground">
+              {pending ? "Saving…" : (saveLabels[kind] ?? "Save")}
+            </Button>
+          </div>
         </form>
       </DialogContent>
     </Dialog>
   )
+}
+
+const updates: Partial<Record<RecordKind, (id: string, formData: FormData) => Promise<ActionResult>>> = {
+  bill: updateBill,
+  expense: updateExpense,
+  income: updateExpense,
+  goal: updateGoal,
+  subscription: updateSubscription,
 }
 
 const actions: Record<RecordKind, (formData: FormData) => Promise<ActionResult>> = {
@@ -223,6 +274,7 @@ const actions: Record<RecordKind, (formData: FormData) => Promise<ActionResult>>
 }
 
 function Field({
+  id,
   label,
   name,
   type = "text",
@@ -231,6 +283,7 @@ function Field({
   placeholder,
   inputMode,
 }: {
+  id?: string
   label: string
   name: string
   type?: string
@@ -239,11 +292,12 @@ function Field({
   placeholder?: string
   inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"]
 }) {
+  const fieldId = id ?? name
   return (
     <div className="grid gap-1.5">
-      <Label htmlFor={name}>{label}</Label>
+      <Label htmlFor={fieldId}>{label}</Label>
       <Input
-        id={name}
+        id={fieldId}
         name={name}
         type={type}
         required={required}

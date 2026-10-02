@@ -1,22 +1,20 @@
 import type { Metadata } from "next"
 
-import { LedgerBoard } from "@/components/records/section-board"
+import { IncomeBoard } from "@/components/money/income-board"
+import { getSessionView } from "@/lib/data/session"
 import { listExpenses } from "@/lib/data/lists"
 import { pageClock } from "@/lib/data/timezone"
 
 export const metadata: Metadata = { title: "Income" }
 
 export default async function Page() {
-  const [clock, income] = await Promise.all([pageClock(), listExpenses("income")])
+  const [clock, income, session] = await Promise.all([pageClock(), listExpenses("income"), getSessionView()])
   return (
-    <LedgerBoard
-      title="Income"
-      body="Pay and other money coming in."
-      kind="income"
+    <IncomeBoard
       rows={income.rows}
       currency={income.currency}
       today={clock.today}
-      visibility={income.visibility}
+      householdName={session.householdName}
       error={income.error}
     />
   )
