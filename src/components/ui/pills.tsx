@@ -21,9 +21,12 @@ const chipStyle: Record<BillStatus, { background: string; color: string }> = {
   overdue: { background: "color-mix(in srgb, var(--danger) 16%, white)", color: "var(--danger)" },
 }
 
-export function StatusChip({ status }: { status: BillStatus }) {
+export function StatusChip({ status, muted = false }: { status: BillStatus; muted?: boolean }) {
+  const style = muted
+    ? { background: "var(--surface-muted)", color: "var(--ink-muted)" }
+    : chipStyle[status]
   return (
-    <span className="inline-flex rounded-full px-2 py-0.5 text-xs font-medium" style={chipStyle[status]}>
+    <span className="inline-flex rounded-full px-2 py-0.5 text-xs font-medium" style={style}>
       {billStatusLabel(status)}
     </span>
   )

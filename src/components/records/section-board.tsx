@@ -37,7 +37,7 @@ function Frame({
   children: React.ReactNode
 }) {
   return (
-    <div className="mx-auto grid max-w-[1180px] gap-4">
+    <div className="mx-auto grid max-w-[1120px] gap-4">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-[28px] font-semibold tracking-tight">{title}</h1>

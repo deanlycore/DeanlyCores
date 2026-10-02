@@ -14,7 +14,7 @@ export default async function Page() {
   const tasks = taskProgress(data?.tasks ?? [])
   const bills = data ? billsDueThisWeek(data.bills, data.today).length : 0
   return (
-    <div className="mx-auto grid max-w-[1180px] gap-4">
+    <div className="mx-auto grid max-w-[1120px] gap-4">
       <header>
         <h1 className="font-display text-[28px] font-semibold tracking-tight">Reports</h1>
         <p className="mt-1 text-sm text-muted-foreground">A quiet look at this month. Not a scorecard.</p>

@@ -4,35 +4,27 @@ import Link from "next/link"
 import { useActionState } from "react"
 
 import { requestReset, signIn, updatePassword, type FormState } from "@/lib/actions/auth"
-import { Wordmark } from "@/components/brand/wordmark"
+import { LoopMark } from "@/components/brand/loop-mark"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
 function AuthFrame({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="grid min-h-full lg:grid-cols-2">
-      <section className="hidden flex-col justify-between bg-[linear-gradient(160deg,#D5F2EC,transparent_42%),linear-gradient(#FAF8F5,#F3EFE9)] p-12 lg:flex">
-        <Wordmark size="lg" />
-        <div>
-          <p className="font-display text-4xl font-semibold tracking-tight text-ink">
-            Keep life together, effortlessly.
-          </p>
-          <p className="mt-4 max-w-sm text-sm text-muted-foreground">
-            A private place for DeanFamily. Separate logins. Shared where it helps.
-          </p>
+    <div className="relative grid min-h-full place-items-center overflow-hidden bg-background px-4 py-10">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -left-16 -top-20 h-72 w-72"
+        style={{ background: "radial-gradient(closest-side, rgb(213 242 236 / 0.55), transparent 72%)" }}
+      />
+      <div className="relative w-full max-w-[400px]">
+        <div className="mb-8 grid justify-items-center text-center">
+          <LoopMark size={48} />
+          <p className="mt-3 text-sm text-muted-foreground">Keep life together, effortlessly.</p>
         </div>
-        <p className="text-sm text-muted-foreground">Deanly — DeanFamily</p>
-      </section>
-      <section className="flex items-center justify-center px-4 py-10">
-        <div className="w-full max-w-sm">
-          <div className="mb-8 lg:hidden">
-            <Wordmark />
-          </div>
-          <h1 className="font-display text-2xl font-semibold tracking-tight">{title}</h1>
-          <div className="mt-6">{children}</div>
-        </div>
-      </section>
+        <h1 className="font-display text-2xl font-semibold tracking-tight">{title}</h1>
+        <div className="mt-6">{children}</div>
+      </div>
     </div>
   )
 }
@@ -80,7 +72,7 @@ export function LoginForm({ configured }: { configured: boolean }) {
           Remember this browser
         </label>
         <Message state={state} />
-        <Button type="submit" disabled={pending || !configured} className="h-11 rounded-button">
+        <Button type="submit" disabled={pending || !configured} className="h-11 rounded-button text-primary-foreground">
           {pending ? "One moment…" : "Sign in"}
         </Button>
       </form>
@@ -103,7 +95,7 @@ export function ForgotForm() {
           <Input id="email" name="email" type="email" required autoComplete="email" className={fieldClass} />
         </div>
         <Message state={state} />
-        <Button type="submit" disabled={pending} className="h-11 rounded-button">
+        <Button type="submit" disabled={pending} className="h-11 rounded-button text-primary-foreground">
           {pending ? "Sending…" : "Send reset link"}
         </Button>
         <Link href="/login" className="text-sm text-muted-foreground hover:text-ink">
@@ -128,7 +120,7 @@ export function UpdatePasswordForm() {
           <Input id="confirm" name="confirm" type="password" required autoComplete="new-password" className={fieldClass} />
         </div>
         <Message state={state} />
-        <Button type="submit" disabled={pending} className="h-11 rounded-button">
+        <Button type="submit" disabled={pending} className="h-11 rounded-button text-primary-foreground">
           {pending ? "Saving…" : "Update password"}
         </Button>
       </form>

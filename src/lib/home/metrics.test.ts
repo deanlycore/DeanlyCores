@@ -83,9 +83,9 @@ test("dinner tonight wins the meal hero", () => {
 })
 
 test("greeting follows the household clock", () => {
-  assert.equal(greetingFor("America/New_York", "Alex Dean", new Date("2026-10-01T14:00:00Z")), "Good morning, Alex!")
-  assert.equal(greetingFor("America/New_York", "Alex Dean", new Date("2026-10-01T18:30:00Z")), "Good afternoon, Alex!")
-  assert.equal(greetingFor("America/New_York", "Alex Dean", new Date("2026-10-02T02:30:00Z")), "Good evening, Alex!")
+  assert.equal(greetingFor("America/New_York", "Alex Dean", new Date("2026-10-01T14:00:00Z")), "Good morning, Alex")
+  assert.equal(greetingFor("America/New_York", "Alex Dean", new Date("2026-10-01T18:30:00Z")), "Good afternoon, Alex")
+  assert.equal(greetingFor("America/New_York", "Alex Dean", new Date("2026-10-02T02:30:00Z")), "Good evening, Alex")
 })
 
 test("a New York day starts at 04:00 UTC during daylight time", () => {

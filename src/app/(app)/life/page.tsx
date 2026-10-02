@@ -13,7 +13,7 @@ const links = [
 
 export default function Page() {
   return (
-    <div className="mx-auto grid max-w-[1180px] gap-4">
+    <div className="mx-auto grid max-w-[1120px] gap-4">
       <header>
         <h1 className="font-display text-[28px] font-semibold tracking-tight">Life</h1>
         <p className="mt-1 text-sm text-muted-foreground">The days, the meals, and the list on the fridge.</p>
