@@ -31,10 +31,16 @@ export function SectionSegments({
     if (nodes.length === 0) return
 
     function update() {
-      const line = 88
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight
+      const nearBottom = maxScroll > 24 && window.scrollY >= maxScroll - 24
       let current = nodes[0]
-      for (const node of nodes) {
-        if (node.getBoundingClientRect().top <= line) current = node
+      if (nearBottom) {
+        current = nodes[nodes.length - 1]
+      } else {
+        const line = 88
+        for (const node of nodes) {
+          if (node.getBoundingClientRect().top <= line) current = node
+        }
       }
       setActiveId((previous) => (previous === current.id ? previous : current.id))
     }
