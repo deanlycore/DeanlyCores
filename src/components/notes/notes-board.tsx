@@ -81,6 +81,7 @@ export function NotesBoard({
   const visible = visibleNotes(items, filter)
   const recent = recentNotes(visible)
   const chips = noteChipLabels(noteMetrics(items, today, timeZone))
+  const phoneEmpty = items.length === 0
 
   function patch(id: string, next: Partial<NoteRow>) {
     setPatches((current) => ({ ...current, [id]: { ...current[id], ...next } }))
@@ -102,6 +103,8 @@ export function NotesBoard({
     <>
       <MoneyFrame
         phoneTouch
+        className={phoneEmpty ? "max-md:gap-2" : undefined}
+        headerClassName={phoneEmpty ? "max-md:gap-2" : undefined}
         title="Notes"
         subtitle={NOTES_COPY.subtitle}
         filter={filter}
@@ -122,11 +125,15 @@ export function NotesBoard({
             </>
           ) : null
         }
-        pulse={<RecentPulse notes={recent} />}
+        pulse={<RecentPulse notes={recent} phoneCompact={phoneEmpty} />}
       >
         {error ? <WidgetError /> : null}
-        {items.length === 0 ? (
-          <EmptyState copy={NOTES_COPY.emptyList} action={<MoneyAddButton onClick={() => setAdding(true)}>New note</MoneyAddButton>} />
+        {phoneEmpty ? (
+          <EmptyState
+            className="max-md:pt-3 max-md:pb-1"
+            copy={NOTES_COPY.emptyList}
+            action={<MoneyAddButton onClick={() => setAdding(true)}>New note</MoneyAddButton>}
+          />
         ) : null}
         {items.length > 0 && visible.length === 0 ? (
           <FilterEmpty copy={NOTES_COPY.filterEmpty} onClear={() => setFilter("all")} />
@@ -205,12 +212,17 @@ export function NotesBoard({
   )
 }
 
-function RecentPulse({ notes }: { notes: NoteRow[] }) {
+function RecentPulse({ notes, phoneCompact = false }: { notes: NoteRow[]; phoneCompact?: boolean }) {
   return (
-    <section className="rounded-[12px] border border-border bg-surface p-4 shadow-soft md:p-[18px]">
+    <section
+      className={cn(
+        "rounded-[12px] border border-border bg-surface p-4 shadow-soft md:p-[18px]",
+        phoneCompact && "max-md:px-4 max-md:py-2",
+      )}
+    >
       <h2 className="text-[13px] font-medium text-ink">Recent</h2>
       {notes.length === 0 ? (
-        <p className="mt-3 text-sm text-muted-foreground">{NOTES_COPY.pulseEmpty}</p>
+        <p className={cn("mt-3 text-sm text-muted-foreground", phoneCompact && "max-md:mt-2")}>{NOTES_COPY.pulseEmpty}</p>
       ) : (
         <ul className="mt-3 flex gap-2 overflow-x-auto pb-1">
           {notes.map((note) => (
