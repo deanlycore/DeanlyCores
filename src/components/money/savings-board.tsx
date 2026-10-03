@@ -22,6 +22,7 @@ import {
   useRowPatches,
   useScrollToItemHash,
 } from "@/components/money/money-chrome"
+import { MoneyGroups } from "@/components/money/money-groups"
 import { VisibilityPill, WidgetError } from "@/components/ui/pills"
 import { deleteGoal, setGoalVisibility } from "@/lib/actions/records"
 import type { GoalRow } from "@/lib/data/home"
@@ -30,8 +31,10 @@ import {
   MONEY_COPY,
   PHONE_MONEY_COPY,
   applyVisibility,
+  categoryGroupLabel,
   centsInput,
   goalPercent,
+  groupMoney,
   moneySubtitle,
   savingsMetrics,
   sortSharedFirst,
@@ -68,6 +71,13 @@ export function SavingsBoard({
 
   const items = merge(rows)
   const visible = sortSharedFirst(applyVisibility(items, filter))
+  const groups = groupMoney(
+    "savings",
+    visible,
+    (goal) => categoryGroupLabel("savings", goal.category),
+    () => null,
+  )
+  const usedCategories = items.map((goal) => goal.category)
   const pulse = visible.slice(0, 4)
   const metrics = savingsMetrics(visible)
 
@@ -112,7 +122,8 @@ export function SavingsBoard({
       {items.length > 0 && visible.length === 0 ? <FilterEmpty onClear={() => setFilter("all")} /> : null}
         </>
       )}
-      {visible.map((goal) => {
+      {visible.length > 0 ? (
+        <MoneyGroups section="savings" sectionCount={visible.length} groups={groups} currency={currency} renderRow={(goal) => {
         const percent = goalPercent(goal.current_cents, goal.target_cents)
         return (
           <MoneyCard key={goal.id} id={`item-${goal.id}`} onOpen={() => openEdit(goal)}>
@@ -134,8 +145,11 @@ export function SavingsBoard({
                 <p className="mt-0.5 text-[13px] tabular-nums text-muted-foreground">
                   {formatMoney(goal.current_cents, currency)} of {formatMoney(goal.target_cents, currency)}
                 </p>
-                <div className="mt-2 h-1 overflow-hidden rounded-full bg-surface-muted">
-                  <div className="h-full rounded-full bg-brand" style={{ width: `${percent}%` }} />
+                <div className="mt-2 flex items-center gap-2">
+                  <div className="h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-surface-muted">
+                    <div className="h-full rounded-full bg-brand" style={{ width: `${percent}%` }} />
+                  </div>
+                  <span className="text-[13px] tabular-nums text-muted-foreground">{percent}%</span>
                 </div>
               </div>
               <div onClick={(event) => event.stopPropagation()}>
@@ -151,13 +165,15 @@ export function SavingsBoard({
             </div>
           </MoneyCard>
         )
-      })}
+      }} />
+      ) : null}
       <RecordDialog
         key={adding ? "goal-add" : "goal-idle"}
         kind="goal"
         today={today}
         defaultVisibility="shared"
         sheetOnPhone
+        categories={usedCategories}
         open={adding}
         onOpenChange={setAdding}
       />
@@ -176,7 +192,9 @@ export function SavingsBoard({
             target: centsInput(editing.target_cents),
             current: centsInput(editing.current_cents),
             visibility: editing.visibility,
+            category: editing.category,
           }}
+          categories={usedCategories}
         />
       ) : null}
       <ConfirmRemove

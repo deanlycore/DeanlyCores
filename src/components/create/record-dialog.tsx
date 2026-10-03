@@ -25,6 +25,7 @@ import {
   uploadDocument,
   type ActionResult,
 } from "@/lib/actions/records"
+import { CategoryField } from "@/components/money/category-field"
 import { defaultVisibilityFor, type Visibility } from "@/lib/visibility"
 import { phoneSheetClass } from "@/components/money/money-chrome"
 import { Button } from "@/components/ui/button"
@@ -83,6 +84,8 @@ export type RecordInitial = {
   needSoon?: boolean
   allDay?: boolean
   visibility?: Visibility
+  category?: string | null
+  cadence?: "month" | "year" | null
 }
 
 const editTitles: Partial<Record<RecordKind, string>> = {
@@ -119,6 +122,7 @@ export function RecordDialog({
   initial,
   sheetOnPhone = false,
   extra,
+  categories = [],
 }: {
   kind: RecordKind
   trigger?: React.ReactNode
@@ -129,6 +133,8 @@ export function RecordDialog({
   initial?: RecordInitial
   sheetOnPhone?: boolean
   extra?: React.ReactNode
+  /** Names already on rows this session can read. Starters are added in the field. */
+  categories?: (string | null | undefined)[]
 }) {
   const router = useRouter()
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false)
@@ -143,6 +149,8 @@ export function RecordDialog({
   const formId = useId()
   const [allDay, setAllDay] = useState(Boolean(initial?.allDay))
   const visibilityDefault = initial?.visibility ?? defaultVisibilityFor(kind, defaultVisibility)
+  const categorySection =
+    kind === "bill" ? "bills" : kind === "income" ? "income" : kind === "goal" ? "savings" : kind === "subscription" ? "subscriptions" : null
 
   async function onSubmit(formData: FormData) {
     setPending(true)
@@ -278,7 +286,23 @@ export function RecordDialog({
               <Field id={`${formId}-name`} label="Name" name="name" defaultValue={initial?.name} />
               <Field id={`${formId}-amount`} label="Amount" name="amount" inputMode="decimal" placeholder="0.00" defaultValue={initial?.amount} />
               <Field id={`${formId}-renews`} label="Renews" name="renews_on" type="date" defaultValue={initial?.date ?? today} />
+              <fieldset className="grid gap-2">
+                <legend className="text-sm">How often</legend>
+                <div className="flex gap-3 text-sm">
+                  <label className={cn("inline-flex items-center gap-2", sheetOnPhone && "max-md:min-h-11")}>
+                    <input type="radio" name="cadence" value="month" defaultChecked={initial?.cadence !== "year"} />
+                    Monthly
+                  </label>
+                  <label className={cn("inline-flex items-center gap-2", sheetOnPhone && "max-md:min-h-11")}>
+                    <input type="radio" name="cadence" value="year" defaultChecked={initial?.cadence === "year"} />
+                    Yearly
+                  </label>
+                </div>
+              </fieldset>
             </>
+          ) : null}
+          {categorySection ? (
+            <CategoryField section={categorySection} used={categories} value={initial?.category} id={`${formId}-category`} />
           ) : null}
           <fieldset className="grid gap-2">
             <legend className="text-sm">Who can see this</legend>

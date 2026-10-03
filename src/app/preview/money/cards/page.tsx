@@ -16,8 +16,8 @@ export const dynamic = "force-dynamic"
 const today = "2026-10-02"
 
 const rows: MoneyCardRow[] = [
-  { id: "store", name: "Store card", amount_cents: 12000, due_on: "2026-10-18", note: null, visibility: "private" },
-  { id: "visa", name: "Household visa", amount_cents: 64000, due_on: null, note: null, visibility: "shared" },
+  { id: "store", name: "Store card", amount_cents: 12000, due_on: "2026-10-18", note: null, visibility: "private", category: "Credit Cards", limit_cents: 50000 },
+  { id: "visa", name: "Household visa", amount_cents: 64000, due_on: null, note: null, visibility: "shared", category: "Credit Cards", limit_cents: null },
 ]
 
 const payments: MoneyPaymentRow[] = [

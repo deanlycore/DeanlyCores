@@ -23,6 +23,8 @@ test("money expands to bills, income, savings, subscriptions, cards, and people"
   const people = money?.children?.find((child) => child.href === "/money/people")
   assert.equal(cards?.emptyTitle, "No cards yet.")
   assert.equal(cards?.emptyBody, "No cards yet.")
+  assert.equal(people?.label, "People")
+  assert.equal(people?.description, "I owe, and they owe me.")
   assert.equal(people?.emptyTitle, "Nothing owed to anyone yet.")
   assert.equal(people?.emptyBody, "Nothing owed to anyone yet.")
 })

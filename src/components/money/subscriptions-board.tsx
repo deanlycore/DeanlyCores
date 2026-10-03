@@ -24,6 +24,7 @@ import {
   useRowPatches,
   useScrollToItemHash,
 } from "@/components/money/money-chrome"
+import { MoneyGroups } from "@/components/money/money-groups"
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { VisibilityPill, WidgetError } from "@/components/ui/pills"
 import { deleteSubscription, setSubscriptionActive, setSubscriptionVisibility } from "@/lib/actions/records"
@@ -34,10 +35,15 @@ import {
   PHONE_MONEY_COPY,
   amountLabel,
   applyVisibility,
+  categoryGroupLabel,
   centsInput,
+  groupMoney,
   moneySubtitle,
+  monthlyLine,
+  monthlySubscriptionCents,
   renewalPulseCells,
   sortSubscriptions,
+  subscriptionGroupTotal,
   subscriptionMetrics,
 } from "@/lib/money/board"
 import type { Visibility } from "@/lib/visibility"
@@ -72,6 +78,14 @@ export function SubscriptionsBoard({
 
   const items = merge(rows)
   const visible = sortSubscriptions(applyVisibility(items, filter))
+  const groups = groupMoney(
+    "subscriptions",
+    visible,
+    (row) => categoryGroupLabel("subscriptions", row.category),
+    subscriptionGroupTotal,
+  )
+  const usedCategories = items.map((row) => row.category)
+  const monthCopy = visible.length > 0 ? monthlyLine(monthlySubscriptionCents(visible), currency) : null
   const metrics = subscriptionMetrics(visible, today)
   const pulse = renewalPulseCells(visible, today, currency)
 
@@ -128,7 +142,8 @@ export function SubscriptionsBoard({
       {items.length > 0 && visible.length === 0 ? <FilterEmpty onClear={() => setFilter("all")} /> : null}
         </>
       )}
-      {visible.map((row) => (
+      {visible.length > 0 ? (
+        <MoneyGroups section="subscriptions" sectionCount={visible.length} groups={groups} currency={currency} renderRow={(row) => (
         <MoneyCard key={row.id} id={`item-${row.id}`} onOpen={() => openEdit(row)}>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="flex min-w-0 items-start gap-3">
@@ -174,13 +189,15 @@ export function SubscriptionsBoard({
             </div>
           </div>
         </MoneyCard>
-      ))}
+      )} />
+      ) : null}
       <RecordDialog
         key={adding ? "subscription-add" : "subscription-idle"}
         kind="subscription"
         today={today}
         defaultVisibility="shared"
         sheetOnPhone
+        categories={usedCategories}
         open={adding}
         onOpenChange={setAdding}
       />
@@ -199,7 +216,10 @@ export function SubscriptionsBoard({
             amount: centsInput(editing.amount_cents),
             date: editing.renews_on,
             visibility: editing.visibility,
+            category: editing.category,
+            cadence: editing.cadence,
           }}
+          categories={usedCategories}
         />
       ) : null}
       <ConfirmRemove
@@ -232,6 +252,7 @@ export function SubscriptionsBoard({
         id="money-subscriptions"
         title="Subscriptions"
         subtitle={PHONE_MONEY_COPY.subscriptions}
+        detail={monthCopy}
         addLabel="Add subscription"
         onAdd={() => setAdding(true)}
       >
@@ -248,6 +269,7 @@ export function SubscriptionsBoard({
       phoneSubtitle={PHONE_MONEY_COPY.subscriptions}
       title="Subscriptions"
       subtitle={moneySubtitle("subscriptions", householdName)}
+      detail={monthCopy}
       action={
         <div className="hidden md:block">
           <MoneyAddButton onClick={() => setAdding(true)}>Add subscription</MoneyAddButton>

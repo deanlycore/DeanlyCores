@@ -48,6 +48,20 @@ export async function listMonthBudget(today: string) {
 export async function listBills() {
   const ctx = await requireHousehold()
   if (!ctx) return listed<BillRow>(Promise.resolve({ data: [], error: null }))
+  const full = await ctx.supabase
+    .from("bills")
+    .select("id, name, amount_cents, due_on, paid_at, visibility, category")
+    .eq("household_id", ctx.householdId)
+    .order("due_on", { ascending: true })
+    .limit(100)
+  if (!columnMissing(full.error)) {
+    return {
+      rows: full.data ?? [],
+      error: Boolean(full.error),
+      currency: ctx.currency,
+      visibility: ctx.lastVisibility,
+    }
+  }
   return listed<BillRow>(
     ctx.supabase
       .from("bills")
@@ -124,6 +138,20 @@ export async function listShopping() {
 export async function listGoals() {
   const ctx = await requireHousehold()
   if (!ctx) return listed<GoalRow>(Promise.resolve({ data: [], error: null }))
+  const full = await ctx.supabase
+    .from("goals")
+    .select("id, name, target_cents, current_cents, visibility, category")
+    .eq("household_id", ctx.householdId)
+    .order("created_at", { ascending: false })
+    .limit(40)
+  if (!columnMissing(full.error)) {
+    return {
+      rows: full.data ?? [],
+      error: Boolean(full.error),
+      currency: ctx.currency,
+      visibility: ctx.lastVisibility,
+    }
+  }
   return listed<GoalRow>(
     ctx.supabase
       .from("goals")
@@ -137,6 +165,21 @@ export async function listGoals() {
 export async function listExpenses(kind: "expense" | "income") {
   const ctx = await requireHousehold()
   if (!ctx) return listed<ExpenseRow>(Promise.resolve({ data: [], error: null }))
+  const full = await ctx.supabase
+    .from("expenses")
+    .select("id, name, amount_cents, kind, spent_on, visibility, category")
+    .eq("household_id", ctx.householdId)
+    .eq("kind", kind)
+    .order("spent_on", { ascending: false })
+    .limit(60)
+  if (!columnMissing(full.error)) {
+    return {
+      rows: full.data ?? [],
+      error: Boolean(full.error),
+      currency: ctx.currency,
+      visibility: ctx.lastVisibility,
+    }
+  }
   return listed<ExpenseRow>(
     ctx.supabase
       .from("expenses")
@@ -178,15 +221,29 @@ function relationMissing(error: { message: string } | null) {
   return Boolean(error && /does not exist|schema cache/i.test(error.message))
 }
 
+function columnMissing(error: { message: string } | null) {
+  return Boolean(error && /column/i.test(error.message) && /does not exist|schema cache/i.test(error.message))
+}
+
 export async function listMoneyCards() {
   const ctx = await requireHousehold()
   if (!ctx) return listed<MoneyCardRow>(Promise.resolve({ data: [], error: null }))
   const result = await ctx.supabase
     .from("money_cards")
-    .select("id, name, amount_cents, due_on, note, visibility")
+    .select("id, name, amount_cents, due_on, note, visibility, category, limit_cents")
     .eq("household_id", ctx.householdId)
     .order("name", { ascending: true })
     .limit(100)
+  if (columnMissing(result.error)) {
+    return listed<MoneyCardRow>(
+      ctx.supabase
+        .from("money_cards")
+        .select("id, name, amount_cents, due_on, note, visibility")
+        .eq("household_id", ctx.householdId)
+        .order("name", { ascending: true })
+        .limit(100),
+    )
+  }
   if (relationMissing(result.error)) {
     return { rows: [] as MoneyCardRow[], error: false, currency: ctx.currency, visibility: ctx.lastVisibility }
   }
@@ -203,10 +260,20 @@ export async function listMoneyPeople() {
   if (!ctx) return listed<MoneyPersonRow>(Promise.resolve({ data: [], error: null }))
   const result = await ctx.supabase
     .from("money_people")
-    .select("id, name, amount_cents, due_on, note, visibility")
+    .select("id, name, amount_cents, due_on, note, visibility, direction")
     .eq("household_id", ctx.householdId)
     .order("name", { ascending: true })
     .limit(100)
+  if (columnMissing(result.error)) {
+    return listed<MoneyPersonRow>(
+      ctx.supabase
+        .from("money_people")
+        .select("id, name, amount_cents, due_on, note, visibility")
+        .eq("household_id", ctx.householdId)
+        .order("name", { ascending: true })
+        .limit(100),
+    )
+  }
   if (relationMissing(result.error)) {
     return { rows: [] as MoneyPersonRow[], error: false, currency: ctx.currency, visibility: ctx.lastVisibility }
   }
@@ -241,6 +308,20 @@ export async function listMoneyPayments() {
 export async function listSubscriptions() {
   const ctx = await requireHousehold()
   if (!ctx) return listed<SubscriptionRow>(Promise.resolve({ data: [], error: null }))
+  const full = await ctx.supabase
+    .from("subscriptions")
+    .select("id, name, amount_cents, renews_on, active, visibility, category, cadence")
+    .eq("household_id", ctx.householdId)
+    .order("renews_on", { ascending: true })
+    .limit(40)
+  if (!columnMissing(full.error)) {
+    return {
+      rows: full.data ?? [],
+      error: Boolean(full.error),
+      currency: ctx.currency,
+      visibility: ctx.lastVisibility,
+    }
+  }
   return listed<SubscriptionRow>(
     ctx.supabase
       .from("subscriptions")

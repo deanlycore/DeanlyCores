@@ -26,6 +26,7 @@ import {
   useRowPatches,
   useScrollToItemHash,
 } from "@/components/money/money-chrome"
+import { MoneyGroups } from "@/components/money/money-groups"
 import { LogPaymentDialog, PaymentList, orderedPayments, usePaymentRemoval } from "@/components/money/payment-sheet"
 import { deleteBill, markBillPaid, setBillVisibility } from "@/lib/actions/records"
 import { formatMoney, formatShortDate } from "@/lib/home/metrics"
@@ -41,7 +42,9 @@ import {
   billMetrics,
   billPulseCells,
   bufferAmount,
+  categoryGroupLabel,
   centsInput,
+  groupMoney,
   moneySubtitle,
   sortBills,
   type BillChip,
@@ -97,6 +100,13 @@ export function BillsBoard({
   const items = merge(rows).map((bill) => decorateBill(bill, payments, today))
   const visible = sortBills(applyVisibility(items, filter), today)
   const shown = scan ? visible : visible.filter((bill) => billMatchesChip(bill, today, chip))
+  const groups = groupMoney(
+    "bills",
+    shown,
+    (bill) => categoryGroupLabel("bills", bill.category),
+    (rows) => rows.reduce((sum, bill) => sum + bill.left, 0),
+  )
+  const usedCategories = items.map((bill) => bill.category)
   const metrics = billMetrics(visible, today, budgetCents)
   const pulse = billPulseCells(visible, today, paydayDates, currency)
 
@@ -169,7 +179,8 @@ export function BillsBoard({
           {items.length > 0 && shown.length === 0 ? <FilterEmpty onClear={clearFilters} /> : null}
         </>
       )}
-      {shown.map((bill) => {
+      {shown.length > 0 ? (
+        <MoneyGroups section="bills" sectionCount={shown.length} groups={groups} currency={currency} renderRow={(bill) => {
         const due = billDueCopy(bill, today)
         const paid = Boolean(bill.paid_at)
         return (
@@ -236,13 +247,15 @@ export function BillsBoard({
             </div>
           </MoneyCard>
         )
-      })}
+      }} />
+      ) : null}
       <RecordDialog
         key={adding ? "bill-add" : "bill-idle"}
         kind="bill"
         today={today}
         defaultVisibility="shared"
         sheetOnPhone
+        categories={usedCategories}
         open={adding}
         onOpenChange={setAdding}
       />
@@ -261,7 +274,9 @@ export function BillsBoard({
             amount: centsInput(editing.amount_cents),
             date: editing.due_on,
             visibility: editing.visibility,
+            category: editing.category,
           }}
+          categories={usedCategories}
           extra={
             <PaymentList payments={editing.mine} currency={currency} onRemove={paymentRemoval.setRemoving} />
           }

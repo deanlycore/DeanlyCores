@@ -14,10 +14,10 @@ import { previewSession } from "../../shell-session"
 export const dynamic = "force-dynamic"
 
 const rows: GoalRow[] = [
-  { id: "emergency", name: "Emergency fund", target_cents: 500000, current_cents: 180000, visibility: "shared" },
-  { id: "weekend", name: "Weekend away", target_cents: 120000, current_cents: 40000, visibility: "shared" },
-  { id: "tires", name: "New tires", target_cents: 80000, current_cents: 15000, visibility: "private" },
-  { id: "holiday", name: "Holiday", target_cents: 200000, current_cents: 0, visibility: "shared" },
+  { id: "emergency", name: "Emergency fund", target_cents: 500000, current_cents: 180000, visibility: "shared", category: "Emergency Fund" },
+  { id: "weekend", name: "Weekend away", target_cents: 120000, current_cents: 40000, visibility: "shared", category: "Vacation" },
+  { id: "tires", name: "New tires", target_cents: 80000, current_cents: 15000, visibility: "private", category: "Vehicle" },
+  { id: "holiday", name: "Holiday", target_cents: 200000, current_cents: 0, visibility: "shared", category: "Christmas / Holidays" },
 ]
 
 export default async function PreviewSavings() {

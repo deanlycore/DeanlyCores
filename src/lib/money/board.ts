@@ -24,7 +24,7 @@ export const PHONE_MONEY_COPY = {
 
 export const DEBT_COPY = {
   cardsSubtitle: "Balances still open.",
-  peopleSubtitle: "People you still owe.",
+  peopleSubtitle: "I owe, and they owe me.",
   cardsEmpty: "No cards yet.",
   peopleEmpty: "Nothing owed to anyone yet.",
   pulseEmpty: "Nothing open right now.",
@@ -405,4 +405,165 @@ export function subscriptionMetrics(
     renewing: active.filter((row) => row.renews_on.startsWith(month)).length,
     monthly: active.reduce((sum, row) => sum + row.amount_cents, 0),
   }
+}
+
+/** Starters ship in this order. Empty ones stay hidden. Other is the blank category. */
+export const MONEY_STARTERS = {
+  bills: ["Housing", "Utilities", "Insurance", "Transportation", "Debt & Loans", "Family & Household", "Other"],
+  income: ["Primary Income", "Secondary Income", "Freelance / Business", "Reimbursements", "Benefits", "Other Income"],
+  savings: [
+    "Emergency Fund",
+    "Short-Term Goals",
+    "Vacation",
+    "Christmas / Holidays",
+    "Large Purchases",
+    "Home",
+    "Vehicle",
+    "Long-Term Goals",
+    "Other Goals",
+  ],
+  subscriptions: [
+    "Entertainment",
+    "Streaming",
+    "Music",
+    "Technology",
+    "AI / Software",
+    "Cloud Storage",
+    "Fitness",
+    "Household Services",
+    "Other",
+  ],
+  cards: ["Credit Cards", "Debit Cards", "Bank Cards", "Other"],
+} as const
+
+export const OTHER_LABEL = {
+  bills: "Other",
+  income: "Other Income",
+  savings: "Other Goals",
+  subscriptions: "Other",
+  cards: "Other",
+} as const
+
+export const PEOPLE_GROUPS = ["I owe", "They owe me"] as const
+
+export type MoneyGroupSection = keyof typeof MONEY_STARTERS | "people"
+export type PersonDirection = "owe" | "owed"
+export type SubscriptionCadence = "month" | "year"
+
+const GROUP_SECTION_CAP = 12
+const GROUP_ROW_CAP = 5
+
+/** Plain text, 40 characters. Blank means Other. Tags are not stored. */
+export function cleanCategory(value: unknown) {
+  const text = String(value ?? "")
+    .replace(/<[^>]*>/g, "")
+    .replace(/[<>]/g, "")
+    .trim()
+  if (!text) return null
+  return text.slice(0, 40)
+}
+
+export function personDirection(value: unknown): PersonDirection {
+  return value === "owed" ? "owed" : "owe"
+}
+
+export function subscriptionCadence(value: unknown): SubscriptionCadence {
+  return value === "year" ? "year" : "month"
+}
+
+export function categoryGroupLabel(section: keyof typeof MONEY_STARTERS, category: string | null | undefined) {
+  const cleaned = cleanCategory(category)
+  if (!cleaned) return OTHER_LABEL[section]
+  const starter = MONEY_STARTERS[section].find((name) => name.toLowerCase() === cleaned.toLowerCase())
+  return starter ?? cleaned
+}
+
+export function personGroupLabel(direction: string | null | undefined) {
+  return personDirection(direction) === "owed" ? "They owe me" : "I owe"
+}
+
+/** Starter list, then names already on rows this session can read. */
+export function categoryChoices(section: keyof typeof MONEY_STARTERS, used: (string | null | undefined)[]) {
+  const starters = [...MONEY_STARTERS[section]]
+  const extras: string[] = []
+  for (const value of used) {
+    const label = categoryGroupLabel(section, value)
+    if (starters.some((name) => name.toLowerCase() === label.toLowerCase())) continue
+    if (extras.some((name) => name.toLowerCase() === label.toLowerCase())) continue
+    extras.push(label)
+  }
+  extras.sort((a, b) => a.localeCompare(b))
+  return [...starters, ...extras]
+}
+
+export type MoneyGroup<T> = {
+  label: string
+  rows: T[]
+  totalCents: number | null
+}
+
+function groupOrder(section: MoneyGroupSection, labels: string[]) {
+  if (section === "people") return [...PEOPLE_GROUPS]
+  const other = OTHER_LABEL[section]
+  const starters = MONEY_STARTERS[section].filter((name) => name !== other)
+  const custom = labels
+    .filter((label) => label !== other && !starters.some((name) => name.toLowerCase() === label.toLowerCase()))
+    .sort((a, b) => a.localeCompare(b))
+  return [...starters, ...custom, other]
+}
+
+/** Hide empty groups. Other is last. People stay I owe, then They owe me. */
+export function groupMoney<T>(
+  section: MoneyGroupSection,
+  rows: T[],
+  labelOf: (row: T) => string,
+  totalOf: (rows: T[]) => number | null,
+): MoneyGroup<T>[] {
+  const buckets = new Map<string, T[]>()
+  for (const row of rows) {
+    const label = labelOf(row)
+    const list = buckets.get(label)
+    if (list) list.push(row)
+    else buckets.set(label, [row])
+  }
+  return groupOrder(section, [...buckets.keys()])
+    .filter((label) => (buckets.get(label)?.length ?? 0) > 0)
+    .map((label) => {
+      const groupRows = buckets.get(label) ?? []
+      return { label, rows: groupRows, totalCents: totalOf(groupRows) }
+    })
+}
+
+/** Open unless the section is long and this group is long. A stored choice wins later. */
+export function defaultGroupOpen(sectionCount: number, groupCount: number) {
+  return !(sectionCount > GROUP_SECTION_CAP && groupCount > GROUP_ROW_CAP)
+}
+
+export function incomeGroupTotal(rows: { amount_cents: number; spent_on: string }[], today: string) {
+  if (rows.length === 0 || rows.some((row) => row.spent_on <= today)) return null
+  return rows.reduce((sum, row) => sum + row.amount_cents, 0)
+}
+
+/** Yearly rows are a different amount. They stay out of a monthly total. */
+export function subscriptionGroupTotal(rows: { amount_cents: number; cadence?: SubscriptionCadence | null }[]) {
+  if (rows.length === 0 || rows.some((row) => subscriptionCadence(row.cadence) === "year")) return null
+  return rows.reduce((sum, row) => sum + row.amount_cents, 0)
+}
+
+/** Monthly records only. A yearly amount is not divided into this sum. */
+export function monthlySubscriptionCents(rows: { amount_cents: number; cadence?: SubscriptionCadence | null }[]) {
+  return rows.reduce((sum, row) => sum + (subscriptionCadence(row.cadence) === "month" ? row.amount_cents : 0), 0)
+}
+
+export function monthlyLine(cents: number, currency: string) {
+  return `${formatMoney(cents, currency)} / month`
+}
+
+/** Available credit, then percent used. No color scale. Null when the limit was left blank. */
+export function cardLimitLine(remainingCents: number, limitCents: number | null | undefined, currency: string) {
+  if (limitCents == null) return null
+  const remaining = Math.max(0, remainingCents)
+  const available = Math.max(0, limitCents - remaining)
+  const percent = limitCents <= 0 ? 0 : Math.round((remaining / limitCents) * 100)
+  return `${formatMoney(available, currency)} available · ${percent}% used`
 }

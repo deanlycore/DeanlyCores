@@ -23,6 +23,8 @@ import {
   useRowPatches,
   useScrollToItemHash,
 } from "@/components/money/money-chrome"
+import { CategoryField } from "@/components/money/category-field"
+import { MoneyGroups } from "@/components/money/money-groups"
 import { LogPaymentDialog, PaymentList, usePaymentRemoval } from "@/components/money/payment-sheet"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -45,7 +47,11 @@ import {
   DEBT_COPY,
   applyVisibility,
   balanceMetrics,
+  cardLimitLine,
+  categoryGroupLabel,
   centsInput,
+  groupMoney,
+  personGroupLabel,
   remainingCents,
   sortBalances,
 } from "@/lib/money/board"
@@ -65,17 +71,32 @@ type BalanceRow = {
   visibility: Visibility
   payments: MoneyPaymentRow[]
   remaining_cents: number
+  category?: string | null
+  direction?: "owe" | "owed" | null
+  limit_cents?: number | null
 }
 
 function attach(
   rows: (MoneyCardRow | MoneyPersonRow)[],
   payments: MoneyPaymentRow[],
   kind: Kind,
-) {
+): BalanceRow[] {
   const column = kind === "card" ? "card_id" : "person_id"
   return rows.map((row) => {
     const mine = payments.filter((payment) => payment[column] === row.id)
-    return { ...row, payments: mine, remaining_cents: remainingCents(row.amount_cents, mine) }
+    return {
+      id: row.id,
+      name: row.name,
+      amount_cents: row.amount_cents,
+      due_on: row.due_on,
+      note: row.note,
+      visibility: row.visibility,
+      category: "category" in row ? row.category : null,
+      direction: "direction" in row ? row.direction : null,
+      limit_cents: "limit_cents" in row ? row.limit_cents : null,
+      payments: mine,
+      remaining_cents: remainingCents(row.amount_cents, mine),
+    }
   })
 }
 
@@ -135,6 +156,20 @@ function BalanceBoard({
   const card = kind === "card"
   const items = attach(merge(rows), payments, kind)
   const visible = sortBalances(applyVisibility(items, filter))
+  const groups = card
+    ? groupMoney(
+        "cards",
+        visible,
+        (row) => categoryGroupLabel("cards", row.category),
+        (groupRows) => groupRows.reduce((sum, row) => sum + row.remaining_cents, 0),
+      )
+    : groupMoney(
+        "people",
+        visible,
+        (row) => personGroupLabel(row.direction),
+        (groupRows) => groupRows.reduce((sum, row) => sum + row.remaining_cents, 0),
+      )
+  const usedCategories = items.map((row) => row.category)
   const metrics = balanceMetrics(visible)
   const closedLabel = card ? "paid" : "settled"
   const addLabel = card ? "Add card" : "Add person"
@@ -178,10 +213,12 @@ function BalanceBoard({
         {items.length > 0 && visible.length === 0 ? <FilterEmpty onClear={() => setFilter("all")} /> : null}
         </>
       )}
-      {visible.map((row) => {
+      {visible.length > 0 ? (
+        <MoneyGroups section={card ? "cards" : "people"} sectionCount={visible.length} groups={groups} currency={currency} renderRow={(row) => {
           const open = row.remaining_cents > 0
           const status = open ? DEBT_COPY.stillOpen : card ? DEBT_COPY.paid : DEBT_COPY.settled
           const detail = rowDetail(row, currency)
+          const limit = card ? cardLimitLine(row.remaining_cents, row.limit_cents, currency) : null
           return (
             <MoneyCard key={row.id} id={`item-${row.id}`} onOpen={() => setEditing(row)}>
               <div className="flex flex-wrap items-start justify-between gap-3">
@@ -193,6 +230,7 @@ function BalanceBoard({
                       <VisibilityPill visibility={row.visibility} />
                     </div>
                     {detail ? <p className="mt-0.5 text-[13px] tabular-nums text-ink">{detail}</p> : null}
+                    {limit ? <p className="mt-0.5 text-[13px] tabular-nums text-muted-foreground">{limit}</p> : null}
                   </div>
                 </div>
                 <div className="ml-auto flex items-center gap-2" onClick={(event) => event.stopPropagation()}>
@@ -219,10 +257,12 @@ function BalanceBoard({
               </div>
             </MoneyCard>
           )
-        })}
+        }} />
+      ) : null}
         <BalanceDialog
           key={adding ? `${kind}-add` : `${kind}-idle`}
           kind={kind}
+          categories={usedCategories}
           open={adding}
           onOpenChange={setAdding}
         />
@@ -230,6 +270,7 @@ function BalanceBoard({
           <BalanceDialog
             key={editing.id}
             kind={kind}
+            categories={usedCategories}
             currency={currency}
             open
             onOpenChange={(open) => {
@@ -366,6 +407,7 @@ function BalanceDialog({
   onOpenChange,
   row,
   currency,
+  categories = [],
   onPay,
   onRemovePayment,
   onRemove,
@@ -375,6 +417,7 @@ function BalanceDialog({
   onOpenChange: (open: boolean) => void
   row?: BalanceRow
   currency?: string
+  categories?: (string | null | undefined)[]
   onPay?: () => void
   onRemovePayment?: (payment: MoneyPaymentRow) => void
   onRemove?: () => void
@@ -438,6 +481,36 @@ function BalanceDialog({
             <Label htmlFor={`${formId}-note`}>Note</Label>
             <Input id={`${formId}-note`} name="note" required={false} defaultValue={row?.note ?? ""} className={field} />
           </div>
+          {card ? (
+            <>
+              <CategoryField section="cards" used={categories} value={row?.category} id={`${formId}-category`} />
+              <div className="grid gap-1.5">
+                <Label htmlFor={`${formId}-limit`}>Limit</Label>
+                <Input
+                  id={`${formId}-limit`}
+                  name="limit"
+                  inputMode="decimal"
+                  required={false}
+                  defaultValue={row?.limit_cents != null ? centsInput(row.limit_cents) : ""}
+                  className={field}
+                />
+              </div>
+            </>
+          ) : (
+            <fieldset className="grid gap-2">
+              <legend className="text-sm">Direction</legend>
+              <div className="flex gap-3 text-sm">
+                <label className="inline-flex min-h-11 items-center gap-2">
+                  <input type="radio" name="direction" value="owe" defaultChecked={row?.direction !== "owed"} />
+                  I owe
+                </label>
+                <label className="inline-flex min-h-11 items-center gap-2">
+                  <input type="radio" name="direction" value="owed" defaultChecked={row?.direction === "owed"} />
+                  They owe me
+                </label>
+              </div>
+            </fieldset>
+          )}
           <fieldset className="grid gap-2">
             <legend className="text-sm">Who can see this</legend>
             <div className="flex gap-3 text-sm">

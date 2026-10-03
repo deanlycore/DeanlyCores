@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url"
 import {
   DEBT_COPY,
   MONEY_COPY,
+  MONEY_STARTERS,
   PHONE_MONEY_COPY,
   moneyScanBlockId,
   amountLabel,
@@ -17,16 +18,28 @@ import {
   billMetrics,
   billPulseCells,
   bufferAmount,
+  cardLimitLine,
+  categoryChoices,
+  categoryGroupLabel,
+  cleanCategory,
+  defaultGroupOpen,
   goalPercent,
+  groupMoney,
   incomeGap,
+  incomeGroupTotal,
   incomeMetrics,
+  monthlyLine,
+  monthlySubscriptionCents,
   nextPayEvents,
   paymentToast,
+  personDirection,
+  personGroupLabel,
   remainingCents,
   renewalPulseCells,
   savingsMetrics,
   sortBalances,
   sortBills,
+  subscriptionGroupTotal,
   subscriptionMetrics,
 } from "./board.ts"
 
@@ -199,7 +212,7 @@ test("phone and debt copy stays locked and does not name a household", () => {
   assert.equal(PHONE_MONEY_COPY.savings, "Set aside for later.")
   assert.equal(PHONE_MONEY_COPY.subscriptions, "What renews soon.")
   assert.equal(DEBT_COPY.cardsSubtitle, "Balances still open.")
-  assert.equal(DEBT_COPY.peopleSubtitle, "People you still owe.")
+  assert.equal(DEBT_COPY.peopleSubtitle, "I owe, and they owe me.")
   assert.equal(DEBT_COPY.cardsEmpty, "No cards yet.")
   assert.equal(DEBT_COPY.peopleEmpty, "Nothing owed to anyone yet.")
   assert.equal(DEBT_COPY.pulseEmpty, "Nothing open right now.")
@@ -306,4 +319,145 @@ test("cards and people migration is authenticated RLS with no new definer RPC", 
   assert.doesNotMatch(sql, /grant .+ to public/i)
   assert.doesNotMatch(sql, /\b(cvv|card_number|account_number)\b/i)
   assert.doesNotMatch(sql, /service_role/)
+})
+
+test("groups keep starter order, hide empty groups, and park a blank category in Other", () => {
+  const rows = [
+    { id: "gym", category: null as string | null, left: 3000 },
+    { id: "water", category: "Utilities", left: 6500 },
+    { id: "rent", category: "Housing", left: 150000 },
+    { id: "lane", category: "Lane", left: 4000 },
+    { id: "insure", category: "  housing ", left: 12000 },
+  ]
+  const groups = groupMoney(
+    "bills",
+    rows,
+    (row) => categoryGroupLabel("bills", row.category),
+    (groupRows) => groupRows.reduce((sum, row) => sum + row.left, 0),
+  )
+  assert.deepEqual(
+    groups.map((group) => [group.label, group.rows.map((row) => row.id), group.totalCents]),
+    [
+      ["Housing", ["rent", "insure"], 162000],
+      ["Utilities", ["water"], 6500],
+      ["Lane", ["lane"], 4000],
+      ["Other", ["gym"], 3000],
+    ],
+  )
+  assert.equal(groups.some((group) => group.label === "Insurance"), false)
+  assert.equal(categoryGroupLabel("income", ""), "Other Income")
+  assert.equal(categoryGroupLabel("savings", null), "Other Goals")
+})
+
+test("people split into I owe and They owe me, and an empty direction stays hidden", () => {
+  const groups = groupMoney(
+    "people",
+    [
+      { id: "jordan", direction: "owed", left: 2500 },
+      { id: "alex", direction: null, left: 4000 },
+    ],
+    (row) => personGroupLabel(row.direction),
+    (groupRows) => groupRows.reduce((sum, row) => sum + row.left, 0),
+  )
+  assert.deepEqual(
+    groups.map((group) => [group.label, group.totalCents]),
+    [
+      ["I owe", 4000],
+      ["They owe me", 2500],
+    ],
+  )
+  assert.equal(personDirection("nope"), "owe")
+  assert.equal(personGroupLabel("owe"), "I owe")
+  const onlyOwed = groupMoney("people", [{ id: "sam", direction: "owed" }], (row) => personGroupLabel(row.direction), () => null)
+  assert.deepEqual(onlyOwed.map((group) => group.label), ["They owe me"])
+})
+
+test("suggestion names come from starters plus rows already in hand", () => {
+  const choices = categoryChoices("bills", ["Lane", null, "utilities", "Secret is not here"])
+  assert.deepEqual(choices.slice(0, MONEY_STARTERS.bills.length), [...MONEY_STARTERS.bills])
+  assert.equal(choices.at(-2), "Lane")
+  assert.equal(choices.at(-1), "Secret is not here")
+  assert.equal(categoryChoices("cards", []).includes("Lane"), false)
+  assert.equal(cleanCategory("<b>Rent</b>"), "Rent")
+  assert.equal(cleanCategory("   "), null)
+  assert.equal(cleanCategory("x".repeat(50))?.length, 40)
+})
+
+test("a long section closes only the long groups, and the choice is not a server rule", () => {
+  assert.equal(defaultGroupOpen(12, 6), true)
+  assert.equal(defaultGroupOpen(13, 5), true)
+  assert.equal(defaultGroupOpen(13, 6), false)
+})
+
+test("subscription monthly line sums monthly records and does not divide yearly", () => {
+  const rows = [
+    { amount_cents: 4200, cadence: "month" as const },
+    { amount_cents: 4200, cadence: null },
+    { amount_cents: 12000, cadence: "year" as const },
+  ]
+  assert.equal(monthlySubscriptionCents(rows), 8400)
+  assert.equal(monthlyLine(8400, "USD"), "$84 / month")
+  assert.equal(subscriptionGroupTotal(rows), null)
+  assert.equal(subscriptionGroupTotal(rows.slice(0, 2)), 8400)
+  assert.equal(incomeGroupTotal([{ amount_cents: 100, spent_on: "2026-10-10" }, { amount_cents: 50, spent_on: "2026-09-01" }], "2026-10-02"), null)
+  assert.equal(incomeGroupTotal([{ amount_cents: 100, spent_on: "2026-10-10" }], "2026-10-02"), 100)
+})
+
+test("card limit is a muted available line and stays blank when unset", () => {
+  assert.equal(cardLimitLine(56000, 200000, "USD"), "$1,440 available · 28% used")
+  assert.equal(cardLimitLine(250000, 200000, "USD"), "$0 available · 125% used")
+  assert.equal(cardLimitLine(2500, null, "USD"), null)
+  assert.equal(cardLimitLine(2500, undefined, "USD"), null)
+})
+
+test("a shared filter drops a just me amount from the group total", () => {
+  const rows = [
+    { id: "rent", category: "Housing", visibility: "shared" as const, left: 150000 },
+    { id: "gym", category: "Housing", visibility: "private" as const, left: 3000 },
+  ]
+  const shared = applyVisibility(rows, "shared")
+  const groups = groupMoney(
+    "bills",
+    shared,
+    (row) => categoryGroupLabel("bills", row.category),
+    (groupRows) => groupRows.reduce((sum, row) => sum + row.left, 0),
+  )
+  assert.equal(groups[0].totalCents, 150000)
+  assert.equal(categoryChoices("bills", shared.map((row) => row.category)).includes("Gym fund"), false)
+})
+
+test("money group migration adds category, direction, and limit without new privileges", () => {
+  const sql = readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), "../../../supabase/migrations/20261003190000_money_groups.sql"),
+    "utf8",
+  )
+  assert.match(sql, /add column category text/)
+  assert.match(sql, /char_length\(category\) between 1 and 40/)
+  assert.match(sql, /direction text not null default 'owe'/)
+  assert.match(sql, /direction in \('owe', 'owed'\)/)
+  assert.match(sql, /limit_cents integer/)
+  assert.match(sql, /cadence text not null default 'month'/)
+  assert.match(sql, /revoke update, truncate, references, trigger on table public\.money_payments/)
+  assert.doesNotMatch(sql, /^\s*grant\b/im)
+  assert.doesNotMatch(sql, /security definer/i)
+  assert.doesNotMatch(sql, /create (or replace )?function/i)
+  assert.doesNotMatch(sql, /create table/i)
+  assert.doesNotMatch(sql, /service_role/)
+  const records = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../actions/records.ts"), "utf8")
+  function sliceFn(source: string, name: string) {
+    const start = source.indexOf(`export async function ${name}`)
+    assert.notEqual(start, -1, name)
+    const next = source.indexOf("\nexport async function ", start + 10)
+    return source.slice(start, next === -1 ? undefined : next)
+  }
+  for (const name of ["updateBill", "updateGoal", "updateExpense", "updateSubscription", "updateMoneyCard", "updateMoneyPerson"]) {
+    const source = sliceFn(records, name)
+    assert.doesNotMatch(source, /household_id|owner_id/)
+  }
+  assert.match(sliceFn(records, "createMoneyCard"), /limit_cents: limit\.cents/)
+  assert.match(sliceFn(records, "createMoneyPerson"), /personDirection/)
+  assert.doesNotMatch(sliceFn(records, "createMoneyPerson"), /activity_events/)
+  assert.doesNotMatch(sliceFn(records, "createMoneyCard"), /activity_events/)
+  assert.match(readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../components/money/category-field.tsx"), "utf8"), /Card balances stay on Cards/)
+  assert.match(readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../components/money/money-groups.tsx"), "utf8"), /deanly-money-group-open/)
 })
