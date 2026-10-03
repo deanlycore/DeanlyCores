@@ -1,10 +1,17 @@
 import assert from "node:assert/strict"
+import { readFileSync } from "node:fs"
+import { dirname, join } from "node:path"
 import test from "node:test"
+import { fileURLToPath } from "node:url"
 
 import {
+  DEBT_COPY,
   MONEY_COPY,
+  PHONE_MONEY_COPY,
   amountLabel,
   applyVisibility,
+  balanceMetrics,
+  billAmountLeft,
   billDueCopy,
   billMetrics,
   billPulseCells,
@@ -13,8 +20,11 @@ import {
   incomeGap,
   incomeMetrics,
   nextPayEvents,
+  paymentToast,
+  remainingCents,
   renewalPulseCells,
   savingsMetrics,
+  sortBalances,
   sortBills,
   subscriptionMetrics,
 } from "./board.ts"
@@ -157,4 +167,111 @@ test("empty copy matches the locked lines", () => {
   assert.equal(MONEY_COPY.incomeEmpty, "No income sources yet. Add a paycheck or other source.")
   assert.equal(MONEY_COPY.savingsEmpty, "No savings goals yet. Start one when you’re ready.")
   assert.equal(MONEY_COPY.subscriptionsEmpty, "No subscriptions tracked. Add one to see renewals here.")
+})
+
+test("remaining is the starting amount minus payments, and the toast uses those amounts", () => {
+  assert.equal(remainingCents(12000, [{ amount_cents: 4000 }, { amount_cents: 0 }]), 8000)
+  assert.equal(remainingCents(4000, [{ amount_cents: 4000 }]), 0)
+  assert.equal(remainingCents(1000, [{ amount_cents: 2500 }]), 0)
+  assert.equal(billAmountLeft({ amount_cents: 9000, paid_at: null }, []), 9000)
+  assert.equal(billAmountLeft({ amount_cents: 9000, paid_at: "2026-10-02T00:00:00Z" }, []), 0)
+  assert.equal(billAmountLeft({ amount_cents: 12000, paid_at: null }, [{ amount_cents: 4000 }]), 8000)
+  assert.equal(paymentToast(4000, 8000, "USD"), "$40 paid. $80 left.")
+  assert.equal(paymentToast(4000, 0, "USD"), "$40 paid.")
+  assert.equal(DEBT_COPY.overpay, "That’s more than what’s left.")
+  assert.equal(DEBT_COPY.saved, "Saved.")
+})
+
+test("open balances sort ahead of settled ones, then by name", () => {
+  const rows = sortBalances([
+    { name: "Sam", remaining_cents: 0, visibility: "private" as const },
+    { name: "Alex", remaining_cents: 4000, visibility: "private" as const },
+    { name: "Riley", remaining_cents: 1000, visibility: "shared" as const },
+  ])
+  assert.deepEqual(rows.map((row) => row.name), ["Alex", "Riley", "Sam"])
+  assert.deepEqual(balanceMetrics(rows), { open: 2, closed: 1, justMe: 2 })
+})
+
+test("phone and debt copy stays locked and does not name a household", () => {
+  assert.equal(PHONE_MONEY_COPY.bills, "What’s still due.")
+  assert.equal(PHONE_MONEY_COPY.income, "What’s coming in.")
+  assert.equal(PHONE_MONEY_COPY.savings, "Set aside for later.")
+  assert.equal(PHONE_MONEY_COPY.subscriptions, "What renews soon.")
+  assert.equal(DEBT_COPY.cardsSubtitle, "Balances still open.")
+  assert.equal(DEBT_COPY.peopleSubtitle, "People you still owe.")
+  assert.equal(DEBT_COPY.cardsEmpty, "No cards yet.")
+  assert.equal(DEBT_COPY.peopleEmpty, "Nothing owed to anyone yet.")
+  assert.equal(DEBT_COPY.pulseEmpty, "Nothing open right now.")
+  assert.equal(DEBT_COPY.paid, "Paid")
+  assert.equal(DEBT_COPY.settled, "Settled")
+  const copy = JSON.stringify({ PHONE_MONEY_COPY, DEBT_COPY })
+  assert.equal(copy.includes("DeanFamily"), false)
+  assert.equal(/debt-free|nice work|crush your debt|you’re behind/i.test(copy), false)
+})
+
+test("money phone uses the shared FAB clearance and debt stays off income and savings", () => {
+  const root = join(dirname(fileURLToPath(import.meta.url)), "../../components/money")
+  const notesSpacer = /<div aria-hidden="true" className="h-12 md:hidden" \/>/
+  for (const file of ["bills-board.tsx", "income-board.tsx", "savings-board.tsx", "subscriptions-board.tsx"]) {
+    const source = readFileSync(join(root, file), "utf8")
+    assert.match(source, /<PhoneFabClearance \/>/)
+    assert.match(source, /<LifeFab>/)
+    assert.match(source, /className="hidden md:block"/)
+    assert.match(source, /phoneLayout/)
+    assert.doesNotMatch(source, /h-12 md:hidden/)
+  }
+  const balance = readFileSync(join(root, "balance-board.tsx"), "utf8")
+  assert.match(balance, /<PhoneFabClearance \/>/)
+  assert.match(balance, notesSpacer)
+  assert.match(balance, /<LifeFab>/)
+  assert.doesNotMatch(readFileSync(join(root, "income-board.tsx"), "utf8"), /Log payment/)
+  assert.doesNotMatch(readFileSync(join(root, "savings-board.tsx"), "utf8"), /Log payment/)
+  assert.match(balance, /DEBT_COPY\.cardsEmpty/)
+  assert.match(balance, /DEBT_COPY\.peopleEmpty/)
+  assert.match(balance, /visibilityDefault = row\?\.visibility \?\? "private"/)
+  assert.doesNotMatch(balance, /DeanFamily/)
+  const layout = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../app/(app)/money/layout.tsx"), "utf8")
+  assert.match(layout, /tone="life"/)
+})
+
+test("card, person, and payment writes stay on the session client", () => {
+  const records = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../actions/records.ts"), "utf8")
+  function sliceFn(source: string, name: string) {
+    const start = source.indexOf(`export async function ${name}`)
+    assert.notEqual(start, -1, name)
+    const next = source.indexOf("\nexport async function ", start + 10)
+    return source.slice(start, next === -1 ? undefined : next)
+  }
+  for (const name of ["createMoneyCard", "createMoneyPerson", "logMoneyPayment"]) {
+    const source = sliceFn(records, name)
+    assert.match(source, /household_id: ready\.ctx\.householdId/)
+    assert.match(source, /owner_id: ready\.ctx\.userId/)
+    assert.doesNotMatch(source, /formData\.get\("household_id"\)/)
+    assert.doesNotMatch(source, /formData\.get\("owner_id"\)/)
+    assert.doesNotMatch(source, /service/i)
+    assert.doesNotMatch(source, /activity_events/)
+  }
+  assert.match(sliceFn(records, "createMoneyCard"), /defaultVisibilityFor\("card"\)/)
+  assert.match(sliceFn(records, "createMoneyPerson"), /defaultVisibilityFor\("person"\)/)
+  assert.match(sliceFn(records, "logMoneyPayment"), /DEBT_COPY\.overpay/)
+  assert.match(sliceFn(records, "setMoneyCardVisibility"), /setRecordVisibility\("money_cards"/)
+  assert.match(sliceFn(records, "setMoneyPersonVisibility"), /setRecordVisibility\("money_people"/)
+  assert.doesNotMatch(sliceFn(records, "logMoneyPayment"), /from\("activity_events"\)/)
+})
+
+test("cards and people migration is authenticated RLS with no new definer RPC", () => {
+  const sql = readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), "../../../supabase/migrations/20261003160000_money_cards_people_payments.sql"),
+    "utf8",
+  )
+  assert.match(sql, /visibility public\.visibility not null default 'private'/)
+  assert.match(sql, /grant select, insert, update, delete on table public\.money_cards to authenticated/)
+  assert.match(sql, /grant select, insert, delete on table public\.money_payments to authenticated/)
+  assert.match(sql, /revoke all on table public\.money_payments from public, anon/)
+  assert.doesNotMatch(sql, /security definer/i)
+  assert.doesNotMatch(sql, /create (or replace )?function/i)
+  assert.doesNotMatch(sql, /grant .+ to anon/i)
+  assert.doesNotMatch(sql, /grant .+ to public/i)
+  assert.doesNotMatch(sql, /\b(cvv|card_number|account_number)\b/i)
+  assert.doesNotMatch(sql, /service_role/)
 })

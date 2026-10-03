@@ -35,7 +35,7 @@ export default async function PreviewBills() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <AppearanceControl appearance={appearance} />
         </div>
-        {money ? <SectionSegments label="Money" segments={railChildren(money)} /> : null}
+        {money ? <SectionSegments label="Money" segments={railChildren(money)} tone="life" /> : null}
         <BillsBoard
           rows={rows}
           currency="USD"

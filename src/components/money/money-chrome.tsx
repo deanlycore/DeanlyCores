@@ -77,6 +77,8 @@ export function MoneyFrame({
   pulse,
   children,
   phoneTouch = false,
+  phoneLayout = false,
+  phoneSubtitle,
 }: {
   title: string
   subtitle: string
@@ -86,26 +88,45 @@ export function MoneyFrame({
   chips: React.ReactNode
   pulse: React.ReactNode
   children: React.ReactNode
-  /** Life phone boards raise the visibility control to a 44px target. Money stays as-is. */
+  /** Life phone boards raise the visibility control to a 44px target. Money stays as-is unless phoneTouch is set. */
   phoneTouch?: boolean
+  /** Phone Money stack. Desktop title, subtitle, and chip wrap stay on md+. */
+  phoneLayout?: boolean
+  phoneSubtitle?: string
 }) {
   return (
-    <div className="relative grid gap-5">
+    <div className={cn("relative grid gap-5", phoneLayout && "max-md:min-w-0")}>
       <div aria-hidden="true" className="deanly-wash pointer-events-none absolute -left-6 -top-8 z-0 h-40 w-72" />
-      <div className="relative z-10 grid gap-5">
-        <header className="flex flex-wrap items-start justify-between gap-4">
+      <div className={cn("relative z-10 grid gap-5", phoneLayout && "max-md:min-w-0")}>
+        <header className={cn("flex flex-wrap items-start justify-between gap-4", phoneLayout && "max-md:flex-col max-md:gap-3")}>
           <div className="min-w-0">
-            <h1 className="font-display text-[28px] font-semibold tracking-[-0.02em] text-ink md:text-[30px]">{title}</h1>
-            <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
+            <h1
+              className={cn(
+                "font-display text-[28px] font-semibold tracking-[-0.02em] text-ink md:text-[30px]",
+                phoneLayout && "max-md:text-[26px]",
+              )}
+            >
+              {title}
+            </h1>
+            {phoneSubtitle ? (
+              <>
+                <p className="mt-1 text-sm text-muted-foreground md:hidden">{phoneSubtitle}</p>
+                <p className="mt-1 hidden text-sm text-muted-foreground md:block">{subtitle}</p>
+              </>
+            ) : (
+              <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
+            )}
           </div>
           <div className="flex flex-col items-stretch gap-3 sm:items-end">
             <VisibilityFilter value={filter} onChange={onFilter} phoneTouch={phoneTouch} />
             {action}
           </div>
         </header>
-        {chips ? <div className="flex flex-wrap gap-2">{chips}</div> : null}
+        {chips ? (
+          <div className={cn("flex flex-wrap gap-2", phoneLayout && "max-md:min-w-0 max-md:flex-nowrap max-md:overflow-x-auto max-md:pb-1")}>{chips}</div>
+        ) : null}
         {pulse}
-        <div className="grid gap-2.5">{children}</div>
+        <div className={cn("grid gap-2.5", phoneLayout && "max-md:min-w-0")}>{children}</div>
       </div>
     </div>
   )
@@ -196,17 +217,17 @@ export function MetricChip({
 
 export function RhythmStrip({ title, cells, empty }: { title: string; cells: PulseCell[]; empty: string }) {
   return (
-    <section className="rounded-[12px] border border-border bg-surface p-4 shadow-soft md:p-[18px]">
+    <section className="min-w-0 rounded-[12px] border border-border bg-surface p-4 shadow-soft md:p-[18px]">
       <h2 className="text-[13px] font-medium text-ink">{title}</h2>
       {cells.length === 0 ? (
         <p className="mt-3 text-sm text-muted-foreground">{empty}</p>
       ) : (
-        <ul className="mt-3 flex gap-2 overflow-x-auto pb-1">
+        <ul className="mt-3 flex min-w-0 gap-2 overflow-x-auto pb-1">
           {cells.map((cell) => (
             <li
               key={cell.id}
               className={cn(
-                "flex min-w-[80px] max-w-[120px] flex-1 flex-col gap-1 rounded-[10px] px-2.5 py-2.5",
+                "flex min-w-[80px] max-w-[120px] flex-1 flex-col gap-1 rounded-[10px] px-2.5 py-2.5 max-md:min-w-[4.5rem]",
                 cell.tone === "soon" && "bg-brand-soft text-on-brand-soft",
                 cell.tone !== "soon" && "bg-surface-muted text-ink",
               )}
@@ -249,7 +270,7 @@ export function MoneyCard({
       id={id}
       onClick={onOpen}
       className={cn(
-        "scroll-mt-24 rounded-[12px] border border-border bg-surface px-4 py-3.5 shadow-soft transition-transform duration-150 ease-out",
+        "scroll-mt-24 min-w-0 rounded-[12px] border border-border bg-surface px-4 py-3.5 shadow-soft transition-transform duration-150 ease-out",
         (onOpen || linked) && "cursor-pointer hover:-translate-y-px",
       )}
     >

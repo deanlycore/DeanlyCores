@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
 import { RecordDialog } from "@/components/create/record-dialog"
+import { LifeFab, PhoneFabClearance } from "@/components/life/life-chrome"
 import { VisibilityPill, WidgetError } from "@/components/ui/pills"
 import { Button } from "@/components/ui/button"
 import {
@@ -22,13 +23,16 @@ import {
   useRowPatches,
   useScrollToItemHash,
 } from "@/components/money/money-chrome"
+import { LogPaymentDialog, PaymentList, orderedPayments, usePaymentRemoval } from "@/components/money/payment-sheet"
 import { deleteBill, markBillPaid, setBillVisibility } from "@/lib/actions/records"
-import { formatShortDate } from "@/lib/home/metrics"
-import type { BillRow } from "@/lib/data/home"
+import { formatMoney, formatShortDate } from "@/lib/home/metrics"
+import type { BillRow, MoneyPaymentRow } from "@/lib/data/home"
 import {
   MONEY_COPY,
+  PHONE_MONEY_COPY,
   amountLabel,
   applyVisibility,
+  billAmountLeft,
   billDueCopy,
   billMatchesChip,
   billMetrics,
@@ -51,6 +55,7 @@ const dueTone = {
 
 export function BillsBoard({
   rows,
+  payments = [],
   currency,
   today,
   householdName,
@@ -59,6 +64,7 @@ export function BillsBoard({
   error,
 }: {
   rows: BillRow[]
+  payments?: MoneyPaymentRow[]
   currency: string
   today: string
   householdName?: string | null
@@ -70,13 +76,16 @@ export function BillsBoard({
   const { filter, setFilter } = useMoneyVisibility()
   const { patch, merge } = useRowPatches<BillRow>()
   const [chip, setChip] = useState<BillChip | null>(null)
-  const [editing, setEditing] = useState<BillRow | null>(null)
+  const [adding, setAdding] = useState(false)
+  const [editing, setEditing] = useState<DecoratedBill | null>(null)
   const [editOpen, setEditOpen] = useState(false)
+  const [paying, setPaying] = useState<DecoratedBill | null>(null)
   const [removing, setRemoving] = useState<BillRow | null>(null)
   const [pendingRemove, setPendingRemove] = useState(false)
+  const paymentRemoval = usePaymentRemoval()
   useScrollToItemHash()
 
-  const items = merge(rows)
+  const items = merge(rows).map((bill) => decorateBill(bill, payments, today))
   const visible = sortBills(applyVisibility(items, filter), today)
   const shown = visible.filter((bill) => billMatchesChip(bill, today, chip))
   const metrics = billMetrics(visible, today, budgetCents)
@@ -122,27 +131,24 @@ export function BillsBoard({
     router.refresh()
   }
 
-  function openEdit(bill: BillRow) {
+  function openEdit(bill: DecoratedBill) {
     setEditing(bill)
     setEditOpen(true)
   }
 
-  function addDialog() {
-    return (
-      <RecordDialog
-        kind="bill"
-        today={today}
-        defaultVisibility="shared"
-        trigger={<MoneyAddButton>Add bill</MoneyAddButton>}
-      />
-    )
-  }
-
   return (
+    <>
     <MoneyFrame
+      phoneLayout
+      phoneTouch
+      phoneSubtitle={PHONE_MONEY_COPY.bills}
       title="Bills"
       subtitle={moneySubtitle("bills", householdName)}
-      action={addDialog()}
+      action={
+        <div className="hidden md:block">
+          <MoneyAddButton onClick={() => setAdding(true)}>Add bill</MoneyAddButton>
+        </div>
+      }
       filter={filter}
       onFilter={setFilter}
       chips={
@@ -172,14 +178,23 @@ export function BillsBoard({
       pulse={<RhythmStrip title="Due this week" cells={pulse} empty={MONEY_COPY.billsPulseEmpty} />}
     >
       {error ? <WidgetError /> : null}
-      {items.length === 0 ? <EmptyState copy={MONEY_COPY.billsEmpty} action={addDialog()} /> : null}
+      {items.length === 0 ? (
+        <EmptyState
+          copy={MONEY_COPY.billsEmpty}
+          action={
+            <div className="hidden md:block">
+              <MoneyAddButton onClick={() => setAdding(true)}>Add bill</MoneyAddButton>
+            </div>
+          }
+        />
+      ) : null}
       {items.length > 0 && shown.length === 0 ? <FilterEmpty onClear={clearFilters} /> : null}
       {shown.map((bill) => {
         const due = billDueCopy(bill, today)
         const paid = Boolean(bill.paid_at)
         return (
           <MoneyCard key={bill.id} id={`item-${bill.id}`} onOpen={() => openEdit(bill)}>
-            <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex min-w-0 max-w-full flex-wrap items-start justify-between gap-3">
               <div className="flex min-w-0 items-start gap-3">
                 <StatusDisc tone={paid ? "paid" : due.tone === "danger" ? "overdue" : "upcoming"} />
                 <div className="min-w-0">
@@ -196,11 +211,11 @@ export function BillsBoard({
                     </button>
                     <VisibilityPill visibility={bill.visibility} />
                   </div>
-                  <p className="mt-0.5 text-[13px] tabular-nums text-muted-foreground">{amountLabel(bill.amount_cents, currency)}</p>
+                  <BillAmount bill={bill} currency={currency} />
                 </div>
               </div>
-              <div className="ml-auto flex items-center gap-2" onClick={(event) => event.stopPropagation()}>
-                <p className={cn("text-[13px] tabular-nums", paid ? "text-muted-foreground" : dueTone[due.tone])}>
+              <div className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-2 max-md:w-full" onClick={(event) => event.stopPropagation()}>
+                <p className={cn("whitespace-nowrap text-[13px] tabular-nums", paid ? "text-muted-foreground" : dueTone[due.tone])}>
                   {paid ? formatShortDate(bill.due_on) : due.text}
                 </p>
                 {paid ? (
@@ -208,16 +223,29 @@ export function BillsBoard({
                     Paid
                   </span>
                 ) : (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="h-9 rounded-[12px] px-3 text-[13px] text-brand-deep"
-                    onClick={() => void markPaid(bill, true)}
-                  >
-                    Mark paid
-                  </Button>
+                  <>
+                    {bill.mine.length === 0 ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-9 rounded-[12px] px-3 text-[13px] text-brand-deep max-md:hidden"
+                        onClick={() => void markPaid(bill, true)}
+                      >
+                        Mark paid
+                      </Button>
+                    ) : null}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-9 max-md:min-h-11 rounded-[12px] px-3 text-[13px] text-brand-deep"
+                      onClick={() => setPaying(bill)}
+                    >
+                      Log payment
+                    </Button>
+                  </>
                 )}
                 <RowMenu
+                  className="max-md:min-h-11 max-md:min-w-11"
                   label={bill.name}
                   visibility={bill.visibility}
                   onEdit={() => openEdit(bill)}
@@ -229,12 +257,22 @@ export function BillsBoard({
           </MoneyCard>
         )
       })}
+      <RecordDialog
+        key={adding ? "bill-add" : "bill-idle"}
+        kind="bill"
+        today={today}
+        defaultVisibility="shared"
+        sheetOnPhone
+        open={adding}
+        onOpenChange={setAdding}
+      />
       {editing ? (
         <RecordDialog
           key={editing.id}
           kind="bill"
           today={today}
           defaultVisibility="shared"
+          sheetOnPhone
           open={editOpen}
           onOpenChange={setEditOpen}
           initial={{
@@ -244,9 +282,26 @@ export function BillsBoard({
             date: editing.due_on,
             visibility: editing.visibility,
           }}
+          extra={
+            <PaymentList payments={editing.mine} currency={currency} onRemove={paymentRemoval.setRemoving} />
+          }
+        />
+      ) : null}
+      {paying ? (
+        <LogPaymentDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setPaying(null)
+          }}
+          parentKind="bill"
+          parentId={paying.id}
+          remainingCents={paying.left}
+          currency={currency}
+          today={today}
         />
       ) : null}
       <ConfirmRemove
+        sheetOnPhone
         open={Boolean(removing)}
         title="Remove this bill?"
         pending={pendingRemove}
@@ -266,6 +321,39 @@ export function BillsBoard({
           router.refresh()
         }}
       />
+      {paymentRemoval.dialog}
+      <PhoneFabClearance />
     </MoneyFrame>
+    <LifeFab>
+      <MoneyAddButton className="h-11 px-4 shadow-soft" onClick={() => setAdding(true)}>
+        Add bill
+      </MoneyAddButton>
+    </LifeFab>
+    </>
   )
+}
+
+type DecoratedBill = BillRow & { mine: MoneyPaymentRow[]; left: number; settled: boolean }
+
+function decorateBill(bill: BillRow, payments: MoneyPaymentRow[], today: string): DecoratedBill {
+  const mine = payments.filter((payment) => payment.bill_id === bill.id)
+  const left = billAmountLeft(bill, mine)
+  const settled = mine.length > 0 ? left === 0 : Boolean(bill.paid_at)
+  const paid_at = mine.length === 0 ? bill.paid_at : settled ? (bill.paid_at ?? `${today}T12:00:00.000Z`) : null
+  return { ...bill, paid_at, mine, left, settled }
+}
+
+function BillAmount({ bill, currency }: { bill: DecoratedBill; currency: string }) {
+  const last = orderedPayments(bill.mine).at(-1)
+  const lastText = last ? `Last payment ${formatMoney(last.amount_cents, currency)} · ${formatShortDate(last.paid_on)}` : ""
+  if (bill.mine.length === 0) {
+    return (
+      <p className="mt-0.5 text-[13px] tabular-nums text-muted-foreground">
+        <span className="md:hidden">{bill.settled ? amountLabel(bill.amount_cents, currency) : `${formatMoney(bill.left, currency)} left`}</span>
+        <span className="hidden md:inline">{amountLabel(bill.amount_cents, currency)}</span>
+      </p>
+    )
+  }
+  const text = bill.left > 0 ? `${formatMoney(bill.left, currency)} left${lastText ? ` · ${lastText}` : ""}` : lastText
+  return <p className="mt-0.5 text-[13px] tabular-nums text-ink">{text}</p>
 }

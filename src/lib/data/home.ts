@@ -96,6 +96,34 @@ export type VaultRow = {
   created_at: string
 }
 
+export type MoneyCardRow = {
+  id: string
+  name: string
+  amount_cents: number
+  due_on: string | null
+  note: string | null
+  visibility: Visibility
+}
+
+export type MoneyPersonRow = {
+  id: string
+  name: string
+  amount_cents: number
+  due_on: string | null
+  note: string | null
+  visibility: Visibility
+}
+
+export type MoneyPaymentRow = {
+  id: string
+  bill_id: string | null
+  card_id: string | null
+  person_id: string | null
+  amount_cents: number
+  paid_on: string
+  note: string | null
+}
+
 export type SubscriptionRow = {
   id: string
   name: string

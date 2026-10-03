@@ -14,6 +14,73 @@ export const MONEY_COPY = {
   buffer: "Buffer",
 } as const
 
+/** Phone subtitles. Desktop moneySubtitle strings stay as shipped. */
+export const PHONE_MONEY_COPY = {
+  bills: "What’s still due.",
+  income: "What’s coming in.",
+  savings: "Set aside for later.",
+  subscriptions: "What renews soon.",
+} as const
+
+export const DEBT_COPY = {
+  cardsSubtitle: "Balances still open.",
+  peopleSubtitle: "People you still owe.",
+  cardsEmpty: "No cards yet.",
+  peopleEmpty: "Nothing owed to anyone yet.",
+  pulseEmpty: "Nothing open right now.",
+  filterEmpty: "Nothing matches these filters.",
+  overpay: "That’s more than what’s left.",
+  saved: "Saved.",
+  stillOpen: "Still open",
+  paid: "Paid",
+  settled: "Settled",
+  removeCard: "Remove this card?",
+  removePerson: "Remove this person?",
+  removePayment: "Remove this payment?",
+  cardsVisibilityHint: "Shared if this card is the house’s.",
+} as const
+
+export type PaymentParent = "bill" | "card" | "person"
+
+export function remainingCents(amountCents: number, payments: { amount_cents: number }[]) {
+  const paid = payments.reduce((sum, payment) => sum + payment.amount_cents, 0)
+  return Math.max(0, amountCents - paid)
+}
+
+/** One remaining number. A bill with no payments still uses Mark paid via paid_at. */
+export function billAmountLeft(
+  bill: { amount_cents: number; paid_at: string | null },
+  payments: { amount_cents: number }[],
+) {
+  if (payments.length === 0) return bill.paid_at ? 0 : bill.amount_cents
+  return remainingCents(bill.amount_cents, payments)
+}
+
+/** Toast shape: "$40 paid. $80 left." At zero remaining, stop after the paid amount. */
+export function paymentToast(paidCents: number, leftCents: number, currency: string) {
+  const paid = formatMoney(paidCents, currency)
+  if (leftCents <= 0) return `${paid} paid.`
+  return `${paid} paid. ${formatMoney(leftCents, currency)} left.`
+}
+
+export function sortBalances<T extends { name: string; remaining_cents: number; visibility: Visibility }>(rows: T[]) {
+  return [...rows].sort((a, b) => {
+    const open = Number(b.remaining_cents > 0) - Number(a.remaining_cents > 0)
+    if (open !== 0) return open
+    const name = a.name.localeCompare(b.name)
+    if (name !== 0) return name
+    return sharedRank(a.visibility) - sharedRank(b.visibility)
+  })
+}
+
+export function balanceMetrics(rows: { remaining_cents: number; visibility: Visibility }[]) {
+  return {
+    open: rows.filter((row) => row.remaining_cents > 0).length,
+    closed: rows.filter((row) => row.remaining_cents === 0).length,
+    justMe: rows.filter((row) => row.visibility === "private").length,
+  }
+}
+
 export type VisibilityFilter = "all" | "shared" | "private"
 export type BillChip = "due" | "overdue" | "paid"
 export type PulseTone = "idle" | "soon" | "overdue" | "payday"

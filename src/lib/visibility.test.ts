@@ -15,6 +15,11 @@ test("personal notes and uploads default to just me", () => {
   assert.equal(defaultVisibilityFor("upload", "shared"), "private")
 })
 
+test("cards and people you owe default to just me", () => {
+  assert.equal(defaultVisibilityFor("card", "shared"), "private")
+  assert.equal(defaultVisibilityFor("person", "shared"), "private")
+})
+
 test("other records keep the household member's last choice", () => {
   assert.equal(defaultVisibilityFor("task", "private"), "private")
   assert.equal(defaultVisibilityFor("goal", "shared"), "shared")

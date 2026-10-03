@@ -9,6 +9,8 @@ export const DEFAULT_VISIBILITY = {
   calendar: "shared",
   tasks: "shared",
   subscriptions: "shared",
+  cards: "private",
+  people: "private",
   notes: "private",
   documents: "private",
   assets: "shared",
@@ -19,7 +21,7 @@ export function visibilityLabel(visibility: Visibility) {
 }
 
 const sharedDefaults = new Set(["bill", "event", "meal", "shopping", "budget"])
-const privateDefaults = new Set(["note", "upload"])
+const privateDefaults = new Set(["note", "upload", "card", "person"])
 
 /**
  * Household records open as Shared. Personal notes and uploads open as Just me.
