@@ -77,6 +77,8 @@ export function MoneyFrame({
   pulse,
   children,
   phoneTouch = false,
+  className,
+  headerClassName,
 }: {
   title: string
   subtitle: string
@@ -88,12 +90,15 @@ export function MoneyFrame({
   children: React.ReactNode
   /** Life phone boards raise the visibility control to a 44px target. Money stays as-is. */
   phoneTouch?: boolean
+  /** Phone Notes empty state tightens the stack. Desktop keeps gap-5. */
+  className?: string
+  headerClassName?: string
 }) {
   return (
     <div className="relative grid gap-5">
       <div aria-hidden="true" className="deanly-wash pointer-events-none absolute -left-6 -top-8 z-0 h-40 w-72" />
-      <div className="relative z-10 grid gap-5">
-        <header className="flex flex-wrap items-start justify-between gap-4">
+      <div className={cn("relative z-10 grid gap-5", className)}>
+        <header className={cn("flex flex-wrap items-start justify-between gap-4", headerClassName)}>
           <div className="min-w-0">
             <h1 className="font-display text-[28px] font-semibold tracking-[-0.02em] text-ink md:text-[30px]">{title}</h1>
             <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
@@ -273,9 +278,9 @@ export function StatusDisc({ tone }: { tone: "upcoming" | "paid" | "overdue" | "
   )
 }
 
-export function EmptyState({ copy, action }: { copy: string; action: React.ReactNode }) {
+export function EmptyState({ copy, action, className }: { copy: string; action: React.ReactNode; className?: string }) {
   return (
-    <div className="rounded-[12px] border border-border bg-surface px-5 py-8 text-center shadow-soft">
+    <div className={cn("rounded-[12px] border border-border bg-surface px-5 py-8 text-center shadow-soft", className)}>
       <LoopMark size={28} className="mx-auto" />
       <p className="mx-auto mt-3 max-w-sm text-sm text-muted-foreground">{copy}</p>
       <div className="mt-4 flex justify-center">{action}</div>
