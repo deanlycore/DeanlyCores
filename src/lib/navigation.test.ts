@@ -61,7 +61,10 @@ test("search skips the life hub and keeps the money summary", () => {
   assert.equal(links.some((link) => link.href === "/money" && link.label === "Money"), true)
   assert.equal(links.some((link) => link.href === "/life"), false)
   assert.equal(links.some((link) => link.href === "/money/subscriptions"), true)
+  assert.equal(links.some((link) => link.href === "/money/cards"), true)
+  assert.equal(links.some((link) => link.href === "/money/people"), true)
   assert.equal(links.some((link) => link.href === "/life/subscriptions"), false)
+  assert.equal(links.some((link) => link.href === "/money/debt" || link.label === "Debt"), false)
 })
 
 test("preview routes map onto the signed-in shell", () => {

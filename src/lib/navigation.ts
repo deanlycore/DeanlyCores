@@ -269,6 +269,7 @@ export function commandLinks() {
       links.push({ href: item.href, label: item.label, group: item.label })
     }
     for (const child of item.children ?? []) {
+      if (child.href === "/money/debt") continue
       links.push({ href: child.href, label: child.label, group: item.label })
     }
   }
