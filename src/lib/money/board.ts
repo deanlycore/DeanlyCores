@@ -24,7 +24,7 @@ export const PHONE_MONEY_COPY = {
 
 export const DEBT_COPY = {
   cardsSubtitle: "Balances still open.",
-  peopleSubtitle: "People you still owe.",
+  peopleSubtitle: "I owe, and they owe me.",
   cardsEmpty: "No cards yet.",
   peopleEmpty: "Nothing owed to anyone yet.",
   pulseEmpty: "Nothing open right now.",

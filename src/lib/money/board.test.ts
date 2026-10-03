@@ -212,7 +212,7 @@ test("phone and debt copy stays locked and does not name a household", () => {
   assert.equal(PHONE_MONEY_COPY.savings, "Set aside for later.")
   assert.equal(PHONE_MONEY_COPY.subscriptions, "What renews soon.")
   assert.equal(DEBT_COPY.cardsSubtitle, "Balances still open.")
-  assert.equal(DEBT_COPY.peopleSubtitle, "People you still owe.")
+  assert.equal(DEBT_COPY.peopleSubtitle, "I owe, and they owe me.")
   assert.equal(DEBT_COPY.cardsEmpty, "No cards yet.")
   assert.equal(DEBT_COPY.peopleEmpty, "Nothing owed to anyone yet.")
   assert.equal(DEBT_COPY.pulseEmpty, "Nothing open right now.")
