@@ -106,7 +106,7 @@ export const primaryNav: PrimaryNavItem[] = [
       {
         href: "/money/people",
         label: "People",
-        description: "People you still owe.",
+        description: "I owe, and they owe me.",
         visibility: DEFAULT_VISIBILITY.people,
         emptyTitle: "Nothing owed to anyone yet.",
         emptyBody: "Nothing owed to anyone yet.",
