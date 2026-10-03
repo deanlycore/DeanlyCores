@@ -106,6 +106,7 @@ const saveLabels: Partial<Record<RecordKind, string>> = {
   event: "Save event",
   meal: "Save meal",
   shopping: "Save item",
+  note: "Create",
 }
 
 export function RecordDialog({
@@ -156,6 +157,10 @@ export function RecordDialog({
         return
       }
       setOpen(false)
+      if (kind === "note" && result.id) {
+        router.push(`/notes/${result.id}`)
+        return
+      }
       router.refresh()
     } catch {
       setMessage("Couldn’t save that. Try again.")
@@ -253,10 +258,10 @@ export function RecordDialog({
           ) : null}
           {kind === "note" ? (
             <>
-              <Field label="Title" name="title" />
-              <label className="grid gap-1.5 text-sm">
+              <Field id={`${formId}-title`} label="Title" name="title" />
+              <label className="grid gap-1.5 text-sm" htmlFor={`${formId}-body`}>
                 Note
-                <textarea name="body" rows={4} className="rounded-button border border-input bg-surface px-3 py-2 text-sm" />
+                <textarea id={`${formId}-body`} name="body" rows={4} className="rounded-button border border-input bg-surface px-3 py-2 text-sm" />
               </label>
             </>
           ) : null}
@@ -276,11 +281,11 @@ export function RecordDialog({
           <fieldset className="grid gap-2">
             <legend className="text-sm">Who can see this</legend>
             <div className="flex gap-3 text-sm">
-              <label className="inline-flex items-center gap-2">
+              <label className={cn("inline-flex items-center gap-2", sheetOnPhone && "max-md:min-h-11")}>
                 <input type="radio" name="visibility" value="shared" defaultChecked={visibilityDefault !== "private"} />
                 Shared
               </label>
-              <label className="inline-flex items-center gap-2">
+              <label className={cn("inline-flex items-center gap-2", sheetOnPhone && "max-md:min-h-11")}>
                 <input type="radio" name="visibility" value="private" defaultChecked={visibilityDefault === "private"} />
                 Just me
               </label>
@@ -289,11 +294,11 @@ export function RecordDialog({
           {message ? <p className="text-sm text-danger">{message}</p> : null}
           <div className="flex items-center justify-end gap-2">
             <DialogClose asChild>
-              <Button type="button" variant="outline" className="h-10 rounded-button">
+              <Button type="button" variant="outline" className={cn("h-10 rounded-button", sheetOnPhone && "max-md:min-h-11")}>
                 Cancel
               </Button>
             </DialogClose>
-            <Button type="submit" disabled={pending} className="h-10 rounded-button text-primary-foreground">
+            <Button type="submit" disabled={pending} className={cn("h-10 rounded-button text-primary-foreground", sheetOnPhone && "max-md:min-h-11")}>
               {pending ? "Saving…" : (saveLabels[kind] ?? "Save")}
             </Button>
           </div>

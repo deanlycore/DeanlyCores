@@ -1,15 +1,13 @@
 "use client"
 
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { useState } from "react"
 
-import { documentUrl, updateNote } from "@/lib/actions/records"
+import { documentUrl } from "@/lib/actions/records"
 import { RecordDialog } from "@/components/create/record-dialog"
 import { Button } from "@/components/ui/button"
 import { VisibilityPill, WidgetError } from "@/components/ui/pills"
-import type { ExpenseRow, NoteRow, VaultRow } from "@/lib/data/home"
-import { formatMoney, formatShortDate, relativeTime } from "@/lib/home/metrics"
+import type { ExpenseRow, VaultRow } from "@/lib/data/home"
+import { formatMoney, formatShortDate } from "@/lib/home/metrics"
 import type { Visibility } from "@/lib/visibility"
 import { cn } from "cn"
 
@@ -102,69 +100,6 @@ export function MoneyBoard({
         ))}
       </ul>
     </Frame>
-  )
-}
-
-export function NotesBoard({
-  rows,
-  today,
-  visibility,
-  error,
-}: {
-  rows: NoteRow[]
-  today: string
-  visibility: Visibility
-  error?: boolean
-}) {
-  return (
-    <Frame
-      title="Notes"
-      body="New notes can stay just yours."
-      error={error}
-      action={<RecordDialog kind="note" today={today} defaultVisibility={visibility === "shared" ? "private" : visibility} trigger={<AddButton>New note</AddButton>} />}
-    >
-      {rows.length === 0 ? <p className="text-sm text-muted-foreground">Capture something for the household, or just for you.</p> : null}
-      <ul className="grid gap-3">
-        {rows.map((note) => (
-          <li key={note.id}>
-            <Link href={`/notes/${note.id}`} className="block rounded-xl px-1 py-2 hover:bg-surface-muted">
-              <div className="flex items-center justify-between gap-2">
-                <p className="font-medium">{note.title}</p>
-                <VisibilityPill visibility={note.visibility} />
-              </div>
-              <p className="line-clamp-2 text-sm text-muted-foreground">{note.body || "Empty note"}</p>
-              <p className="text-xs text-muted-foreground">{relativeTime(note.updated_at)}</p>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </Frame>
-  )
-}
-
-export function NoteEditor({ note }: { note: NoteRow }) {
-  const router = useRouter()
-  const [message, setMessage] = useState<string | null>(null)
-  return (
-    <form
-      className="mx-auto grid max-w-3xl gap-3"
-      action={async (formData) => {
-        const result = await updateNote(note.id, formData)
-        setMessage(result.ok ? "Saved." : result.message)
-        if (result.ok) router.refresh()
-      }}
-    >
-      <div className="flex items-center justify-between">
-        <h1 className="font-display text-2xl font-semibold">Note</h1>
-        <VisibilityPill visibility={note.visibility} />
-      </div>
-      <input name="title" defaultValue={note.title} className="h-11 rounded-button border border-input bg-surface px-3 font-medium" />
-      <textarea name="body" defaultValue={note.body} rows={12} className="rounded-2xl border border-input bg-surface px-3 py-3 text-sm" />
-      {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
-      <Button type="submit" className="h-11 w-fit rounded-button text-primary-foreground">
-        Save note
-      </Button>
-    </form>
   )
 }
 

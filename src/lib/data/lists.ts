@@ -190,6 +190,7 @@ export async function getNote(id: string) {
   const { data } = await ctx.supabase
     .from("notes")
     .select("id, title, body, visibility, updated_at")
+    .eq("household_id", ctx.householdId)
     .eq("id", id)
     .maybeSingle()
   return data
