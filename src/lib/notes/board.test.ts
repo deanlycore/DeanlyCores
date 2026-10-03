@@ -35,7 +35,7 @@ const notes = [
   },
   {
     id: "allergy",
-    title: "Wife allergy — no zucchini",
+    title: "Wife allergy \u2014 no zucchini",
     body: "Skip zucchini in the pasta.",
     visibility: "shared" as const,
     updated_at: "2026-10-01T18:00:00.000Z",
@@ -132,11 +132,11 @@ test("note reads stay on the session client and visibility is not an updateNote 
   assert.doesNotMatch(sliceFn(records, "setNoteVisibility"), /service/i)
 
   const listed = sliceFn(lists, "listNotes")
-  assert.match(listed, /requireHousehold/)
+  assert.match(listed, /requireHousehold\(/)
   assert.match(listed, /ctx\.supabase/)
   assert.match(listed, /from\("notes"\)/)
   const one = sliceFn(lists, "getNote")
-  assert.match(one, /requireHousehold/)
+  assert.match(one, /requireHousehold\(/)
   assert.match(one, /ctx\.supabase/)
   assert.doesNotMatch(one, /service/i)
 
@@ -151,6 +151,7 @@ test("notes phone uses the Life FAB clearance and skips a segment strip", () => 
   const board = readFileSync(join(root, "notes-board.tsx"), "utf8")
   const editor = readFileSync(join(root, "note-editor.tsx"), "utf8")
   assert.match(board, /<PhoneFabClearance \/>/)
+  assert.match(board, /<div aria-hidden="true" className="h-12 md:hidden" \/>/)
   assert.match(board, /<LifeFab>/)
   assert.match(board, /className="hidden md:block"/)
   assert.match(board, /defaultVisibility="private"/)

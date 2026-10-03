@@ -194,6 +194,7 @@ export function NotesBoard({
           }}
         />
         <PhoneFabClearance />
+        <div aria-hidden="true" className="h-12 md:hidden" />
       </MoneyFrame>
       <LifeFab>
         <MoneyAddButton className="h-11 px-4 shadow-soft" onClick={() => setAdding(true)}>
