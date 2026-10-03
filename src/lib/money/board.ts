@@ -98,12 +98,37 @@ export type DueTone = "success" | "danger" | "warn" | "muted"
 
 const STRIP_CAP = 7
 
-/** In-page targets for the Money scan. Child routes keep their own hrefs. */
+/** In-page targets for a Money section card. Child routes keep their own hrefs. */
 export function moneyScanBlockId(href: string) {
   if (!href.startsWith("/money/")) return ""
   const slug = href.slice("/money/".length)
   if (!slug || slug.includes("/")) return ""
   return `money-${slug}`
+}
+
+export const MONEY_SCAN_SECTIONS = ["bills", "income", "savings", "subscriptions", "cards", "people"] as const
+
+export type MoneyScanSection = (typeof MONEY_SCAN_SECTIONS)[number]
+
+/** Bills is the Money tab. Any other value, including budget and debt, stays on Bills. */
+export function moneyScanSection(value: string | string[] | null | undefined): MoneyScanSection {
+  const raw = Array.isArray(value) ? value[0] : value
+  if (raw && (MONEY_SCAN_SECTIONS as readonly string[]).includes(raw)) return raw as MoneyScanSection
+  return "bills"
+}
+
+export function moneyScanSectionFromHref(href: string): MoneyScanSection | null {
+  const id = moneyScanBlockId(href)
+  if (!id.startsWith("money-")) return null
+  const slug = id.slice("money-".length)
+  if (!(MONEY_SCAN_SECTIONS as readonly string[]).includes(slug)) return null
+  return slug as MoneyScanSection
+}
+
+/** Each pill is its own address. Bills has no query so the Money tab stays on Bills. */
+export function moneyScanHref(section: MoneyScanSection, base = "/money") {
+  if (section === "bills") return base
+  return `${base}?section=${section}`
 }
 
 export function moneySubtitle(
