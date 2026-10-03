@@ -8,6 +8,7 @@ import {
   DEBT_COPY,
   MONEY_COPY,
   PHONE_MONEY_COPY,
+  moneyScanBlockId,
   amountLabel,
   applyVisibility,
   balanceMetrics,
@@ -207,6 +208,37 @@ test("phone and debt copy stays locked and does not name a household", () => {
   const copy = JSON.stringify({ PHONE_MONEY_COPY, DEBT_COPY })
   assert.equal(copy.includes("DeanFamily"), false)
   assert.equal(/debt-free|nice work|crush your debt|you’re behind/i.test(copy), false)
+})
+
+test("money scan block ids stay on the category page", () => {
+  assert.equal(moneyScanBlockId("/money/bills"), "money-bills")
+  assert.equal(moneyScanBlockId("/money/income"), "money-income")
+  assert.equal(moneyScanBlockId("/money/savings"), "money-savings")
+  assert.equal(moneyScanBlockId("/money/subscriptions"), "money-subscriptions")
+  assert.equal(moneyScanBlockId("/money/cards"), "money-cards")
+  assert.equal(moneyScanBlockId("/money/people"), "money-people")
+  assert.equal(moneyScanBlockId("/life/tasks"), "")
+  assert.equal(moneyScanBlockId("/money"), "")
+})
+
+test("money page is the six category scan and drops the spending dump", () => {
+  const page = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../app/(app)/money/page.tsx"), "utf8")
+  const scan = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../components/money/money-scan.tsx"), "utf8")
+  const shell = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../components/shell/app-shell.tsx"), "utf8")
+  const segments = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../components/shell/section-segments.tsx"), "utf8")
+  assert.match(page, /MoneyScan/)
+  assert.doesNotMatch(page, /MoneyBoard|listMonthBudget|listExpenses\("expense"\)|Set budget|Log spending/)
+  for (const label of ["BillsBoard", "IncomeBoard", "SavingsBoard", "SubscriptionsBoard", "CardsBoard", "PeopleBoard"]) {
+    assert.match(scan, new RegExp(label))
+  }
+  assert.match(scan, /useState<MoneyVisibility>\("all"\)/)
+  assert.match(scan, /<PhoneFabClearance \/>/)
+  assert.doesNotMatch(scan, /LifeFab|Set budget|Log spending|Budget/)
+  assert.match(shell, /href: "\/money", label: "Money"/)
+  assert.doesNotMatch(shell, /href: "\/money\/bills", label: "Money"/)
+  assert.match(segments, /pathname === "\/money"/)
+  assert.match(segments, /scrollIntoView/)
+  assert.match(segments, /moneyScanBlockId/)
 })
 
 test("money phone uses the shared FAB clearance and debt stays off income and savings", () => {

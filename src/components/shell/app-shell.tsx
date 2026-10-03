@@ -37,7 +37,7 @@ import {
 
 const mobileTabs = [
   { href: "/home", label: "Home", icon: Home, match: (path: string) => path === "/home" },
-  { href: "/money/bills", label: "Money", icon: Wallet, match: (path: string) => path === "/money" || path.startsWith("/money/") },
+  { href: "/money", label: "Money", icon: Wallet, match: (path: string) => path === "/money" || path.startsWith("/money/") },
   { href: "/life/calendar", label: "Life", icon: SunMedium, match: (path: string) => path === "/life" || path.startsWith("/life/") },
   { href: "/notes", label: "Notes", icon: NotebookPen, match: (path: string) => path === "/notes" || path.startsWith("/notes/") },
   { href: "/more", label: "More", icon: MoreHorizontal, match: (path: string) => path === "/more" },

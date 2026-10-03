@@ -111,12 +111,12 @@ function CollapsedGroup({ item, pathname }: { item: PrimaryNavItem; pathname: st
   const children = railChildren(item)
   const [open, setOpen] = useState(false)
   const [box, setBox] = useState({ top: 0, left: 0 })
-  const buttonRef = useRef<HTMLButtonElement>(null)
+  const triggerRef = useRef<HTMLElement | null>(null)
   const flyoutRef = useRef<HTMLDivElement>(null)
   const closeTimer = useRef<number | null>(null)
 
   function place() {
-    const rect = buttonRef.current?.getBoundingClientRect()
+    const rect = triggerRef.current?.getBoundingClientRect()
     if (!rect) return
     const estimated = 36 + children.length * 40
     const top = Math.max(8, Math.min(rect.top, window.innerHeight - estimated - 8))
@@ -136,7 +136,7 @@ function CollapsedGroup({ item, pathname }: { item: PrimaryNavItem; pathname: st
 
   function hideIfLeft(event: FocusEvent) {
     const next = event.relatedTarget
-    if (next instanceof Node && (flyoutRef.current?.contains(next) || next === buttonRef.current)) return
+    if (next instanceof Node && (flyoutRef.current?.contains(next) || next === triggerRef.current)) return
     hideSoon()
   }
 
@@ -148,7 +148,7 @@ function CollapsedGroup({ item, pathname }: { item: PrimaryNavItem; pathname: st
 
   useEffect(() => {
     if (!open) return
-    const nav = buttonRef.current?.closest("nav")
+    const nav = triggerRef.current?.closest("nav")
     const close = () => setOpen(false)
     nav?.addEventListener("scroll", close, { passive: true })
     return () => nav?.removeEventListener("scroll", close)
@@ -156,27 +156,55 @@ function CollapsedGroup({ item, pathname }: { item: PrimaryNavItem; pathname: st
 
   return (
     <>
-      <button
-        ref={buttonRef}
-        type="button"
-        aria-label={item.label}
-        aria-expanded={open}
-        aria-haspopup="true"
-        onMouseEnter={show}
-        onMouseLeave={hideSoon}
-        onFocus={show}
-        onBlur={hideIfLeft}
-        onKeyDown={(event) => {
-          if (event.key !== "ArrowRight" && event.key !== "Enter" && event.key !== " ") return
-          event.preventDefault()
-          show()
-          window.requestAnimationFrame(() => flyoutRef.current?.querySelector("a")?.focus())
-        }}
-        className={`${rowClass} justify-center px-0 text-muted-foreground hover:bg-surface-muted hover:text-ink`}
-      >
-        <Icon className="size-[18px] shrink-0" aria-hidden="true" />
-        <span className="sr-only">{item.label}</span>
-      </button>
+      {item.href === "/money" ? (
+        <Link
+          href="/money"
+          ref={(node) => {
+            triggerRef.current = node
+          }}
+          aria-label={item.label}
+          aria-expanded={open}
+          aria-haspopup="true"
+          onMouseEnter={show}
+          onMouseLeave={hideSoon}
+          onFocus={show}
+          onBlur={hideIfLeft}
+          onKeyDown={(event) => {
+            if (event.key !== "ArrowRight") return
+            event.preventDefault()
+            show()
+            window.requestAnimationFrame(() => flyoutRef.current?.querySelector("a")?.focus())
+          }}
+          className={`${rowClass} justify-center px-0 text-muted-foreground hover:bg-surface-muted hover:text-ink`}
+        >
+          <Icon className="size-[18px] shrink-0" aria-hidden="true" />
+          <span className="sr-only">{item.label}</span>
+        </Link>
+      ) : (
+        <button
+          ref={(node) => {
+            triggerRef.current = node
+          }}
+          type="button"
+          aria-label={item.label}
+          aria-expanded={open}
+          aria-haspopup="true"
+          onMouseEnter={show}
+          onMouseLeave={hideSoon}
+          onFocus={show}
+          onBlur={hideIfLeft}
+          onKeyDown={(event) => {
+            if (event.key !== "ArrowRight" && event.key !== "Enter" && event.key !== " ") return
+            event.preventDefault()
+            show()
+            window.requestAnimationFrame(() => flyoutRef.current?.querySelector("a")?.focus())
+          }}
+          className={`${rowClass} justify-center px-0 text-muted-foreground hover:bg-surface-muted hover:text-ink`}
+        >
+          <Icon className="size-[18px] shrink-0" aria-hidden="true" />
+          <span className="sr-only">{item.label}</span>
+        </button>
+      )}
       {open
         ? createPortal(
             <div
@@ -191,7 +219,7 @@ function CollapsedGroup({ item, pathname }: { item: PrimaryNavItem; pathname: st
               onKeyDown={(event) => {
                 if (event.key !== "Escape") return
                 setOpen(false)
-                buttonRef.current?.focus()
+                triggerRef.current?.focus()
               }}
             >
               <p className="px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
@@ -223,18 +251,38 @@ function RailGroup({
 }) {
   const children = railChildren(item)
   const panelId = `rail-${item.label.toLowerCase()}`
+  const labelClass =
+    "flex h-8 min-w-0 flex-1 items-center rounded-[10px] text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground hover:text-ink"
   return (
     <div className="mt-2">
-      <button
-        type="button"
-        aria-expanded={open}
-        aria-controls={panelId}
-        onClick={onToggle}
-        className="flex h-8 w-full items-center gap-2 rounded-[10px] px-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground hover:text-ink"
-      >
-        <span className="flex-1">{item.label}</span>
-        <ChevronDown className={`size-3.5 shrink-0 transition-transform duration-150 ${open ? "" : "-rotate-90"}`} aria-hidden="true" />
-      </button>
+      {item.href === "/money" ? (
+        <div className="flex h-8 w-full items-center gap-1 pr-1">
+          <Link href="/money" aria-current={pathname === "/money" ? "page" : undefined} className={`${labelClass} px-2.5`} onClick={() => { if (!open) onToggle() }}>
+            {item.label}
+          </Link>
+          <button
+            type="button"
+            aria-expanded={open}
+            aria-controls={panelId}
+            aria-label={`${open ? "Collapse" : "Expand"} ${item.label}`}
+            onClick={onToggle}
+            className="rounded-[10px] p-1 text-muted-foreground hover:text-ink"
+          >
+            <ChevronDown className={`size-3.5 shrink-0 transition-transform duration-150 ${open ? "" : "-rotate-90"}`} aria-hidden="true" />
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={panelId}
+          onClick={onToggle}
+          className="flex h-8 w-full items-center gap-2 rounded-[10px] px-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground hover:text-ink"
+        >
+          <span className="flex-1">{item.label}</span>
+          <ChevronDown className={`size-3.5 shrink-0 transition-transform duration-150 ${open ? "" : "-rotate-90"}`} aria-hidden="true" />
+        </button>
+      )}
       {open ? (
         <div id={panelId} className="grid gap-0.5">
           {children.map((child) => (
@@ -261,7 +309,7 @@ export function DesktopNav({ collapsed, pathname }: { collapsed: boolean; pathna
             )
           }
           if (collapsed) return <CollapsedGroup key={item.href} item={item} pathname={pathname} />
-          const childActive = railChildren(item).some((child) => pathMatches(pathname, child.href))
+          const childActive = pathname === item.href || railChildren(item).some((child) => pathMatches(pathname, child.href))
           const open = childActive || !closed[item.href]
           return (
             <RailGroup

@@ -7,13 +7,16 @@ import { toast } from "sonner"
 import { RecordDialog } from "@/components/create/record-dialog"
 import { LifeFab, PhoneFabClearance } from "@/components/life/life-chrome"
 import {
+  CategoryLine,
   ConfirmRemove,
   EmptyState,
   FilterEmpty,
   MetricChip,
   MoneyAddButton,
   MoneyCard,
+  MoneyCategoryBlock,
   MoneyFrame,
+  type MoneyVisibility,
   RhythmStrip,
   RowMenu,
   StatusDisc,
@@ -45,15 +48,20 @@ export function SubscriptionsBoard({
   today,
   householdName,
   error,
+  scan = false,
+  scanFilter,
 }: {
   rows: SubscriptionRow[]
   currency: string
   today: string
   householdName?: string | null
   error?: boolean
+  scan?: boolean
+  scanFilter?: MoneyVisibility
 }) {
   const router = useRouter()
-  const { filter, setFilter } = useMoneyVisibility()
+  const { filter: storedFilter, setFilter } = useMoneyVisibility()
+  const filter = scan ? (scanFilter ?? "all") : storedFilter
   const { patch, merge } = useRowPatches<SubscriptionRow>()
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<SubscriptionRow | null>(null)
@@ -96,30 +104,17 @@ export function SubscriptionsBoard({
     router.refresh()
   }
 
-  return (
+  const list = (
     <>
-    <MoneyFrame
-      phoneLayout
-      phoneTouch
-      phoneSubtitle={PHONE_MONEY_COPY.subscriptions}
-      title="Subscriptions"
-      subtitle={moneySubtitle("subscriptions", householdName)}
-      action={
-        <div className="hidden md:block">
-          <MoneyAddButton onClick={() => setAdding(true)}>Add subscription</MoneyAddButton>
-        </div>
-      }
-      filter={filter}
-      onFilter={setFilter}
-      chips={
-        <>
-          <MetricChip tone={metrics.renewing > 0 ? "brand" : "muted"}>{metrics.renewing} renewing this month</MetricChip>
-          <MetricChip>Monthly total {formatMoney(metrics.monthly, currency)}</MetricChip>
-        </>
-      }
-      pulse={<RhythmStrip title="Renewing soon" cells={pulse} empty={MONEY_COPY.subscriptionsPulseEmpty} />}
-    >
       {error ? <WidgetError /> : null}
+      {scan ? (
+        items.length === 0 ? (
+          <CategoryLine>{MONEY_COPY.subscriptionsEmpty}</CategoryLine>
+        ) : visible.length === 0 ? (
+          <CategoryLine>{MONEY_COPY.filterEmpty}</CategoryLine>
+        ) : null
+      ) : (
+        <>
       {items.length === 0 ? (
         <EmptyState
           copy={MONEY_COPY.subscriptionsEmpty}
@@ -131,6 +126,8 @@ export function SubscriptionsBoard({
         />
       ) : null}
       {items.length > 0 && visible.length === 0 ? <FilterEmpty onClear={() => setFilter("all")} /> : null}
+        </>
+      )}
       {visible.map((row) => (
         <MoneyCard key={row.id} id={`item-${row.id}`} onOpen={() => openEdit(row)}>
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -226,6 +223,47 @@ export function SubscriptionsBoard({
           router.refresh()
         }}
       />
+    </>
+  )
+
+  if (scan) {
+    return (
+      <MoneyCategoryBlock
+        id="money-subscriptions"
+        title="Subscriptions"
+        subtitle={PHONE_MONEY_COPY.subscriptions}
+        addLabel="Add subscription"
+        onAdd={() => setAdding(true)}
+      >
+        {list}
+      </MoneyCategoryBlock>
+    )
+  }
+
+  return (
+    <>
+    <MoneyFrame
+      phoneLayout
+      phoneTouch
+      phoneSubtitle={PHONE_MONEY_COPY.subscriptions}
+      title="Subscriptions"
+      subtitle={moneySubtitle("subscriptions", householdName)}
+      action={
+        <div className="hidden md:block">
+          <MoneyAddButton onClick={() => setAdding(true)}>Add subscription</MoneyAddButton>
+        </div>
+      }
+      filter={filter}
+      onFilter={setFilter}
+      chips={
+        <>
+          <MetricChip tone={metrics.renewing > 0 ? "brand" : "muted"}>{metrics.renewing} renewing this month</MetricChip>
+          <MetricChip>Monthly total {formatMoney(metrics.monthly, currency)}</MetricChip>
+        </>
+      }
+      pulse={<RhythmStrip title="Renewing soon" cells={pulse} empty={MONEY_COPY.subscriptionsPulseEmpty} />}
+    >
+      {list}
       <PhoneFabClearance />
     </MoneyFrame>
     <LifeFab>

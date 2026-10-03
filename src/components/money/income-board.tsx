@@ -7,13 +7,16 @@ import { toast } from "sonner"
 import { RecordDialog } from "@/components/create/record-dialog"
 import { LifeFab, PhoneFabClearance } from "@/components/life/life-chrome"
 import {
+  CategoryLine,
   ConfirmRemove,
   EmptyState,
   FilterEmpty,
   MetricChip,
   MoneyAddButton,
   MoneyCard,
+  MoneyCategoryBlock,
   MoneyFrame,
+  type MoneyVisibility,
   RowMenu,
   StatusDisc,
   useMoneyVisibility,
@@ -43,15 +46,20 @@ export function IncomeBoard({
   today,
   householdName,
   error,
+  scan = false,
+  scanFilter,
 }: {
   rows: ExpenseRow[]
   currency: string
   today: string
   householdName?: string | null
   error?: boolean
+  scan?: boolean
+  scanFilter?: MoneyVisibility
 }) {
   const router = useRouter()
-  const { filter, setFilter } = useMoneyVisibility()
+  const { filter: storedFilter, setFilter } = useMoneyVisibility()
+  const filter = scan ? (scanFilter ?? "all") : storedFilter
   const { patch, merge } = useRowPatches<ExpenseRow>()
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<ExpenseRow | null>(null)
@@ -82,49 +90,17 @@ export function IncomeBoard({
     router.refresh()
   }
 
-  return (
+  const list = (
     <>
-    <MoneyFrame
-      phoneLayout
-      phoneTouch
-      phoneSubtitle={PHONE_MONEY_COPY.income}
-      title="Income"
-      subtitle={moneySubtitle("income", householdName)}
-      action={
-        <div className="hidden md:block">
-          <MoneyAddButton onClick={() => setAdding(true)}>Add income</MoneyAddButton>
-        </div>
-      }
-      filter={filter}
-      onFilter={setFilter}
-      chips={
-        <>
-          <MetricChip tone={metrics.nextDate ? "brand" : "muted"}>
-            {metrics.nextDate ? `Next pay ${formatShortDate(metrics.nextDate)}` : "No payday yet"}
-          </MetricChip>
-          <MetricChip>This month {formatMoney(metrics.monthCents, currency)}</MetricChip>
-        </>
-      }
-      pulse={
-        <section className="rounded-[12px] border border-border bg-surface p-4 shadow-soft md:p-[18px]">
-          <h2 className="text-[13px] font-medium text-ink">Next payday</h2>
-          {upcoming.length === 0 ? (
-            <p className="mt-3 text-sm text-muted-foreground">{MONEY_COPY.incomePulseEmpty}</p>
-          ) : (
-            <ul className="mt-3 flex gap-2 overflow-x-auto pb-1 md:grid md:grid-cols-2 md:overflow-visible md:pb-0">
-              {upcoming.map((row) => (
-                <li key={row.id} className="min-w-[4.5rem] shrink-0 rounded-[10px] bg-brand-soft px-3 py-3 text-on-brand-soft md:min-w-0">
-                  <p className="text-[13px] tabular-nums">{formatShortDate(row.spent_on)}</p>
-                  <p className="mt-1 text-[15px] font-medium">{row.name}</p>
-                  <p className="text-[13px] tabular-nums">{formatMoney(row.amount_cents, currency)}</p>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      }
-    >
       {error ? <WidgetError /> : null}
+      {scan ? (
+        items.length === 0 ? (
+          <CategoryLine>{MONEY_COPY.incomeEmpty}</CategoryLine>
+        ) : visible.length === 0 ? (
+          <CategoryLine>{MONEY_COPY.filterEmpty}</CategoryLine>
+        ) : null
+      ) : (
+        <>
       {items.length === 0 ? (
         <EmptyState
           copy={MONEY_COPY.incomeEmpty}
@@ -136,6 +112,8 @@ export function IncomeBoard({
         />
       ) : null}
       {items.length > 0 && visible.length === 0 ? <FilterEmpty onClear={() => setFilter("all")} /> : null}
+        </>
+      )}
       {visible.map((row) => {
         const expected = row.spent_on > today
         const gap = incomeGap(row, visible, today)
@@ -229,6 +207,66 @@ export function IncomeBoard({
           router.refresh()
         }}
       />
+    </>
+  )
+
+  if (scan) {
+    return (
+      <MoneyCategoryBlock
+        id="money-income"
+        title="Income"
+        subtitle={PHONE_MONEY_COPY.income}
+        addLabel="Add income"
+        onAdd={() => setAdding(true)}
+      >
+        {list}
+      </MoneyCategoryBlock>
+    )
+  }
+
+  return (
+    <>
+    <MoneyFrame
+      phoneLayout
+      phoneTouch
+      phoneSubtitle={PHONE_MONEY_COPY.income}
+      title="Income"
+      subtitle={moneySubtitle("income", householdName)}
+      action={
+        <div className="hidden md:block">
+          <MoneyAddButton onClick={() => setAdding(true)}>Add income</MoneyAddButton>
+        </div>
+      }
+      filter={filter}
+      onFilter={setFilter}
+      chips={
+        <>
+          <MetricChip tone={metrics.nextDate ? "brand" : "muted"}>
+            {metrics.nextDate ? `Next pay ${formatShortDate(metrics.nextDate)}` : "No payday yet"}
+          </MetricChip>
+          <MetricChip>This month {formatMoney(metrics.monthCents, currency)}</MetricChip>
+        </>
+      }
+      pulse={
+        <section className="rounded-[12px] border border-border bg-surface p-4 shadow-soft md:p-[18px]">
+          <h2 className="text-[13px] font-medium text-ink">Next payday</h2>
+          {upcoming.length === 0 ? (
+            <p className="mt-3 text-sm text-muted-foreground">{MONEY_COPY.incomePulseEmpty}</p>
+          ) : (
+            <ul className="mt-3 flex gap-2 overflow-x-auto pb-1 md:grid md:grid-cols-2 md:overflow-visible md:pb-0">
+              {upcoming.map((row) => (
+                <li key={row.id} className="min-w-[4.5rem] shrink-0 rounded-[10px] bg-brand-soft px-3 py-3 text-on-brand-soft md:min-w-0">
+                  <p className="text-[13px] tabular-nums">{formatShortDate(row.spent_on)}</p>
+                  <p className="mt-1 text-[15px] font-medium">{row.name}</p>
+                  <p className="text-[13px] tabular-nums">{formatMoney(row.amount_cents, currency)}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      }
+    >
+      {list}
       <PhoneFabClearance />
     </MoneyFrame>
     <LifeFab>

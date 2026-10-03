@@ -7,13 +7,16 @@ import { toast } from "sonner"
 import { RecordDialog } from "@/components/create/record-dialog"
 import { LifeFab, PhoneFabClearance } from "@/components/life/life-chrome"
 import {
+  CategoryLine,
   ConfirmRemove,
   EmptyState,
   FilterEmpty,
   MetricChip,
   MoneyAddButton,
   MoneyCard,
+  MoneyCategoryBlock,
   MoneyFrame,
+  type MoneyVisibility,
   RowMenu,
   useMoneyVisibility,
   useRowPatches,
@@ -41,15 +44,20 @@ export function SavingsBoard({
   today,
   householdName,
   error,
+  scan = false,
+  scanFilter,
 }: {
   rows: GoalRow[]
   currency: string
   today: string
   householdName?: string | null
   error?: boolean
+  scan?: boolean
+  scanFilter?: MoneyVisibility
 }) {
   const router = useRouter()
-  const { filter, setFilter } = useMoneyVisibility()
+  const { filter: storedFilter, setFilter } = useMoneyVisibility()
+  const filter = scan ? (scanFilter ?? "all") : storedFilter
   const { patch, merge } = useRowPatches<GoalRow>()
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<GoalRow | null>(null)
@@ -80,57 +88,17 @@ export function SavingsBoard({
     router.refresh()
   }
 
-  return (
+  const list = (
     <>
-    <MoneyFrame
-      phoneLayout
-      phoneTouch
-      phoneSubtitle={PHONE_MONEY_COPY.savings}
-      title="Savings"
-      subtitle={moneySubtitle("savings", householdName)}
-      action={
-        <div className="hidden md:block">
-          <MoneyAddButton onClick={() => setAdding(true)}>Add goal</MoneyAddButton>
-        </div>
-      }
-      filter={filter}
-      onFilter={setFilter}
-      chips={
-        <>
-          <MetricChip tone={metrics.onTrack > 0 ? "brand" : "muted"}>{metrics.onTrack} on track</MetricChip>
-          <MetricChip>Set aside {formatMoney(metrics.setAside, currency)}</MetricChip>
-        </>
-      }
-      pulse={
-        <section className="rounded-[12px] border border-border bg-surface p-4 shadow-soft md:p-[18px]">
-          <h2 className="text-[13px] font-medium text-ink">In progress</h2>
-          {pulse.length === 0 ? (
-            <p className="mt-3 text-sm text-muted-foreground">{MONEY_COPY.savingsPulseEmpty}</p>
-          ) : (
-            <ul className="mt-3 flex gap-2 overflow-x-auto pb-1 md:grid md:grid-cols-2 md:overflow-visible md:pb-0">
-              {pulse.map((goal) => {
-                const percent = goalPercent(goal.current_cents, goal.target_cents)
-                return (
-                  <li key={goal.id} className="min-w-[4.5rem] shrink-0 rounded-[10px] border border-border bg-surface px-3 py-2.5 md:min-w-0 md:shrink">
-                    <div className="flex items-baseline justify-between gap-3">
-                      <p className="truncate text-sm font-medium text-ink">{goal.name}</p>
-                      <p className="text-xs tabular-nums text-muted-foreground">{percent}%</p>
-                    </div>
-                    <div className="mt-2 h-1 overflow-hidden rounded-full bg-surface-muted">
-                      <div
-                        className="h-full rounded-full bg-brand"
-                        style={{ width: `${percent}%` }}
-                      />
-                    </div>
-                  </li>
-                )
-              })}
-            </ul>
-          )}
-        </section>
-      }
-    >
       {error ? <WidgetError /> : null}
+      {scan ? (
+        items.length === 0 ? (
+          <CategoryLine>{MONEY_COPY.savingsEmpty}</CategoryLine>
+        ) : visible.length === 0 ? (
+          <CategoryLine>{MONEY_COPY.filterEmpty}</CategoryLine>
+        ) : null
+      ) : (
+        <>
       {items.length === 0 ? (
         <EmptyState
           copy={MONEY_COPY.savingsEmpty}
@@ -142,6 +110,8 @@ export function SavingsBoard({
         />
       ) : null}
       {items.length > 0 && visible.length === 0 ? <FilterEmpty onClear={() => setFilter("all")} /> : null}
+        </>
+      )}
       {visible.map((goal) => {
         const percent = goalPercent(goal.current_cents, goal.target_cents)
         return (
@@ -230,6 +200,74 @@ export function SavingsBoard({
           router.refresh()
         }}
       />
+    </>
+  )
+
+  if (scan) {
+    return (
+      <MoneyCategoryBlock
+        id="money-savings"
+        title="Savings"
+        subtitle={PHONE_MONEY_COPY.savings}
+        addLabel="Add goal"
+        onAdd={() => setAdding(true)}
+      >
+        {list}
+      </MoneyCategoryBlock>
+    )
+  }
+
+  return (
+    <>
+    <MoneyFrame
+      phoneLayout
+      phoneTouch
+      phoneSubtitle={PHONE_MONEY_COPY.savings}
+      title="Savings"
+      subtitle={moneySubtitle("savings", householdName)}
+      action={
+        <div className="hidden md:block">
+          <MoneyAddButton onClick={() => setAdding(true)}>Add goal</MoneyAddButton>
+        </div>
+      }
+      filter={filter}
+      onFilter={setFilter}
+      chips={
+        <>
+          <MetricChip tone={metrics.onTrack > 0 ? "brand" : "muted"}>{metrics.onTrack} on track</MetricChip>
+          <MetricChip>Set aside {formatMoney(metrics.setAside, currency)}</MetricChip>
+        </>
+      }
+      pulse={
+        <section className="rounded-[12px] border border-border bg-surface p-4 shadow-soft md:p-[18px]">
+          <h2 className="text-[13px] font-medium text-ink">In progress</h2>
+          {pulse.length === 0 ? (
+            <p className="mt-3 text-sm text-muted-foreground">{MONEY_COPY.savingsPulseEmpty}</p>
+          ) : (
+            <ul className="mt-3 flex gap-2 overflow-x-auto pb-1 md:grid md:grid-cols-2 md:overflow-visible md:pb-0">
+              {pulse.map((goal) => {
+                const percent = goalPercent(goal.current_cents, goal.target_cents)
+                return (
+                  <li key={goal.id} className="min-w-[4.5rem] shrink-0 rounded-[10px] border border-border bg-surface px-3 py-2.5 md:min-w-0 md:shrink">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <p className="truncate text-sm font-medium text-ink">{goal.name}</p>
+                      <p className="text-xs tabular-nums text-muted-foreground">{percent}%</p>
+                    </div>
+                    <div className="mt-2 h-1 overflow-hidden rounded-full bg-surface-muted">
+                      <div
+                        className="h-full rounded-full bg-brand"
+                        style={{ width: `${percent}%` }}
+                      />
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </section>
+      }
+    >
+      {list}
       <PhoneFabClearance />
     </MoneyFrame>
     <LifeFab>

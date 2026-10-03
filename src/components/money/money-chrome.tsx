@@ -184,6 +184,48 @@ export function MoneyAddButton({ children, className, type = "button", ...props 
   )
 }
 
+/** One category on the Money scan. Rows inside stay the board’s own cards. */
+export function MoneyCategoryBlock({
+  id,
+  title,
+  subtitle,
+  addLabel,
+  onAdd,
+  children,
+}: {
+  id: string
+  title: string
+  subtitle: string
+  addLabel: string
+  onAdd: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <section
+      id={id}
+      aria-labelledby={`${id}-title`}
+      className="min-w-0 rounded-[12px] border border-border bg-surface p-4 shadow-soft max-md:scroll-mt-[4.75rem]"
+    >
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 id={`${id}-title`} className="text-[15px] font-medium text-ink md:text-[16px]">
+            {title}
+          </h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">{subtitle}</p>
+        </div>
+        <MoneyAddButton onClick={onAdd} className="shrink-0 max-md:min-h-11">
+          {addLabel}
+        </MoneyAddButton>
+      </header>
+      <div className="mt-3 grid gap-2.5">{children}</div>
+    </section>
+  )
+}
+
+export function CategoryLine({ children }: { children: React.ReactNode }) {
+  return <p className="text-sm text-muted-foreground">{children}</p>
+}
+
 export function MetricChip({
   children,
   tone = "muted",
