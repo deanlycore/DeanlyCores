@@ -287,6 +287,7 @@ function BalanceBoard({
         />
         {paymentRemoval.dialog}
         <PhoneFabClearance />
+        <div aria-hidden="true" className="h-12 md:hidden" />
       </MoneyFrame>
       <LifeFab>
         <MoneyAddButton className="h-11 px-4 shadow-soft" onClick={() => setAdding(true)}>
@@ -300,12 +301,12 @@ function BalanceBoard({
 function OpenStrip({ rows, currency }: { rows: BalanceRow[]; currency: string }) {
   const open = rows.filter((row) => row.remaining_cents > 0).slice(0, 7)
   return (
-    <section className="rounded-[12px] border border-border bg-surface p-4 shadow-soft md:p-[18px]">
+    <section className="min-w-0 rounded-[12px] border border-border bg-surface p-4 shadow-soft md:p-[18px]">
       <h2 className="text-[13px] font-medium text-ink">Still open</h2>
       {open.length === 0 ? (
         <p className="mt-3 text-sm text-muted-foreground">{DEBT_COPY.pulseEmpty}</p>
       ) : (
-        <ul className="mt-3 flex gap-2 overflow-x-auto pb-1">
+        <ul className="mt-3 flex min-w-0 gap-2 overflow-x-auto pb-1">
           {open.map((row) => (
             <li
               key={row.id}

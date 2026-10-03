@@ -211,7 +211,8 @@ test("phone and debt copy stays locked and does not name a household", () => {
 
 test("money phone uses the shared FAB clearance and debt stays off income and savings", () => {
   const root = join(dirname(fileURLToPath(import.meta.url)), "../../components/money")
-  for (const file of ["bills-board.tsx", "income-board.tsx", "savings-board.tsx", "subscriptions-board.tsx", "balance-board.tsx"]) {
+  const notesSpacer = /<div aria-hidden="true" className="h-12 md:hidden" \/>/
+  for (const file of ["bills-board.tsx", "income-board.tsx", "savings-board.tsx", "subscriptions-board.tsx"]) {
     const source = readFileSync(join(root, file), "utf8")
     assert.match(source, /<PhoneFabClearance \/>/)
     assert.match(source, /<LifeFab>/)
@@ -219,9 +220,12 @@ test("money phone uses the shared FAB clearance and debt stays off income and sa
     assert.match(source, /phoneLayout/)
     assert.doesNotMatch(source, /h-12 md:hidden/)
   }
+  const balance = readFileSync(join(root, "balance-board.tsx"), "utf8")
+  assert.match(balance, /<PhoneFabClearance \/>/)
+  assert.match(balance, notesSpacer)
+  assert.match(balance, /<LifeFab>/)
   assert.doesNotMatch(readFileSync(join(root, "income-board.tsx"), "utf8"), /Log payment/)
   assert.doesNotMatch(readFileSync(join(root, "savings-board.tsx"), "utf8"), /Log payment/)
-  const balance = readFileSync(join(root, "balance-board.tsx"), "utf8")
   assert.match(balance, /DEBT_COPY\.cardsEmpty/)
   assert.match(balance, /DEBT_COPY\.peopleEmpty/)
   assert.match(balance, /visibilityDefault = row\?\.visibility \?\? "private"/)

@@ -194,7 +194,7 @@ export function BillsBoard({
         const paid = Boolean(bill.paid_at)
         return (
           <MoneyCard key={bill.id} id={`item-${bill.id}`} onOpen={() => openEdit(bill)}>
-            <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex min-w-0 max-w-full flex-wrap items-start justify-between gap-3">
               <div className="flex min-w-0 items-start gap-3">
                 <StatusDisc tone={paid ? "paid" : due.tone === "danger" ? "overdue" : "upcoming"} />
                 <div className="min-w-0">
@@ -214,8 +214,8 @@ export function BillsBoard({
                   <BillAmount bill={bill} currency={currency} />
                 </div>
               </div>
-              <div className="ml-auto flex items-center gap-2" onClick={(event) => event.stopPropagation()}>
-                <p className={cn("text-[13px] tabular-nums", paid ? "text-muted-foreground" : dueTone[due.tone])}>
+              <div className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-2 max-md:w-full" onClick={(event) => event.stopPropagation()}>
+                <p className={cn("whitespace-nowrap text-[13px] tabular-nums", paid ? "text-muted-foreground" : dueTone[due.tone])}>
                   {paid ? formatShortDate(bill.due_on) : due.text}
                 </p>
                 {paid ? (
