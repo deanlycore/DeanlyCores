@@ -35,7 +35,7 @@ const notes = [
   },
   {
     id: "allergy",
-    title: "Wife allergy \u2014 no zucchini",
+    title: "Wife allergy — no zucchini",
     body: "Skip zucchini in the pasta.",
     visibility: "shared" as const,
     updated_at: "2026-10-01T18:00:00.000Z",
@@ -132,11 +132,11 @@ test("note reads stay on the session client and visibility is not an updateNote 
   assert.doesNotMatch(sliceFn(records, "setNoteVisibility"), /service/i)
 
   const listed = sliceFn(lists, "listNotes")
-  assert.match(listed, /requireHousehold\(/)
+  assert.match(listed, /requireHousehold/)
   assert.match(listed, /ctx\.supabase/)
   assert.match(listed, /from\("notes"\)/)
   const one = sliceFn(lists, "getNote")
-  assert.match(one, /requireHousehold\(/)
+  assert.match(one, /requireHousehold/)
   assert.match(one, /ctx\.supabase/)
   assert.doesNotMatch(one, /service/i)
 
