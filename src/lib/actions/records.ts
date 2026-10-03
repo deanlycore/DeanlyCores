@@ -6,7 +6,14 @@ import { requireHousehold } from "@/lib/data/context"
 import { firstName, parseCents, parseDate, zonedDate, zonedDateTimeToIso } from "@/lib/home/metrics"
 import { notifySharedCreate } from "@/lib/push/send"
 import { shouldNotifySharedCreate, type SharedPushKind } from "@/lib/push/shared"
-import { DEBT_COPY, remainingCents, type PaymentParent } from "@/lib/money/board"
+import {
+  DEBT_COPY,
+  cleanCategory,
+  personDirection,
+  remainingCents,
+  subscriptionCadence,
+  type PaymentParent,
+} from "@/lib/money/board"
 import { defaultVisibilityFor, type Visibility } from "@/lib/visibility"
 import { createClient } from "@/lib/supabase/server"
 
@@ -24,6 +31,14 @@ function textOf(value: FormDataEntryValue | null, max: number) {
 
 function columnMissing(error: { message: string } | null) {
   return Boolean(error && /column/i.test(error.message) && /does not exist/i.test(error.message))
+}
+
+function optionalLimit(value: FormDataEntryValue | null) {
+  const raw = String(value ?? "").trim()
+  if (!raw) return { ok: true as const, cents: null as number | null }
+  const cents = parseCents(raw)
+  if (cents == null) return { ok: false as const, message: "Enter a limit, or leave it blank." }
+  return { ok: true as const, cents }
 }
 
 function storeOf(formData: FormData) {
@@ -126,18 +141,17 @@ export async function createBill(formData: FormData): Promise<ActionResult> {
   const due = parseDate(formData.get("due_on"))
   if (!name || amount == null || !due) return { ok: false, message: "Add a name, amount, and due date." }
   const visibility = visibilityOf(formData.get("visibility"), defaultVisibilityFor("bill", ready.ctx.lastVisibility))
-  const { data, error } = await ready.ctx.supabase
-    .from("bills")
-    .insert({
-      household_id: ready.ctx.householdId,
-      owner_id: ready.ctx.userId,
-      visibility,
-      name,
-      amount_cents: amount,
-      due_on: due,
-    })
-    .select("id")
-    .single()
+  const row = {
+    household_id: ready.ctx.householdId,
+    owner_id: ready.ctx.userId,
+    visibility,
+    name,
+    amount_cents: amount,
+    due_on: due,
+  }
+  let result = await ready.ctx.supabase.from("bills").insert({ ...row, category: cleanCategory(formData.get("category")) }).select("id").single()
+  if (columnMissing(result.error)) result = await ready.ctx.supabase.from("bills").insert(row).select("id").single()
+  const { data, error } = result
   const failed = calm(error, "Couldn’t save that bill.")
   if (failed || !data) return failed ?? { ok: false, message: "Couldn’t save that bill." }
   await remember(ready.ctx, visibility)
@@ -496,18 +510,17 @@ export async function createGoal(formData: FormData): Promise<ActionResult> {
   const current = parseCents(formData.get("current")) ?? 0
   if (!name || target == null || target <= 0) return { ok: false, message: "Add a name and a target amount." }
   const visibility = visibilityOf(formData.get("visibility"), defaultVisibilityFor("goal", ready.ctx.lastVisibility))
-  const { data, error } = await ready.ctx.supabase
-    .from("goals")
-    .insert({
-      household_id: ready.ctx.householdId,
-      owner_id: ready.ctx.userId,
-      visibility,
-      name,
-      target_cents: target,
-      current_cents: current,
-    })
-    .select("id")
-    .single()
+  const row = {
+    household_id: ready.ctx.householdId,
+    owner_id: ready.ctx.userId,
+    visibility,
+    name,
+    target_cents: target,
+    current_cents: current,
+  }
+  let result = await ready.ctx.supabase.from("goals").insert({ ...row, category: cleanCategory(formData.get("category")) }).select("id").single()
+  if (columnMissing(result.error)) result = await ready.ctx.supabase.from("goals").insert(row).select("id").single()
+  const { data, error } = result
   const failed = calm(error, "Couldn’t save that goal.")
   if (failed || !data) return failed ?? { ok: false, message: "Couldn’t save that goal." }
   await remember(ready.ctx, visibility)
@@ -569,19 +582,19 @@ export async function createExpense(formData: FormData): Promise<ActionResult> {
     return { ok: false, message: "Add a name, amount, and date." }
   }
   const visibility = visibilityOf(formData.get("visibility"), defaultVisibilityFor("expense", ready.ctx.lastVisibility))
-  const { data, error } = await ready.ctx.supabase
-    .from("expenses")
-    .insert({
-      household_id: ready.ctx.householdId,
-      owner_id: ready.ctx.userId,
-      visibility,
-      name,
-      amount_cents: amount,
-      kind,
-      spent_on: spent,
-    })
-    .select("id")
-    .single()
+  const row = {
+    household_id: ready.ctx.householdId,
+    owner_id: ready.ctx.userId,
+    visibility,
+    name,
+    amount_cents: amount,
+    kind,
+    spent_on: spent,
+  }
+  const category = kind === "income" ? cleanCategory(formData.get("category")) : null
+  let result = await ready.ctx.supabase.from("expenses").insert({ ...row, category }).select("id").single()
+  if (columnMissing(result.error)) result = await ready.ctx.supabase.from("expenses").insert(row).select("id").single()
+  const { data, error } = result
   const failed = calm(error, "Couldn’t save that.")
   if (failed || !data) return failed ?? { ok: false, message: "Couldn’t save that." }
   await remember(ready.ctx, visibility)
@@ -659,18 +672,25 @@ export async function createSubscription(formData: FormData): Promise<ActionResu
   const renews = parseDate(formData.get("renews_on"))
   if (!name || amount == null || !renews) return { ok: false, message: "Add a name, amount, and renewal date." }
   const visibility = visibilityOf(formData.get("visibility"), defaultVisibilityFor("subscription", ready.ctx.lastVisibility))
-  const { data, error } = await ready.ctx.supabase
+  const row = {
+    household_id: ready.ctx.householdId,
+    owner_id: ready.ctx.userId,
+    visibility,
+    name,
+    amount_cents: amount,
+    renews_on: renews,
+  }
+  let result = await ready.ctx.supabase
     .from("subscriptions")
     .insert({
-      household_id: ready.ctx.householdId,
-      owner_id: ready.ctx.userId,
-      visibility,
-      name,
-      amount_cents: amount,
-      renews_on: renews,
+      ...row,
+      category: cleanCategory(formData.get("category")),
+      cadence: subscriptionCadence(formData.get("cadence")),
     })
     .select("id")
     .single()
+  if (columnMissing(result.error)) result = await ready.ctx.supabase.from("subscriptions").insert(row).select("id").single()
+  const { data, error } = result
   const failed = calm(error, "Couldn’t save that subscription.")
   if (failed || !data) return failed ?? { ok: false, message: "Couldn’t save that subscription." }
   await remember(ready.ctx, visibility)
@@ -692,10 +712,15 @@ export async function updateBill(id: string, formData: FormData): Promise<Action
   const due = parseDate(formData.get("due_on"))
   if (!name || amount == null || !due) return { ok: false, message: "Add a name, amount, and due date." }
   const visibility = visibilityOf(formData.get("visibility"), "shared")
-  const { error } = await ready.ctx.supabase
+  const row = { name, amount_cents: amount, due_on: due, visibility }
+  let { error } = await ready.ctx.supabase
     .from("bills")
-    .update({ name, amount_cents: amount, due_on: due, visibility })
+    .update({ ...row, category: cleanCategory(formData.get("category")) })
     .eq("id", id)
+  if (columnMissing(error)) {
+    const retry = await ready.ctx.supabase.from("bills").update(row).eq("id", id)
+    error = retry.error
+  }
   const failed = calm(error, "Couldn’t save that bill.")
   if (failed) return failed
   await syncBillPaid(ready.ctx, id, amount, false)
@@ -720,10 +745,16 @@ export async function updateExpense(id: string, formData: FormData): Promise<Act
   const spent = parseDate(formData.get("spent_on"))
   if (!name || amount == null || amount <= 0 || !spent) return { ok: false, message: "Add a name, amount, and date." }
   const visibility = visibilityOf(formData.get("visibility"), "shared")
-  const { error } = await ready.ctx.supabase
+  const row = { name, amount_cents: amount, spent_on: spent, visibility }
+  const withCategory = formData.get("kind") === "income" || formData.has("category")
+  let { error } = await ready.ctx.supabase
     .from("expenses")
-    .update({ name, amount_cents: amount, spent_on: spent, visibility })
+    .update(withCategory ? { ...row, category: cleanCategory(formData.get("category")) } : row)
     .eq("id", id)
+  if (columnMissing(error)) {
+    const retry = await ready.ctx.supabase.from("expenses").update(row).eq("id", id)
+    error = retry.error
+  }
   const failed = calm(error, "Couldn’t save that.")
   if (failed) return failed
   await remember(ready.ctx, visibility)
@@ -747,10 +778,15 @@ export async function updateGoal(id: string, formData: FormData): Promise<Action
   const current = parseCents(formData.get("current")) ?? 0
   if (!name || target == null || target <= 0) return { ok: false, message: "Add a name and a target amount." }
   const visibility = visibilityOf(formData.get("visibility"), "shared")
-  const { error } = await ready.ctx.supabase
+  const row = { name, target_cents: target, current_cents: current, visibility }
+  let { error } = await ready.ctx.supabase
     .from("goals")
-    .update({ name, target_cents: target, current_cents: current, visibility })
+    .update({ ...row, category: cleanCategory(formData.get("category")) })
     .eq("id", id)
+  if (columnMissing(error)) {
+    const retry = await ready.ctx.supabase.from("goals").update(row).eq("id", id)
+    error = retry.error
+  }
   const failed = calm(error, "Couldn’t save that goal.")
   if (failed) return failed
   await remember(ready.ctx, visibility)
@@ -774,10 +810,19 @@ export async function updateSubscription(id: string, formData: FormData): Promis
   const renews = parseDate(formData.get("renews_on"))
   if (!name || amount == null || !renews) return { ok: false, message: "Add a name, amount, and renewal date." }
   const visibility = visibilityOf(formData.get("visibility"), "shared")
-  const { error } = await ready.ctx.supabase
+  const row = { name, amount_cents: amount, renews_on: renews, visibility }
+  let { error } = await ready.ctx.supabase
     .from("subscriptions")
-    .update({ name, amount_cents: amount, renews_on: renews, visibility })
+    .update({
+      ...row,
+      category: cleanCategory(formData.get("category")),
+      cadence: subscriptionCadence(formData.get("cadence")),
+    })
     .eq("id", id)
+  if (columnMissing(error)) {
+    const retry = await ready.ctx.supabase.from("subscriptions").update(row).eq("id", id)
+    error = retry.error
+  }
   const failed = calm(error, "Couldn’t save that subscription.")
   if (failed) return failed
   await remember(ready.ctx, visibility)
@@ -847,8 +892,10 @@ export async function createMoneyCard(formData: FormData): Promise<ActionResult>
   const name = textOf(formData.get("name"), 120)
   const amount = parseCents(formData.get("amount"))
   if (!name || amount == null) return { ok: false, message: "Add a name and a balance." }
+  const limit = optionalLimit(formData.get("limit"))
+  if (!limit.ok) return limit
   const visibility = visibilityOf(formData.get("visibility"), defaultVisibilityFor("card"))
-  const { error } = await ready.ctx.supabase.from("money_cards").insert({
+  const row = {
     household_id: ready.ctx.householdId,
     owner_id: ready.ctx.userId,
     visibility,
@@ -856,7 +903,16 @@ export async function createMoneyCard(formData: FormData): Promise<ActionResult>
     amount_cents: amount,
     due_on: parseDate(formData.get("due_on")),
     note: textOf(formData.get("note"), 280),
+  }
+  let { error } = await ready.ctx.supabase.from("money_cards").insert({
+    ...row,
+    category: cleanCategory(formData.get("category")),
+    limit_cents: limit.cents,
   })
+  if (columnMissing(error)) {
+    const retry = await ready.ctx.supabase.from("money_cards").insert(row)
+    error = retry.error
+  }
   const failed = calm(error, "Couldn’t save that card.")
   if (failed) return failed
   await remember(ready.ctx, visibility)
@@ -870,17 +926,24 @@ export async function updateMoneyCard(id: string, formData: FormData): Promise<A
   const name = textOf(formData.get("name"), 120)
   const amount = parseCents(formData.get("amount"))
   if (!name || amount == null) return { ok: false, message: "Add a name and a balance." }
+  const limit = optionalLimit(formData.get("limit"))
+  if (!limit.ok) return limit
   const visibility = visibilityOf(formData.get("visibility"), "private")
-  const { error } = await ready.ctx.supabase
+  const row = {
+    name,
+    amount_cents: amount,
+    due_on: parseDate(formData.get("due_on")),
+    note: textOf(formData.get("note"), 280),
+    visibility,
+  }
+  let { error } = await ready.ctx.supabase
     .from("money_cards")
-    .update({
-      name,
-      amount_cents: amount,
-      due_on: parseDate(formData.get("due_on")),
-      note: textOf(formData.get("note"), 280),
-      visibility,
-    })
+    .update({ ...row, category: cleanCategory(formData.get("category")), limit_cents: limit.cents })
     .eq("id", id)
+  if (columnMissing(error)) {
+    const retry = await ready.ctx.supabase.from("money_cards").update(row).eq("id", id)
+    error = retry.error
+  }
   const failed = calm(error, "Couldn’t save that card.")
   if (failed) return failed
   await remember(ready.ctx, visibility)
@@ -903,7 +966,7 @@ export async function createMoneyPerson(formData: FormData): Promise<ActionResul
   const amount = parseCents(formData.get("amount"))
   if (!name || amount == null) return { ok: false, message: "Add a name and an amount." }
   const visibility = visibilityOf(formData.get("visibility"), defaultVisibilityFor("person"))
-  const { error } = await ready.ctx.supabase.from("money_people").insert({
+  const row = {
     household_id: ready.ctx.householdId,
     owner_id: ready.ctx.userId,
     visibility,
@@ -911,7 +974,15 @@ export async function createMoneyPerson(formData: FormData): Promise<ActionResul
     amount_cents: amount,
     due_on: parseDate(formData.get("due_on")),
     note: textOf(formData.get("note"), 280),
+  }
+  let { error } = await ready.ctx.supabase.from("money_people").insert({
+    ...row,
+    direction: personDirection(formData.get("direction")),
   })
+  if (columnMissing(error)) {
+    const retry = await ready.ctx.supabase.from("money_people").insert(row)
+    error = retry.error
+  }
   const failed = calm(error, "Couldn’t save that.")
   if (failed) return failed
   await remember(ready.ctx, visibility)
@@ -926,16 +997,21 @@ export async function updateMoneyPerson(id: string, formData: FormData): Promise
   const amount = parseCents(formData.get("amount"))
   if (!name || amount == null) return { ok: false, message: "Add a name and an amount." }
   const visibility = visibilityOf(formData.get("visibility"), "private")
-  const { error } = await ready.ctx.supabase
+  const row = {
+    name,
+    amount_cents: amount,
+    due_on: parseDate(formData.get("due_on")),
+    note: textOf(formData.get("note"), 280),
+    visibility,
+  }
+  let { error } = await ready.ctx.supabase
     .from("money_people")
-    .update({
-      name,
-      amount_cents: amount,
-      due_on: parseDate(formData.get("due_on")),
-      note: textOf(formData.get("note"), 280),
-      visibility,
-    })
+    .update({ ...row, direction: personDirection(formData.get("direction")) })
     .eq("id", id)
+  if (columnMissing(error)) {
+    const retry = await ready.ctx.supabase.from("money_people").update(row).eq("id", id)
+    error = retry.error
+  }
   const failed = calm(error, "Couldn’t save that.")
   if (failed) return failed
   await remember(ready.ctx, visibility)

@@ -16,6 +16,8 @@ export type BillRow = {
   due_on: string
   paid_at: string | null
   visibility: Visibility
+  /** Blank means Other. */
+  category?: string | null
 }
 
 export type TaskRow = {
@@ -50,6 +52,7 @@ export type GoalRow = {
   target_cents: number
   current_cents: number
   visibility: Visibility
+  category?: string | null
 }
 
 export type ShoppingRow = {
@@ -76,6 +79,7 @@ export type ExpenseRow = {
   kind: string
   spent_on: string
   visibility: Visibility
+  category?: string | null
 }
 
 export type NoteRow = {
@@ -103,6 +107,9 @@ export type MoneyCardRow = {
   due_on: string | null
   note: string | null
   visibility: Visibility
+  category?: string | null
+  /** Null when the limit was left blank. */
+  limit_cents?: number | null
 }
 
 export type MoneyPersonRow = {
@@ -112,6 +119,8 @@ export type MoneyPersonRow = {
   due_on: string | null
   note: string | null
   visibility: Visibility
+  /** owe is I owe. owed is They owe me. Missing rows stay owe. */
+  direction?: "owe" | "owed" | null
 }
 
 export type MoneyPaymentRow = {
@@ -131,6 +140,9 @@ export type SubscriptionRow = {
   renews_on: string
   active: boolean
   visibility: Visibility
+  category?: string | null
+  /** Missing rows stay monthly. Yearly amounts are not divided into the monthly line. */
+  cadence?: "month" | "year" | null
 }
 
 export type HomePayload = {

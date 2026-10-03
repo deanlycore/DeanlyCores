@@ -23,6 +23,7 @@ import {
   useRowPatches,
   useScrollToItemHash,
 } from "@/components/money/money-chrome"
+import { MoneyGroups } from "@/components/money/money-groups"
 import { VisibilityPill, WidgetError } from "@/components/ui/pills"
 import { deleteExpense, setExpenseVisibility } from "@/lib/actions/records"
 import type { ExpenseRow } from "@/lib/data/home"
@@ -31,8 +32,11 @@ import {
   MONEY_COPY,
   PHONE_MONEY_COPY,
   applyVisibility,
+  categoryGroupLabel,
   centsInput,
+  groupMoney,
   incomeGap,
+  incomeGroupTotal,
   incomeMetrics,
   moneySubtitle,
   nextPayEvents,
@@ -70,6 +74,13 @@ export function IncomeBoard({
 
   const items = merge(rows)
   const visible = sortIncome(applyVisibility(items, filter), today)
+  const groups = groupMoney(
+    "income",
+    visible,
+    (row) => categoryGroupLabel("income", row.category),
+    (rows) => incomeGroupTotal(rows, today),
+  )
+  const usedCategories = items.map((row) => row.category)
   const metrics = incomeMetrics(visible, today)
   const upcoming = nextPayEvents(visible, today)
 
@@ -114,7 +125,8 @@ export function IncomeBoard({
       {items.length > 0 && visible.length === 0 ? <FilterEmpty onClear={() => setFilter("all")} /> : null}
         </>
       )}
-      {visible.map((row) => {
+      {visible.length > 0 ? (
+        <MoneyGroups section="income" sectionCount={visible.length} groups={groups} currency={currency} renderRow={(row) => {
         const expected = row.spent_on > today
         const gap = incomeGap(row, visible, today)
         return (
@@ -158,13 +170,15 @@ export function IncomeBoard({
             </div>
           </MoneyCard>
         )
-      })}
+      }} />
+      ) : null}
       <RecordDialog
         key={adding ? "income-add" : "income-idle"}
         kind="income"
         today={today}
         defaultVisibility="shared"
         sheetOnPhone
+        categories={usedCategories}
         open={adding}
         onOpenChange={setAdding}
       />
@@ -183,7 +197,9 @@ export function IncomeBoard({
             amount: centsInput(editing.amount_cents),
             date: editing.spent_on,
             visibility: editing.visibility,
+            category: editing.category,
           }}
+          categories={usedCategories}
         />
       ) : null}
       <ConfirmRemove

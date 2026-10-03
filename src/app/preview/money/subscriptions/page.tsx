@@ -14,8 +14,9 @@ import { previewSession } from "../../shell-session"
 export const dynamic = "force-dynamic"
 
 const rows: SubscriptionRow[] = [
-  { id: "music", name: "Music", amount_cents: 1199, renews_on: "2026-10-12", active: true, visibility: "shared" },
-  { id: "cloud", name: "Cloud storage", amount_cents: 299, renews_on: "2026-10-20", active: true, visibility: "private" },
+  { id: "music", name: "Music", amount_cents: 4200, renews_on: "2026-10-12", active: true, visibility: "shared", category: "Music", cadence: "month" },
+  { id: "cloud", name: "Cloud storage", amount_cents: 4200, renews_on: "2026-10-20", active: true, visibility: "private", category: "Cloud Storage", cadence: "month" },
+  { id: "domain", name: "Domain", amount_cents: 12000, renews_on: "2026-12-01", active: true, visibility: "shared", category: "Technology", cadence: "year" },
 ]
 
 export default async function PreviewSubscriptions() {

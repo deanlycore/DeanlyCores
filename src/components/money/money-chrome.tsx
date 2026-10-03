@@ -79,6 +79,7 @@ export function MoneyFrame({
   phoneTouch = false,
   phoneLayout = false,
   phoneSubtitle,
+  detail,
 }: {
   title: string
   subtitle: string
@@ -93,6 +94,8 @@ export function MoneyFrame({
   /** Phone Money stack. Desktop title, subtitle, and chip wrap stay on md+. */
   phoneLayout?: boolean
   phoneSubtitle?: string
+  /** Muted line under the subtitle. Subscriptions use it for the monthly sum. */
+  detail?: string | null
 }) {
   return (
     <div className={cn("relative grid gap-5", phoneLayout && "max-md:min-w-0")}>
@@ -116,6 +119,7 @@ export function MoneyFrame({
             ) : (
               <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
             )}
+            {detail ? <p className="mt-1 text-[13px] tabular-nums text-muted-foreground">{detail}</p> : null}
           </div>
           <div className="flex flex-col items-stretch gap-3 sm:items-end">
             <VisibilityFilter value={filter} onChange={onFilter} phoneTouch={phoneTouch} />
@@ -191,6 +195,7 @@ export function MoneyCategoryBlock({
   subtitle,
   addLabel,
   onAdd,
+  detail,
   children,
 }: {
   id: string
@@ -198,6 +203,7 @@ export function MoneyCategoryBlock({
   subtitle: string
   addLabel: string
   onAdd: () => void
+  detail?: string | null
   children: React.ReactNode
 }) {
   return (
@@ -212,6 +218,7 @@ export function MoneyCategoryBlock({
             {title}
           </h2>
           <p className="mt-0.5 text-sm text-muted-foreground">{subtitle}</p>
+          {detail ? <p className="mt-1 text-[13px] tabular-nums text-muted-foreground">{detail}</p> : null}
         </div>
         <MoneyAddButton onClick={onAdd} className="shrink-0 max-md:min-h-11">
           {addLabel}

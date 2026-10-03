@@ -14,8 +14,8 @@ import { previewSession } from "../../shell-session"
 export const dynamic = "force-dynamic"
 
 const rows: ExpenseRow[] = [
-  { id: "paycheck", name: "Paycheck", amount_cents: 240000, kind: "income", spent_on: "2026-10-10", visibility: "shared" },
-  { id: "side", name: "Side work", amount_cents: 18000, kind: "income", spent_on: "2026-10-25", visibility: "private" },
+  { id: "paycheck", name: "Paycheck", amount_cents: 240000, kind: "income", spent_on: "2026-10-10", visibility: "shared", category: "Primary Income" },
+  { id: "side", name: "Side work", amount_cents: 18000, kind: "income", spent_on: "2026-10-25", visibility: "private", category: "Freelance / Business" },
 ]
 
 export default async function PreviewIncome() {

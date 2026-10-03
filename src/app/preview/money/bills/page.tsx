@@ -16,13 +16,13 @@ export const dynamic = "force-dynamic"
 const today = "2026-10-02"
 
 const rows: BillRow[] = [
-  { id: "storage", name: "Storage", amount_cents: 9100, due_on: "2026-10-01", paid_at: null, visibility: "shared" },
-  { id: "electric", name: "Electric", amount_cents: 12000, due_on: "2026-10-03", paid_at: null, visibility: "shared" },
-  { id: "gym", name: "Gym", amount_cents: 3000, due_on: "2026-10-06", paid_at: null, visibility: "private" },
-  { id: "internet", name: "Internet", amount_cents: 6000, due_on: "2026-10-08", paid_at: "2026-10-02T15:00:00Z", visibility: "shared" },
-  { id: "gas", name: "Gas", amount_cents: 5500, due_on: "2026-10-11", paid_at: null, visibility: "shared" },
-  { id: "truck", name: "Truck payment", amount_cents: 41700, due_on: "2026-10-13", paid_at: null, visibility: "shared" },
-  { id: "rent", name: "Rent", amount_cents: 190000, due_on: "2026-11-01", paid_at: null, visibility: "shared" },
+  { id: "storage", name: "Storage", amount_cents: 9100, due_on: "2026-10-01", paid_at: null, visibility: "shared", category: null },
+  { id: "electric", name: "Electric", amount_cents: 12000, due_on: "2026-10-03", paid_at: null, visibility: "shared", category: "Utilities" },
+  { id: "gym", name: "Gym", amount_cents: 3000, due_on: "2026-10-06", paid_at: null, visibility: "private", category: null },
+  { id: "internet", name: "Internet", amount_cents: 6000, due_on: "2026-10-08", paid_at: "2026-10-02T15:00:00Z", visibility: "shared", category: "Utilities" },
+  { id: "gas", name: "Gas", amount_cents: 5500, due_on: "2026-10-11", paid_at: null, visibility: "shared", category: "Utilities" },
+  { id: "truck", name: "Truck payment", amount_cents: 41700, due_on: "2026-10-13", paid_at: null, visibility: "shared", category: "Debt & Loans" },
+  { id: "rent", name: "Rent", amount_cents: 190000, due_on: "2026-11-01", paid_at: null, visibility: "shared", category: "Housing" },
 ]
 
 export default async function PreviewBills() {
