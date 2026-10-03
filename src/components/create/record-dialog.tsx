@@ -118,6 +118,7 @@ export function RecordDialog({
   onOpenChange,
   initial,
   sheetOnPhone = false,
+  extra,
 }: {
   kind: RecordKind
   trigger?: React.ReactNode
@@ -127,6 +128,7 @@ export function RecordDialog({
   onOpenChange?: (open: boolean) => void
   initial?: RecordInitial
   sheetOnPhone?: boolean
+  extra?: React.ReactNode
 }) {
   const router = useRouter()
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false)
@@ -291,6 +293,7 @@ export function RecordDialog({
               </label>
             </div>
           </fieldset>
+          {extra}
           {message ? <p className="text-sm text-danger">{message}</p> : null}
           <div className="flex items-center justify-end gap-2">
             <DialogClose asChild>

@@ -7,6 +7,8 @@ export type RailIcon =
   | "trending-up"
   | "piggy-bank"
   | "repeat"
+  | "credit-card"
+  | "user"
   | "calendar"
   | "tasks"
   | "meals"
@@ -19,7 +21,7 @@ export type SectionLink = {
   visibility?: Visibility
   emptyTitle: string
   emptyBody: string
-  /** Shown as a desktop rail child. Budget, debt, and vault sections stay off the rail. */
+  /** Shown as a desktop rail child. Budget, the old debt placeholder, and vault stay off the rail. */
   rail?: boolean
   icon?: RailIcon
 }
@@ -90,6 +92,26 @@ export const primaryNav: PrimaryNavItem[] = [
         emptyBody: "The ones you keep will be listed here, quietly, as Shared household records.",
         rail: true,
         icon: "repeat",
+      },
+      {
+        href: "/money/cards",
+        label: "Cards",
+        description: "Balances still open.",
+        visibility: DEFAULT_VISIBILITY.cards,
+        emptyTitle: "No cards yet.",
+        emptyBody: "Add a card when you want to track what’s left.",
+        rail: true,
+        icon: "credit-card",
+      },
+      {
+        href: "/money/people",
+        label: "People",
+        description: "People you still owe.",
+        visibility: DEFAULT_VISIBILITY.people,
+        emptyTitle: "Nothing owed to anyone yet.",
+        emptyBody: "Add a person when you want to track what you owe.",
+        rail: true,
+        icon: "user",
       },
       {
         href: "/money/budget",

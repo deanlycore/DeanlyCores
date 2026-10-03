@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
 import { RecordDialog } from "@/components/create/record-dialog"
+import { LifeFab, PhoneFabClearance } from "@/components/life/life-chrome"
 import {
   ConfirmRemove,
   EmptyState,
@@ -25,6 +26,7 @@ import type { ExpenseRow } from "@/lib/data/home"
 import { formatMoney, formatShortDate } from "@/lib/home/metrics"
 import {
   MONEY_COPY,
+  PHONE_MONEY_COPY,
   applyVisibility,
   centsInput,
   incomeGap,
@@ -51,6 +53,7 @@ export function IncomeBoard({
   const router = useRouter()
   const { filter, setFilter } = useMoneyVisibility()
   const { patch, merge } = useRowPatches<ExpenseRow>()
+  const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<ExpenseRow | null>(null)
   const [editOpen, setEditOpen] = useState(false)
   const [removing, setRemoving] = useState<ExpenseRow | null>(null)
@@ -61,17 +64,6 @@ export function IncomeBoard({
   const visible = sortIncome(applyVisibility(items, filter), today)
   const metrics = incomeMetrics(visible, today)
   const upcoming = nextPayEvents(visible, today)
-
-  function addDialog() {
-    return (
-      <RecordDialog
-        kind="income"
-        today={today}
-        defaultVisibility="shared"
-        trigger={<MoneyAddButton>Add income</MoneyAddButton>}
-      />
-    )
-  }
 
   function openEdit(row: ExpenseRow) {
     setEditing(row)
@@ -91,10 +83,18 @@ export function IncomeBoard({
   }
 
   return (
+    <>
     <MoneyFrame
+      phoneLayout
+      phoneTouch
+      phoneSubtitle={PHONE_MONEY_COPY.income}
       title="Income"
       subtitle={moneySubtitle("income", householdName)}
-      action={addDialog()}
+      action={
+        <div className="hidden md:block">
+          <MoneyAddButton onClick={() => setAdding(true)}>Add income</MoneyAddButton>
+        </div>
+      }
       filter={filter}
       onFilter={setFilter}
       chips={
@@ -111,9 +111,9 @@ export function IncomeBoard({
           {upcoming.length === 0 ? (
             <p className="mt-3 text-sm text-muted-foreground">{MONEY_COPY.incomePulseEmpty}</p>
           ) : (
-            <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+            <ul className="mt-3 flex gap-2 overflow-x-auto pb-1 md:grid md:grid-cols-2 md:overflow-visible md:pb-0">
               {upcoming.map((row) => (
-                <li key={row.id} className="rounded-[10px] bg-brand-soft px-3 py-3 text-on-brand-soft">
+                <li key={row.id} className="min-w-[4.5rem] shrink-0 rounded-[10px] bg-brand-soft px-3 py-3 text-on-brand-soft md:min-w-0">
                   <p className="text-[13px] tabular-nums">{formatShortDate(row.spent_on)}</p>
                   <p className="mt-1 text-[15px] font-medium">{row.name}</p>
                   <p className="text-[13px] tabular-nums">{formatMoney(row.amount_cents, currency)}</p>
@@ -125,7 +125,16 @@ export function IncomeBoard({
       }
     >
       {error ? <WidgetError /> : null}
-      {items.length === 0 ? <EmptyState copy={MONEY_COPY.incomeEmpty} action={addDialog()} /> : null}
+      {items.length === 0 ? (
+        <EmptyState
+          copy={MONEY_COPY.incomeEmpty}
+          action={
+            <div className="hidden md:block">
+              <MoneyAddButton onClick={() => setAdding(true)}>Add income</MoneyAddButton>
+            </div>
+          }
+        />
+      ) : null}
       {items.length > 0 && visible.length === 0 ? <FilterEmpty onClear={() => setFilter("all")} /> : null}
       {visible.map((row) => {
         const expected = row.spent_on > today
@@ -160,6 +169,7 @@ export function IncomeBoard({
                   {expected ? "Expected" : "Received"}
                 </p>
                 <RowMenu
+                  className="max-md:min-h-11 max-md:min-w-11"
                   label={row.name}
                   visibility={row.visibility}
                   onEdit={() => openEdit(row)}
@@ -171,12 +181,22 @@ export function IncomeBoard({
           </MoneyCard>
         )
       })}
+      <RecordDialog
+        key={adding ? "income-add" : "income-idle"}
+        kind="income"
+        today={today}
+        defaultVisibility="shared"
+        sheetOnPhone
+        open={adding}
+        onOpenChange={setAdding}
+      />
       {editing ? (
         <RecordDialog
           key={editing.id}
           kind="income"
           today={today}
           defaultVisibility="shared"
+          sheetOnPhone
           open={editOpen}
           onOpenChange={setEditOpen}
           initial={{
@@ -189,6 +209,7 @@ export function IncomeBoard({
         />
       ) : null}
       <ConfirmRemove
+        sheetOnPhone
         open={Boolean(removing)}
         title="Remove this income?"
         pending={pendingRemove}
@@ -208,6 +229,13 @@ export function IncomeBoard({
           router.refresh()
         }}
       />
+      <PhoneFabClearance />
     </MoneyFrame>
+    <LifeFab>
+      <MoneyAddButton className="h-11 px-4 shadow-soft" onClick={() => setAdding(true)}>
+        Add income
+      </MoneyAddButton>
+    </LifeFab>
+    </>
   )
 }

@@ -8,6 +8,9 @@ import type {
   MealRow,
   NoteRow,
   ShoppingRow,
+  MoneyCardRow,
+  MoneyPaymentRow,
+  MoneyPersonRow,
   SubscriptionRow,
   TaskRow,
   VaultRow,
@@ -169,6 +172,70 @@ export async function listDocuments() {
       .order("created_at", { ascending: false })
       .limit(40),
   )
+}
+
+function relationMissing(error: { message: string } | null) {
+  return Boolean(error && /does not exist|schema cache/i.test(error.message))
+}
+
+export async function listMoneyCards() {
+  const ctx = await requireHousehold()
+  if (!ctx) return listed<MoneyCardRow>(Promise.resolve({ data: [], error: null }))
+  const result = await ctx.supabase
+    .from("money_cards")
+    .select("id, name, amount_cents, due_on, note, visibility")
+    .eq("household_id", ctx.householdId)
+    .order("name", { ascending: true })
+    .limit(100)
+  if (relationMissing(result.error)) {
+    return { rows: [] as MoneyCardRow[], error: false, currency: ctx.currency, visibility: ctx.lastVisibility }
+  }
+  return {
+    rows: result.data ?? [],
+    error: Boolean(result.error),
+    currency: ctx.currency,
+    visibility: ctx.lastVisibility,
+  }
+}
+
+export async function listMoneyPeople() {
+  const ctx = await requireHousehold()
+  if (!ctx) return listed<MoneyPersonRow>(Promise.resolve({ data: [], error: null }))
+  const result = await ctx.supabase
+    .from("money_people")
+    .select("id, name, amount_cents, due_on, note, visibility")
+    .eq("household_id", ctx.householdId)
+    .order("name", { ascending: true })
+    .limit(100)
+  if (relationMissing(result.error)) {
+    return { rows: [] as MoneyPersonRow[], error: false, currency: ctx.currency, visibility: ctx.lastVisibility }
+  }
+  return {
+    rows: result.data ?? [],
+    error: Boolean(result.error),
+    currency: ctx.currency,
+    visibility: ctx.lastVisibility,
+  }
+}
+
+export async function listMoneyPayments() {
+  const ctx = await requireHousehold()
+  if (!ctx) return listed<MoneyPaymentRow>(Promise.resolve({ data: [], error: null }))
+  const result = await ctx.supabase
+    .from("money_payments")
+    .select("id, bill_id, card_id, person_id, amount_cents, paid_on, note")
+    .eq("household_id", ctx.householdId)
+    .order("paid_on", { ascending: true })
+    .limit(500)
+  if (relationMissing(result.error)) {
+    return { rows: [] as MoneyPaymentRow[], error: false, currency: ctx.currency, visibility: ctx.lastVisibility }
+  }
+  return {
+    rows: result.data ?? [],
+    error: Boolean(result.error),
+    currency: ctx.currency,
+    visibility: ctx.lastVisibility,
+  }
 }
 
 export async function listSubscriptions() {

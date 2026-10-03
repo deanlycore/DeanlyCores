@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
 import { RecordDialog } from "@/components/create/record-dialog"
+import { LifeFab, PhoneFabClearance } from "@/components/life/life-chrome"
 import {
   ConfirmRemove,
   EmptyState,
@@ -27,6 +28,7 @@ import type { SubscriptionRow } from "@/lib/data/home"
 import { formatMoney, formatShortDate } from "@/lib/home/metrics"
 import {
   MONEY_COPY,
+  PHONE_MONEY_COPY,
   amountLabel,
   applyVisibility,
   centsInput,
@@ -53,6 +55,7 @@ export function SubscriptionsBoard({
   const router = useRouter()
   const { filter, setFilter } = useMoneyVisibility()
   const { patch, merge } = useRowPatches<SubscriptionRow>()
+  const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<SubscriptionRow | null>(null)
   const [editOpen, setEditOpen] = useState(false)
   const [removing, setRemoving] = useState<SubscriptionRow | null>(null)
@@ -63,17 +66,6 @@ export function SubscriptionsBoard({
   const visible = sortSubscriptions(applyVisibility(items, filter))
   const metrics = subscriptionMetrics(visible, today)
   const pulse = renewalPulseCells(visible, today, currency)
-
-  function addDialog() {
-    return (
-      <RecordDialog
-        kind="subscription"
-        today={today}
-        defaultVisibility="shared"
-        trigger={<MoneyAddButton>Add subscription</MoneyAddButton>}
-      />
-    )
-  }
 
   function openEdit(row: SubscriptionRow) {
     setEditing(row)
@@ -105,10 +97,18 @@ export function SubscriptionsBoard({
   }
 
   return (
+    <>
     <MoneyFrame
+      phoneLayout
+      phoneTouch
+      phoneSubtitle={PHONE_MONEY_COPY.subscriptions}
       title="Subscriptions"
       subtitle={moneySubtitle("subscriptions", householdName)}
-      action={addDialog()}
+      action={
+        <div className="hidden md:block">
+          <MoneyAddButton onClick={() => setAdding(true)}>Add subscription</MoneyAddButton>
+        </div>
+      }
       filter={filter}
       onFilter={setFilter}
       chips={
@@ -120,7 +120,16 @@ export function SubscriptionsBoard({
       pulse={<RhythmStrip title="Renewing soon" cells={pulse} empty={MONEY_COPY.subscriptionsPulseEmpty} />}
     >
       {error ? <WidgetError /> : null}
-      {items.length === 0 ? <EmptyState copy={MONEY_COPY.subscriptionsEmpty} action={addDialog()} /> : null}
+      {items.length === 0 ? (
+        <EmptyState
+          copy={MONEY_COPY.subscriptionsEmpty}
+          action={
+            <div className="hidden md:block">
+              <MoneyAddButton onClick={() => setAdding(true)}>Add subscription</MoneyAddButton>
+            </div>
+          }
+        />
+      ) : null}
       {items.length > 0 && visible.length === 0 ? <FilterEmpty onClear={() => setFilter("all")} /> : null}
       {visible.map((row) => (
         <MoneyCard key={row.id} id={`item-${row.id}`} onOpen={() => openEdit(row)}>
@@ -153,6 +162,7 @@ export function SubscriptionsBoard({
             </div>
             <div className="ml-auto flex items-center gap-2" onClick={(event) => event.stopPropagation()}>
               <RowMenu
+                className="max-md:min-h-11 max-md:min-w-11"
                 label={row.name}
                 visibility={row.visibility}
                 onEdit={() => openEdit(row)}
@@ -168,12 +178,22 @@ export function SubscriptionsBoard({
           </div>
         </MoneyCard>
       ))}
+      <RecordDialog
+        key={adding ? "subscription-add" : "subscription-idle"}
+        kind="subscription"
+        today={today}
+        defaultVisibility="shared"
+        sheetOnPhone
+        open={adding}
+        onOpenChange={setAdding}
+      />
       {editing ? (
         <RecordDialog
           key={editing.id}
           kind="subscription"
           today={today}
           defaultVisibility="shared"
+          sheetOnPhone
           open={editOpen}
           onOpenChange={setEditOpen}
           initial={{
@@ -186,6 +206,7 @@ export function SubscriptionsBoard({
         />
       ) : null}
       <ConfirmRemove
+        sheetOnPhone
         open={Boolean(removing)}
         title="Remove this subscription?"
         pending={pendingRemove}
@@ -205,6 +226,13 @@ export function SubscriptionsBoard({
           router.refresh()
         }}
       />
+      <PhoneFabClearance />
     </MoneyFrame>
+    <LifeFab>
+      <MoneyAddButton className="h-11 px-4 shadow-soft" onClick={() => setAdding(true)}>
+        Add subscription
+      </MoneyAddButton>
+    </LifeFab>
+    </>
   )
 }

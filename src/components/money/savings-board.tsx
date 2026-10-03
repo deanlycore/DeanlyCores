@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
 import { RecordDialog } from "@/components/create/record-dialog"
+import { LifeFab, PhoneFabClearance } from "@/components/life/life-chrome"
 import {
   ConfirmRemove,
   EmptyState,
@@ -24,6 +25,7 @@ import type { GoalRow } from "@/lib/data/home"
 import { formatMoney } from "@/lib/home/metrics"
 import {
   MONEY_COPY,
+  PHONE_MONEY_COPY,
   applyVisibility,
   centsInput,
   goalPercent,
@@ -49,6 +51,7 @@ export function SavingsBoard({
   const router = useRouter()
   const { filter, setFilter } = useMoneyVisibility()
   const { patch, merge } = useRowPatches<GoalRow>()
+  const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<GoalRow | null>(null)
   const [editOpen, setEditOpen] = useState(false)
   const [removing, setRemoving] = useState<GoalRow | null>(null)
@@ -59,17 +62,6 @@ export function SavingsBoard({
   const visible = sortSharedFirst(applyVisibility(items, filter))
   const pulse = visible.slice(0, 4)
   const metrics = savingsMetrics(visible)
-
-  function addDialog() {
-    return (
-      <RecordDialog
-        kind="goal"
-        today={today}
-        defaultVisibility="shared"
-        trigger={<MoneyAddButton>Add goal</MoneyAddButton>}
-      />
-    )
-  }
 
   function openEdit(goal: GoalRow) {
     setEditing(goal)
@@ -89,10 +81,18 @@ export function SavingsBoard({
   }
 
   return (
+    <>
     <MoneyFrame
+      phoneLayout
+      phoneTouch
+      phoneSubtitle={PHONE_MONEY_COPY.savings}
       title="Savings"
       subtitle={moneySubtitle("savings", householdName)}
-      action={addDialog()}
+      action={
+        <div className="hidden md:block">
+          <MoneyAddButton onClick={() => setAdding(true)}>Add goal</MoneyAddButton>
+        </div>
+      }
       filter={filter}
       onFilter={setFilter}
       chips={
@@ -107,11 +107,11 @@ export function SavingsBoard({
           {pulse.length === 0 ? (
             <p className="mt-3 text-sm text-muted-foreground">{MONEY_COPY.savingsPulseEmpty}</p>
           ) : (
-            <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+            <ul className="mt-3 flex gap-2 overflow-x-auto pb-1 md:grid md:grid-cols-2 md:overflow-visible md:pb-0">
               {pulse.map((goal) => {
                 const percent = goalPercent(goal.current_cents, goal.target_cents)
                 return (
-                  <li key={goal.id} className="rounded-[10px] border border-border bg-surface px-3 py-2.5">
+                  <li key={goal.id} className="min-w-[4.5rem] shrink-0 rounded-[10px] border border-border bg-surface px-3 py-2.5 md:min-w-0 md:shrink">
                     <div className="flex items-baseline justify-between gap-3">
                       <p className="truncate text-sm font-medium text-ink">{goal.name}</p>
                       <p className="text-xs tabular-nums text-muted-foreground">{percent}%</p>
@@ -131,7 +131,16 @@ export function SavingsBoard({
       }
     >
       {error ? <WidgetError /> : null}
-      {items.length === 0 ? <EmptyState copy={MONEY_COPY.savingsEmpty} action={addDialog()} /> : null}
+      {items.length === 0 ? (
+        <EmptyState
+          copy={MONEY_COPY.savingsEmpty}
+          action={
+            <div className="hidden md:block">
+              <MoneyAddButton onClick={() => setAdding(true)}>Add goal</MoneyAddButton>
+            </div>
+          }
+        />
+      ) : null}
       {items.length > 0 && visible.length === 0 ? <FilterEmpty onClear={() => setFilter("all")} /> : null}
       {visible.map((goal) => {
         const percent = goalPercent(goal.current_cents, goal.target_cents)
@@ -161,6 +170,7 @@ export function SavingsBoard({
               </div>
               <div onClick={(event) => event.stopPropagation()}>
                 <RowMenu
+                  className="max-md:min-h-11 max-md:min-w-11"
                   label={goal.name}
                   visibility={goal.visibility}
                   onEdit={() => openEdit(goal)}
@@ -172,12 +182,22 @@ export function SavingsBoard({
           </MoneyCard>
         )
       })}
+      <RecordDialog
+        key={adding ? "goal-add" : "goal-idle"}
+        kind="goal"
+        today={today}
+        defaultVisibility="shared"
+        sheetOnPhone
+        open={adding}
+        onOpenChange={setAdding}
+      />
       {editing ? (
         <RecordDialog
           key={editing.id}
           kind="goal"
           today={today}
           defaultVisibility="shared"
+          sheetOnPhone
           open={editOpen}
           onOpenChange={setEditOpen}
           initial={{
@@ -190,6 +210,7 @@ export function SavingsBoard({
         />
       ) : null}
       <ConfirmRemove
+        sheetOnPhone
         open={Boolean(removing)}
         title="Remove this goal?"
         pending={pendingRemove}
@@ -209,6 +230,13 @@ export function SavingsBoard({
           router.refresh()
         }}
       />
+      <PhoneFabClearance />
     </MoneyFrame>
+    <LifeFab>
+      <MoneyAddButton className="h-11 px-4 shadow-soft" onClick={() => setAdding(true)}>
+        Add goal
+      </MoneyAddButton>
+    </LifeFab>
+    </>
   )
 }

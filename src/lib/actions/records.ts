@@ -6,10 +6,11 @@ import { requireHousehold } from "@/lib/data/context"
 import { firstName, parseCents, parseDate, zonedDate, zonedDateTimeToIso } from "@/lib/home/metrics"
 import { notifySharedCreate } from "@/lib/push/send"
 import { shouldNotifySharedCreate, type SharedPushKind } from "@/lib/push/shared"
+import { DEBT_COPY, remainingCents, type PaymentParent } from "@/lib/money/board"
 import { defaultVisibilityFor, type Visibility } from "@/lib/visibility"
 import { createClient } from "@/lib/supabase/server"
 
-export type ActionResult = { ok: true; id?: string } | { ok: false; message: string }
+export type ActionResult = { ok: true; id?: string; paidCents?: number; leftCents?: number } | { ok: false; message: string }
 
 function visibilityOf(value: FormDataEntryValue | null, fallback: Visibility): Visibility {
   return value === "private" || value === "shared" ? value : fallback
@@ -697,6 +698,7 @@ export async function updateBill(id: string, formData: FormData): Promise<Action
     .eq("id", id)
   const failed = calm(error, "Couldn’t save that bill.")
   if (failed) return failed
+  await syncBillPaid(ready.ctx, id, amount, false)
   await remember(ready.ctx, visibility)
   refresh()
   return { ok: true }
@@ -801,8 +803,221 @@ export async function setSubscriptionActive(id: string, active: boolean): Promis
   return { ok: true }
 }
 
+const PARENT_TABLE = {
+  bill: "bills",
+  card: "money_cards",
+  person: "money_people",
+} as const
+
+const PARENT_COLUMN = {
+  bill: "bill_id",
+  card: "card_id",
+  person: "person_id",
+} as const
+
+function parentKindOf(value: FormDataEntryValue | null): PaymentParent | null {
+  return value === "bill" || value === "card" || value === "person" ? value : null
+}
+
+function recordId(value: FormDataEntryValue | null) {
+  const id = String(value ?? "")
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id) ? id : null
+}
+
+async function syncBillPaid(
+  ctx: NonNullable<Awaited<ReturnType<typeof requireHousehold>>>,
+  billId: string,
+  amountCents: number,
+  clearWhenOpen: boolean,
+) {
+  const payments = await ctx.supabase.from("money_payments").select("amount_cents").eq("bill_id", billId)
+  if (payments.error) return
+  const rows = payments.data ?? []
+  if (rows.length === 0 && !clearWhenOpen) return
+  const left = remainingCents(amountCents, rows)
+  await ctx.supabase
+    .from("bills")
+    .update({ paid_at: left === 0 ? new Date().toISOString() : null })
+    .eq("id", billId)
+}
+
+export async function createMoneyCard(formData: FormData): Promise<ActionResult> {
+  const ready = await gate()
+  if (!ready.ctx) return ready
+  const name = textOf(formData.get("name"), 120)
+  const amount = parseCents(formData.get("amount"))
+  if (!name || amount == null) return { ok: false, message: "Add a name and a balance." }
+  const visibility = visibilityOf(formData.get("visibility"), defaultVisibilityFor("card"))
+  const { error } = await ready.ctx.supabase.from("money_cards").insert({
+    household_id: ready.ctx.householdId,
+    owner_id: ready.ctx.userId,
+    visibility,
+    name,
+    amount_cents: amount,
+    due_on: parseDate(formData.get("due_on")),
+    note: textOf(formData.get("note"), 280),
+  })
+  const failed = calm(error, "Couldn’t save that card.")
+  if (failed) return failed
+  await remember(ready.ctx, visibility)
+  refresh()
+  return { ok: true }
+}
+
+export async function updateMoneyCard(id: string, formData: FormData): Promise<ActionResult> {
+  const ready = await gate()
+  if (!ready.ctx) return ready
+  const name = textOf(formData.get("name"), 120)
+  const amount = parseCents(formData.get("amount"))
+  if (!name || amount == null) return { ok: false, message: "Add a name and a balance." }
+  const visibility = visibilityOf(formData.get("visibility"), "private")
+  const { error } = await ready.ctx.supabase
+    .from("money_cards")
+    .update({
+      name,
+      amount_cents: amount,
+      due_on: parseDate(formData.get("due_on")),
+      note: textOf(formData.get("note"), 280),
+      visibility,
+    })
+    .eq("id", id)
+  const failed = calm(error, "Couldn’t save that card.")
+  if (failed) return failed
+  await remember(ready.ctx, visibility)
+  refresh()
+  return { ok: true }
+}
+
+export async function deleteMoneyCard(id: string) {
+  return removeRecord("money_cards", id, "Couldn’t remove that card.")
+}
+
+export async function setMoneyCardVisibility(id: string, visibility: Visibility) {
+  return setRecordVisibility("money_cards", id, visibility, "Couldn’t update that card.")
+}
+
+export async function createMoneyPerson(formData: FormData): Promise<ActionResult> {
+  const ready = await gate()
+  if (!ready.ctx) return ready
+  const name = textOf(formData.get("name"), 120)
+  const amount = parseCents(formData.get("amount"))
+  if (!name || amount == null) return { ok: false, message: "Add a name and an amount." }
+  const visibility = visibilityOf(formData.get("visibility"), defaultVisibilityFor("person"))
+  const { error } = await ready.ctx.supabase.from("money_people").insert({
+    household_id: ready.ctx.householdId,
+    owner_id: ready.ctx.userId,
+    visibility,
+    name,
+    amount_cents: amount,
+    due_on: parseDate(formData.get("due_on")),
+    note: textOf(formData.get("note"), 280),
+  })
+  const failed = calm(error, "Couldn’t save that.")
+  if (failed) return failed
+  await remember(ready.ctx, visibility)
+  refresh()
+  return { ok: true }
+}
+
+export async function updateMoneyPerson(id: string, formData: FormData): Promise<ActionResult> {
+  const ready = await gate()
+  if (!ready.ctx) return ready
+  const name = textOf(formData.get("name"), 120)
+  const amount = parseCents(formData.get("amount"))
+  if (!name || amount == null) return { ok: false, message: "Add a name and an amount." }
+  const visibility = visibilityOf(formData.get("visibility"), "private")
+  const { error } = await ready.ctx.supabase
+    .from("money_people")
+    .update({
+      name,
+      amount_cents: amount,
+      due_on: parseDate(formData.get("due_on")),
+      note: textOf(formData.get("note"), 280),
+      visibility,
+    })
+    .eq("id", id)
+  const failed = calm(error, "Couldn’t save that.")
+  if (failed) return failed
+  await remember(ready.ctx, visibility)
+  refresh()
+  return { ok: true }
+}
+
+export async function deleteMoneyPerson(id: string) {
+  return removeRecord("money_people", id, "Couldn’t remove that person.")
+}
+
+export async function setMoneyPersonVisibility(id: string, visibility: Visibility) {
+  return setRecordVisibility("money_people", id, visibility, "Couldn’t update that person.")
+}
+
+export async function logMoneyPayment(formData: FormData): Promise<ActionResult> {
+  const ready = await gate()
+  if (!ready.ctx) return ready
+  const kind = parentKindOf(formData.get("parent_kind"))
+  const parentId = recordId(formData.get("parent_id"))
+  const amount = parseCents(formData.get("amount"))
+  const paidOn = parseDate(formData.get("paid_on"))
+  if (!kind || !parentId) return { ok: false, message: "Couldn’t find that record." }
+  if (amount == null || amount <= 0 || !paidOn) return { ok: false, message: "Add an amount and a date." }
+  const table = PARENT_TABLE[kind]
+  const { data: parent, error: parentError } = await ready.ctx.supabase
+    .from(table)
+    .select("id, amount_cents, visibility, name")
+    .eq("id", parentId)
+    .maybeSingle()
+  if (parentError || !parent) return { ok: false, message: "You don’t have access to change that." }
+  const column = PARENT_COLUMN[kind]
+  const existing = await ready.ctx.supabase.from("money_payments").select("amount_cents").eq(column, parentId)
+  if (existing.error) return calm(existing.error, "Couldn’t save that payment.") ?? { ok: false, message: "Couldn’t save that payment." }
+  const left = remainingCents(parent.amount_cents, existing.data ?? [])
+  if (amount > left) return { ok: false, message: DEBT_COPY.overpay }
+  const { error } = await ready.ctx.supabase.from("money_payments").insert({
+    household_id: ready.ctx.householdId,
+    owner_id: ready.ctx.userId,
+    [column]: parentId,
+    amount_cents: amount,
+    paid_on: paidOn,
+    note: textOf(formData.get("note"), 280),
+  })
+  const failed = calm(error, "Couldn’t save that payment.")
+  if (failed) return failed
+  const nextLeft = left - amount
+  if (kind === "bill") await syncBillPaid(ready.ctx, parentId, parent.amount_cents, true)
+  if (kind === "bill" && nextLeft === 0 && parent.visibility === "shared") {
+    await log(ready.ctx, {
+      visibility: "shared",
+      entityType: "bill",
+      entityId: parentId,
+      summary: `${firstName(ready.ctx.displayName)} paid ${parent.name}`,
+    })
+  }
+  refresh()
+  return { ok: true, paidCents: amount, leftCents: nextLeft }
+}
+
+export async function removeMoneyPayment(id: string): Promise<ActionResult> {
+  const ready = await gate()
+  if (!ready.ctx) return ready
+  const { data: payment, error: readError } = await ready.ctx.supabase
+    .from("money_payments")
+    .select("id, bill_id")
+    .eq("id", id)
+    .maybeSingle()
+  if (readError || !payment) return { ok: false, message: "Couldn’t remove that payment." }
+  const { error } = await ready.ctx.supabase.from("money_payments").delete().eq("id", id)
+  const failed = calm(error, "Couldn’t remove that payment.")
+  if (failed) return failed
+  if (payment.bill_id) {
+    const bill = await ready.ctx.supabase.from("bills").select("amount_cents").eq("id", payment.bill_id).maybeSingle()
+    if (bill.data) await syncBillPaid(ready.ctx, payment.bill_id, bill.data.amount_cents, true)
+  }
+  refresh()
+  return { ok: true }
+}
+
 async function removeRecord(
-  table: "bills" | "expenses" | "goals" | "subscriptions" | "tasks" | "calendar_events" | "meals" | "shopping_items" | "notes",
+  table: "bills" | "expenses" | "goals" | "subscriptions" | "tasks" | "calendar_events" | "meals" | "shopping_items" | "notes" | "money_cards" | "money_people",
   id: string,
   fallback: string,
 ): Promise<ActionResult> {
@@ -816,7 +1031,7 @@ async function removeRecord(
 }
 
 async function setRecordVisibility(
-  table: "bills" | "expenses" | "goals" | "subscriptions" | "tasks" | "calendar_events" | "meals" | "shopping_items" | "notes",
+  table: "bills" | "expenses" | "goals" | "subscriptions" | "tasks" | "calendar_events" | "meals" | "shopping_items" | "notes" | "money_cards" | "money_people",
   id: string,
   visibility: Visibility,
   fallback: string,
@@ -934,8 +1149,10 @@ export async function searchRecords(query: string): Promise<SearchHit[]> {
   if (needle.length < 2) return []
   const pattern = `%${needle.replace(/[%_]/g, "")}%`
   const { supabase, householdId } = ready.ctx
-  const [bills, tasks, notes, meals, events] = await Promise.all([
+  const [bills, cards, people, tasks, notes, meals, events] = await Promise.all([
     supabase.from("bills").select("id, name").eq("household_id", householdId).ilike("name", pattern).limit(5),
+    supabase.from("money_cards").select("id, name").eq("household_id", householdId).ilike("name", pattern).limit(5),
+    supabase.from("money_people").select("id, name").eq("household_id", householdId).ilike("name", pattern).limit(5),
     supabase.from("tasks").select("id, title").eq("household_id", householdId).ilike("title", pattern).limit(5),
     supabase.from("notes").select("id, title").eq("household_id", householdId).ilike("title", pattern).limit(5),
     supabase.from("meals").select("id, title").eq("household_id", householdId).ilike("title", pattern).limit(5),
@@ -943,6 +1160,8 @@ export async function searchRecords(query: string): Promise<SearchHit[]> {
   ])
   return [
     ...(bills.data ?? []).map((row) => ({ href: "/money/bills", label: row.name, group: "Bills" })),
+    ...(cards.data ?? []).map((row) => ({ href: "/money/cards", label: row.name, group: "Cards" })),
+    ...(people.data ?? []).map((row) => ({ href: "/money/people", label: row.name, group: "People" })),
     ...(tasks.data ?? []).map((row) => ({ href: "/life/tasks", label: row.title, group: "Tasks" })),
     ...(notes.data ?? []).map((row) => ({ href: `/notes/${row.id}`, label: row.title, group: "Notes" })),
     ...(meals.data ?? []).map((row) => ({ href: "/life/meals", label: row.title, group: "Meals" })),
