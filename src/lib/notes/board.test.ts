@@ -151,6 +151,7 @@ test("notes phone uses the Life FAB clearance and skips a segment strip", () => 
   const board = readFileSync(join(root, "notes-board.tsx"), "utf8")
   const editor = readFileSync(join(root, "note-editor.tsx"), "utf8")
   assert.match(board, /<PhoneFabClearance \/>/)
+  assert.match(board, /<div aria-hidden="true" className="h-12 md:hidden" \/>/)
   assert.match(board, /<LifeFab>/)
   assert.match(board, /className="hidden md:block"/)
   assert.match(board, /defaultVisibility="private"/)
