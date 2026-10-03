@@ -6,13 +6,16 @@ import { toast } from "sonner"
 
 import { LifeFab, PhoneFabClearance } from "@/components/life/life-chrome"
 import {
+  CategoryLine,
   ConfirmRemove,
   EmptyState,
   FilterEmpty,
   MetricChip,
   MoneyAddButton,
   MoneyCard,
+  MoneyCategoryBlock,
   MoneyFrame,
+  type MoneyVisibility,
   RowMenu,
   StatusDisc,
   phoneSheetClass,
@@ -103,6 +106,8 @@ type BoardProps<T> = {
   currency: string
   today: string
   error?: boolean
+  scan?: boolean
+  scanFilter?: MoneyVisibility
 }
 
 function BalanceBoard({
@@ -112,9 +117,12 @@ function BalanceBoard({
   currency,
   today,
   error,
+  scan = false,
+  scanFilter,
 }: BoardProps<MoneyCardRow | MoneyPersonRow> & { kind: Kind }) {
   const router = useRouter()
-  const { filter, setFilter } = useMoneyVisibility()
+  const { filter: storedFilter, setFilter } = useMoneyVisibility()
+  const filter = scan ? (scanFilter ?? "all") : storedFilter
   const { patch, merge } = useRowPatches<MoneyCardRow | MoneyPersonRow>()
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<BalanceRow | null>(null)
@@ -146,36 +154,17 @@ function BalanceBoard({
     router.refresh()
   }
 
-  return (
+  const list = (
     <>
-      <MoneyFrame
-        phoneLayout
-        phoneTouch
-        title={card ? "Cards" : "People"}
-        subtitle={subtitle}
-        filter={filter}
-        onFilter={setFilter}
-        action={
-          <div className="hidden md:block">
-            <MoneyAddButton onClick={() => setAdding(true)}>{addLabel}</MoneyAddButton>
-          </div>
-        }
-        chips={
-          <>
-            <MetricChip tone={metrics.open > 0 ? "brand" : "muted"}>
-              {metrics.open} open
-            </MetricChip>
-            {metrics.closed > 0 ? (
-              <MetricChip tone="success">
-                {metrics.closed} {closedLabel}
-              </MetricChip>
-            ) : null}
-            {card ? <MetricChip tone="sand">{metrics.justMe} just me</MetricChip> : null}
-          </>
-        }
-        pulse={<OpenStrip rows={visible} currency={currency} />}
-      >
-        {error ? <WidgetError /> : null}
+      {error ? <WidgetError /> : null}
+      {scan ? (
+        items.length === 0 ? (
+          <CategoryLine>{empty}</CategoryLine>
+        ) : visible.length === 0 ? (
+          <CategoryLine>{DEBT_COPY.filterEmpty}</CategoryLine>
+        ) : null
+      ) : (
+        <>
         {items.length === 0 ? (
           <EmptyState
             copy={empty}
@@ -187,7 +176,9 @@ function BalanceBoard({
           />
         ) : null}
         {items.length > 0 && visible.length === 0 ? <FilterEmpty onClear={() => setFilter("all")} /> : null}
-        {visible.map((row) => {
+        </>
+      )}
+      {visible.map((row) => {
           const open = row.remaining_cents > 0
           const status = open ? DEBT_COPY.stillOpen : card ? DEBT_COPY.paid : DEBT_COPY.settled
           const detail = rowDetail(row, currency)
@@ -286,7 +277,54 @@ function BalanceBoard({
           }}
         />
         {paymentRemoval.dialog}
-        <PhoneFabClearance />
+      </>
+  )
+
+  if (scan) {
+    return (
+      <MoneyCategoryBlock
+        id={card ? "money-cards" : "money-people"}
+        title={card ? "Cards" : "People"}
+        subtitle={subtitle}
+        addLabel={addLabel}
+        onAdd={() => setAdding(true)}
+      >
+        {list}
+      </MoneyCategoryBlock>
+    )
+  }
+
+  return (
+    <>
+      <MoneyFrame
+        phoneLayout
+        phoneTouch
+        title={card ? "Cards" : "People"}
+        subtitle={subtitle}
+        filter={filter}
+        onFilter={setFilter}
+        action={
+          <div className="hidden md:block">
+            <MoneyAddButton onClick={() => setAdding(true)}>{addLabel}</MoneyAddButton>
+          </div>
+        }
+        chips={
+          <>
+            <MetricChip tone={metrics.open > 0 ? "brand" : "muted"}>
+              {metrics.open} open
+            </MetricChip>
+            {metrics.closed > 0 ? (
+              <MetricChip tone="success">
+                {metrics.closed} {closedLabel}
+              </MetricChip>
+            ) : null}
+            {card ? <MetricChip tone="sand">{metrics.justMe} just me</MetricChip> : null}
+          </>
+        }
+        pulse={<OpenStrip rows={visible} currency={currency} />}
+      >
+        {list}
+      <PhoneFabClearance />
         <div aria-hidden="true" className="h-12 md:hidden" />
       </MoneyFrame>
       <LifeFab>

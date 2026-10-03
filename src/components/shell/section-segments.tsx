@@ -1,8 +1,10 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
+import { moneyScanBlockId } from "@/lib/money/board"
 import { pathMatches, shellPathname } from "@/lib/navigation"
 
 export function SectionSegments({
@@ -15,7 +17,57 @@ export function SectionSegments({
   tone?: "default" | "life"
 }) {
   const pathname = shellPathname(usePathname())
+  const scan = pathname === "/money"
   const life = tone === "life"
+  const hrefs = segments.map((segment) => segment.href).join("|")
+  const [activeId, setActiveId] = useState("money-bills")
+
+  useEffect(() => {
+    if (!scan) return
+    const nodes = hrefs
+      .split("|")
+      .map((href) => document.getElementById(moneyScanBlockId(href)))
+      .filter((node): node is HTMLElement => Boolean(node))
+    if (nodes.length === 0) return
+
+    function update() {
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight
+      const nearBottom = maxScroll > 24 && window.scrollY >= maxScroll - 24
+      let current = nodes[0]
+      if (nearBottom) {
+        current = nodes[nodes.length - 1]
+      } else {
+        const line = 88
+        for (const node of nodes) {
+          if (node.getBoundingClientRect().top <= line) current = node
+        }
+      }
+      setActiveId((previous) => (previous === current.id ? previous : current.id))
+    }
+
+    update()
+    window.addEventListener("scroll", update, { passive: true })
+    return () => window.removeEventListener("scroll", update)
+  }, [scan, hrefs])
+
+  useEffect(() => {
+    if (!scan) return
+    const button = document.querySelector<HTMLElement>(`[data-money-segment="${activeId}"]`)
+    const nav = button?.closest("nav")
+    if (!button || !nav) return
+    const left = button.offsetLeft
+    const right = left + button.offsetWidth
+    if (left < nav.scrollLeft || right > nav.scrollLeft + nav.clientWidth) {
+      nav.scrollTo({ left: Math.max(0, left - 16), behavior: "smooth" })
+    }
+  }, [scan, activeId])
+
+  function onScanSelect(href: string) {
+    const id = moneyScanBlockId(href)
+    setActiveId(id)
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" })
+  }
+
   return (
     <nav
       aria-label={label}
@@ -26,21 +78,35 @@ export function SectionSegments({
       }
     >
       {segments.map((segment) => {
-        const active = pathMatches(pathname, segment.href)
+        const blockId = moneyScanBlockId(segment.href)
+        const active = scan ? activeId === blockId : pathMatches(pathname, segment.href)
+        const className = life
+          ? `inline-flex min-h-11 shrink-0 items-center rounded-full px-3.5 text-[13px] font-medium ${
+              active ? "bg-brand-soft text-on-brand-soft" : "bg-surface-muted text-muted-foreground"
+            }`
+          : `shrink-0 rounded-full px-3 py-1.5 text-[13px] font-medium ${
+              active ? "bg-brand-soft text-on-brand-soft" : "bg-surface-muted text-muted-foreground"
+            }`
+        if (scan && blockId) {
+          return (
+            <button
+              key={segment.href}
+              type="button"
+              data-money-segment={blockId}
+              aria-current={active ? "true" : undefined}
+              onClick={() => onScanSelect(segment.href)}
+              className={className}
+            >
+              {segment.label}
+            </button>
+          )
+        }
         return (
           <Link
             key={segment.href}
             href={segment.href}
             aria-current={active ? "page" : undefined}
-            className={
-              life
-                ? `inline-flex min-h-11 shrink-0 items-center rounded-full px-3.5 text-[13px] font-medium ${
-                    active ? "bg-brand-soft text-on-brand-soft" : "bg-surface-muted text-muted-foreground"
-                  }`
-                : `shrink-0 rounded-full px-3 py-1.5 text-[13px] font-medium ${
-                    active ? "bg-brand-soft text-on-brand-soft" : "bg-surface-muted text-muted-foreground"
-                  }`
-            }
+            className={className}
           >
             {segment.label}
           </Link>

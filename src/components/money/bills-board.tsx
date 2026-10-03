@@ -9,13 +9,16 @@ import { LifeFab, PhoneFabClearance } from "@/components/life/life-chrome"
 import { VisibilityPill, WidgetError } from "@/components/ui/pills"
 import { Button } from "@/components/ui/button"
 import {
+  CategoryLine,
   ConfirmRemove,
   EmptyState,
   FilterEmpty,
   MetricChip,
   MoneyAddButton,
   MoneyCard,
+  MoneyCategoryBlock,
   MoneyFrame,
+  type MoneyVisibility,
   RhythmStrip,
   RowMenu,
   StatusDisc,
@@ -62,6 +65,8 @@ export function BillsBoard({
   budgetCents = null,
   paydayDates = [],
   error,
+  scan = false,
+  scanFilter,
 }: {
   rows: BillRow[]
   payments?: MoneyPaymentRow[]
@@ -71,9 +76,13 @@ export function BillsBoard({
   budgetCents?: number | null
   paydayDates?: string[]
   error?: boolean
+  /** Category block on /money. Child route chrome stays when this is omitted. */
+  scan?: boolean
+  scanFilter?: MoneyVisibility
 }) {
   const router = useRouter()
-  const { filter, setFilter } = useMoneyVisibility()
+  const { filter: storedFilter, setFilter } = useMoneyVisibility()
+  const filter = scan ? (scanFilter ?? "all") : storedFilter
   const { patch, merge } = useRowPatches<BillRow>()
   const [chip, setChip] = useState<BillChip | null>(null)
   const [adding, setAdding] = useState(false)
@@ -87,7 +96,7 @@ export function BillsBoard({
 
   const items = merge(rows).map((bill) => decorateBill(bill, payments, today))
   const visible = sortBills(applyVisibility(items, filter), today)
-  const shown = visible.filter((bill) => billMatchesChip(bill, today, chip))
+  const shown = scan ? visible : visible.filter((bill) => billMatchesChip(bill, today, chip))
   const metrics = billMetrics(visible, today, budgetCents)
   const pulse = billPulseCells(visible, today, paydayDates, currency)
 
@@ -136,59 +145,30 @@ export function BillsBoard({
     setEditOpen(true)
   }
 
-  return (
+  const list = (
     <>
-    <MoneyFrame
-      phoneLayout
-      phoneTouch
-      phoneSubtitle={PHONE_MONEY_COPY.bills}
-      title="Bills"
-      subtitle={moneySubtitle("bills", householdName)}
-      action={
-        <div className="hidden md:block">
-          <MoneyAddButton onClick={() => setAdding(true)}>Add bill</MoneyAddButton>
-        </div>
-      }
-      filter={filter}
-      onFilter={setFilter}
-      chips={
-        <>
-          <MetricChip
-            tone={metrics.dueThisWeek > 0 ? "brand" : "muted"}
-            pressed={chip === "due"}
-            onClick={() => toggleChip("due")}
-          >
-            {metrics.dueThisWeek} due this week
-          </MetricChip>
-          {metrics.overdue > 0 ? (
-            <MetricChip tone="danger" pressed={chip === "overdue"} onClick={() => toggleChip("overdue")}>
-              {metrics.overdue} overdue
-            </MetricChip>
-          ) : null}
-          <MetricChip tone="success" pressed={chip === "paid"} onClick={() => toggleChip("paid")}>
-            {metrics.paid} paid
-          </MetricChip>
-          {metrics.bufferCents == null ? null : (
-            <MetricChip>
-              {MONEY_COPY.buffer} {bufferAmount(metrics.bufferCents, currency)}
-            </MetricChip>
-          )}
-        </>
-      }
-      pulse={<RhythmStrip title="Due this week" cells={pulse} empty={MONEY_COPY.billsPulseEmpty} />}
-    >
       {error ? <WidgetError /> : null}
-      {items.length === 0 ? (
-        <EmptyState
-          copy={MONEY_COPY.billsEmpty}
-          action={
-            <div className="hidden md:block">
-              <MoneyAddButton onClick={() => setAdding(true)}>Add bill</MoneyAddButton>
-            </div>
-          }
-        />
-      ) : null}
-      {items.length > 0 && shown.length === 0 ? <FilterEmpty onClear={clearFilters} /> : null}
+      {scan ? (
+        items.length === 0 ? (
+          <CategoryLine>{MONEY_COPY.billsEmpty}</CategoryLine>
+        ) : shown.length === 0 ? (
+          <CategoryLine>{MONEY_COPY.filterEmpty}</CategoryLine>
+        ) : null
+      ) : (
+        <>
+          {items.length === 0 ? (
+            <EmptyState
+              copy={MONEY_COPY.billsEmpty}
+              action={
+                <div className="hidden md:block">
+                  <MoneyAddButton onClick={() => setAdding(true)}>Add bill</MoneyAddButton>
+                </div>
+              }
+            />
+          ) : null}
+          {items.length > 0 && shown.length === 0 ? <FilterEmpty onClear={clearFilters} /> : null}
+        </>
+      )}
       {shown.map((bill) => {
         const due = billDueCopy(bill, today)
         const paid = Boolean(bill.paid_at)
@@ -322,6 +302,65 @@ export function BillsBoard({
         }}
       />
       {paymentRemoval.dialog}
+    </>
+  )
+
+  if (scan) {
+    return (
+      <MoneyCategoryBlock
+        id="money-bills"
+        title="Bills"
+        subtitle={PHONE_MONEY_COPY.bills}
+        addLabel="Add bill"
+        onAdd={() => setAdding(true)}
+      >
+        {list}
+      </MoneyCategoryBlock>
+    )
+  }
+
+  return (
+    <>
+    <MoneyFrame
+      phoneLayout
+      phoneTouch
+      phoneSubtitle={PHONE_MONEY_COPY.bills}
+      title="Bills"
+      subtitle={moneySubtitle("bills", householdName)}
+      action={
+        <div className="hidden md:block">
+          <MoneyAddButton onClick={() => setAdding(true)}>Add bill</MoneyAddButton>
+        </div>
+      }
+      filter={filter}
+      onFilter={setFilter}
+      chips={
+        <>
+          <MetricChip
+            tone={metrics.dueThisWeek > 0 ? "brand" : "muted"}
+            pressed={chip === "due"}
+            onClick={() => toggleChip("due")}
+          >
+            {metrics.dueThisWeek} due this week
+          </MetricChip>
+          {metrics.overdue > 0 ? (
+            <MetricChip tone="danger" pressed={chip === "overdue"} onClick={() => toggleChip("overdue")}>
+              {metrics.overdue} overdue
+            </MetricChip>
+          ) : null}
+          <MetricChip tone="success" pressed={chip === "paid"} onClick={() => toggleChip("paid")}>
+            {metrics.paid} paid
+          </MetricChip>
+          {metrics.bufferCents == null ? null : (
+            <MetricChip>
+              {MONEY_COPY.buffer} {bufferAmount(metrics.bufferCents, currency)}
+            </MetricChip>
+          )}
+        </>
+      }
+      pulse={<RhythmStrip title="Due this week" cells={pulse} empty={MONEY_COPY.billsPulseEmpty} />}
+    >
+      {list}
       <PhoneFabClearance />
     </MoneyFrame>
     <LifeFab>

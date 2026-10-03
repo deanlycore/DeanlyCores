@@ -98,6 +98,14 @@ export type DueTone = "success" | "danger" | "warn" | "muted"
 
 const STRIP_CAP = 7
 
+/** In-page targets for the Money scan. Child routes keep their own hrefs. */
+export function moneyScanBlockId(href: string) {
+  if (!href.startsWith("/money/")) return ""
+  const slug = href.slice("/money/".length)
+  if (!slug || slug.includes("/")) return ""
+  return `money-${slug}`
+}
+
 export function moneySubtitle(
   page: "bills" | "income" | "savings" | "subscriptions",
   householdName: string | null | undefined,
