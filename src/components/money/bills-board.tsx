@@ -42,13 +42,13 @@ import {
   billMetrics,
   billPulseCells,
   bufferAmount,
-  categoryGroupLabel,
   centsInput,
   groupMoney,
   moneySubtitle,
   sortBills,
   type BillChip,
 } from "@/lib/money/board"
+import { placeMoneyCategory } from "@/lib/money/category-match"
 import type { Visibility } from "@/lib/visibility"
 import { cn } from "cn"
 
@@ -103,7 +103,7 @@ export function BillsBoard({
   const groups = groupMoney(
     "bills",
     shown,
-    (bill) => categoryGroupLabel("bills", bill.category),
+    (bill) => placeMoneyCategory("bills", bill.name, bill.category),
     (rows) => rows.reduce((sum, bill) => sum + bill.left, 0),
   )
   const usedCategories = items.map((bill) => bill.category)

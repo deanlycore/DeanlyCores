@@ -6,6 +6,7 @@ import { requireHousehold } from "@/lib/data/context"
 import { firstName, parseCents, parseDate, zonedDate, zonedDateTimeToIso } from "@/lib/home/metrics"
 import { notifySharedCreate } from "@/lib/push/send"
 import { shouldNotifySharedCreate, type SharedPushKind } from "@/lib/push/shared"
+import { categoryToStore } from "@/lib/money/category-match"
 import {
   DEBT_COPY,
   cleanCategory,
@@ -65,6 +66,14 @@ function eventSchedule(formData: FormData) {
   const endDay = endDate ?? (allDay ? date : null)
   const ends = endDay ? zonedDateTimeToIso(endDay, allDay ? "23:59" : clock, timeZone) : null
   return { starts, ends: allDay || endDate ? ends : null, invalidEnd: false }
+}
+
+function categoryFor(
+  section: "bills" | "income" | "savings" | "subscriptions" | "cards",
+  name: string,
+  formData: FormData,
+) {
+  return categoryToStore(section, name, formData.get("category"), formData.get("category_mode"))
 }
 
 function calm(error: { message: string } | null, fallback: string): ActionResult | null {
@@ -149,7 +158,7 @@ export async function createBill(formData: FormData): Promise<ActionResult> {
     amount_cents: amount,
     due_on: due,
   }
-  let result = await ready.ctx.supabase.from("bills").insert({ ...row, category: cleanCategory(formData.get("category")) }).select("id").single()
+  let result = await ready.ctx.supabase.from("bills").insert({ ...row, category: categoryFor("bills", name, formData) }).select("id").single()
   if (columnMissing(result.error)) result = await ready.ctx.supabase.from("bills").insert(row).select("id").single()
   const { data, error } = result
   const failed = calm(error, "Couldn’t save that bill.")
@@ -518,7 +527,7 @@ export async function createGoal(formData: FormData): Promise<ActionResult> {
     target_cents: target,
     current_cents: current,
   }
-  let result = await ready.ctx.supabase.from("goals").insert({ ...row, category: cleanCategory(formData.get("category")) }).select("id").single()
+  let result = await ready.ctx.supabase.from("goals").insert({ ...row, category: categoryFor("savings", name, formData) }).select("id").single()
   if (columnMissing(result.error)) result = await ready.ctx.supabase.from("goals").insert(row).select("id").single()
   const { data, error } = result
   const failed = calm(error, "Couldn’t save that goal.")
@@ -591,7 +600,7 @@ export async function createExpense(formData: FormData): Promise<ActionResult> {
     kind,
     spent_on: spent,
   }
-  const category = kind === "income" ? cleanCategory(formData.get("category")) : null
+  const category = kind === "income" ? categoryFor("income", name, formData) : null
   let result = await ready.ctx.supabase.from("expenses").insert({ ...row, category }).select("id").single()
   if (columnMissing(result.error)) result = await ready.ctx.supabase.from("expenses").insert(row).select("id").single()
   const { data, error } = result
@@ -684,7 +693,7 @@ export async function createSubscription(formData: FormData): Promise<ActionResu
     .from("subscriptions")
     .insert({
       ...row,
-      category: cleanCategory(formData.get("category")),
+      category: categoryFor("subscriptions", name, formData),
       cadence: subscriptionCadence(formData.get("cadence")),
     })
     .select("id")
@@ -715,7 +724,7 @@ export async function updateBill(id: string, formData: FormData): Promise<Action
   const row = { name, amount_cents: amount, due_on: due, visibility }
   let { error } = await ready.ctx.supabase
     .from("bills")
-    .update({ ...row, category: cleanCategory(formData.get("category")) })
+    .update({ ...row, category: categoryFor("bills", name, formData) })
     .eq("id", id)
   if (columnMissing(error)) {
     const retry = await ready.ctx.supabase.from("bills").update(row).eq("id", id)
@@ -747,9 +756,11 @@ export async function updateExpense(id: string, formData: FormData): Promise<Act
   const visibility = visibilityOf(formData.get("visibility"), "shared")
   const row = { name, amount_cents: amount, spent_on: spent, visibility }
   const withCategory = formData.get("kind") === "income" || formData.has("category")
+  const category =
+    formData.get("kind") === "income" ? categoryFor("income", name, formData) : cleanCategory(formData.get("category"))
   let { error } = await ready.ctx.supabase
     .from("expenses")
-    .update(withCategory ? { ...row, category: cleanCategory(formData.get("category")) } : row)
+    .update(withCategory ? { ...row, category } : row)
     .eq("id", id)
   if (columnMissing(error)) {
     const retry = await ready.ctx.supabase.from("expenses").update(row).eq("id", id)
@@ -781,7 +792,7 @@ export async function updateGoal(id: string, formData: FormData): Promise<Action
   const row = { name, target_cents: target, current_cents: current, visibility }
   let { error } = await ready.ctx.supabase
     .from("goals")
-    .update({ ...row, category: cleanCategory(formData.get("category")) })
+    .update({ ...row, category: categoryFor("savings", name, formData) })
     .eq("id", id)
   if (columnMissing(error)) {
     const retry = await ready.ctx.supabase.from("goals").update(row).eq("id", id)
@@ -815,7 +826,7 @@ export async function updateSubscription(id: string, formData: FormData): Promis
     .from("subscriptions")
     .update({
       ...row,
-      category: cleanCategory(formData.get("category")),
+      category: categoryFor("subscriptions", name, formData),
       cadence: subscriptionCadence(formData.get("cadence")),
     })
     .eq("id", id)
@@ -906,7 +917,7 @@ export async function createMoneyCard(formData: FormData): Promise<ActionResult>
   }
   let { error } = await ready.ctx.supabase.from("money_cards").insert({
     ...row,
-    category: cleanCategory(formData.get("category")),
+    category: categoryFor("cards", name, formData),
     limit_cents: limit.cents,
   })
   if (columnMissing(error)) {
@@ -938,7 +949,7 @@ export async function updateMoneyCard(id: string, formData: FormData): Promise<A
   }
   let { error } = await ready.ctx.supabase
     .from("money_cards")
-    .update({ ...row, category: cleanCategory(formData.get("category")), limit_cents: limit.cents })
+    .update({ ...row, category: categoryFor("cards", name, formData), limit_cents: limit.cents })
     .eq("id", id)
   if (columnMissing(error)) {
     const retry = await ready.ctx.supabase.from("money_cards").update(row).eq("id", id)
