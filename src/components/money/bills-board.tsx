@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
@@ -49,6 +49,7 @@ import {
   type BillChip,
 } from "@/lib/money/board"
 import { placeMoneyCategory } from "@/lib/money/category-match"
+import { OPEN_BILL_EVENT } from "@/lib/money/snapshot"
 import type { Visibility } from "@/lib/visibility"
 import { cn } from "cn"
 
@@ -98,6 +99,8 @@ export function BillsBoard({
   useScrollToItemHash()
 
   const items = merge(rows).map((bill) => decorateBill(bill, payments, today))
+  const itemsRef = useRef(items)
+  itemsRef.current = items
   const visible = sortBills(applyVisibility(items, filter), today)
   const shown = scan ? visible : visible.filter((bill) => billMatchesChip(bill, today, chip))
   const groups = groupMoney(
@@ -154,6 +157,30 @@ export function BillsBoard({
     setEditing(bill)
     setEditOpen(true)
   }
+
+  useEffect(() => {
+    function openBill(id: string | null) {
+      if (!id) return
+      const bill = itemsRef.current.find((item) => item.id === id)
+      if (!bill) return
+      setEditing((current) => (current?.id === bill.id ? current : bill))
+      setEditOpen(true)
+    }
+    function fromUrl() {
+      openBill(new URLSearchParams(window.location.search).get("bill"))
+    }
+    function fromEvent(event: Event) {
+      const id = (event as CustomEvent<string>).detail
+      openBill(typeof id === "string" ? id : null)
+    }
+    fromUrl()
+    window.addEventListener(OPEN_BILL_EVENT, fromEvent)
+    window.addEventListener("popstate", fromUrl)
+    return () => {
+      window.removeEventListener(OPEN_BILL_EVENT, fromEvent)
+      window.removeEventListener("popstate", fromUrl)
+    }
+  }, [])
 
   const list = (
     <>

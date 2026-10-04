@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation"
 
 import { MoneyScan } from "@/components/money/money-scan"
+import { MoneySnapshot } from "@/components/money/money-snapshot"
 import { AppShell } from "@/components/shell/app-shell"
 import { SectionSegments } from "@/components/shell/section-segments"
 import type { BillRow, ExpenseRow, GoalRow, MoneyCardRow, MoneyPaymentRow, MoneyPersonRow, SubscriptionRow } from "@/lib/data/home"
@@ -63,27 +64,43 @@ const payments: MoneyPaymentRow[] = [
 export default async function PreviewMoney({
   searchParams,
 }: {
-  searchParams: Promise<{ section?: string | string[] }>
+  searchParams: Promise<{ section?: string | string[]; sample?: string | string[] }>
 }) {
   if (process.env.NODE_ENV === "production") notFound()
-  const selected = moneyScanSection((await searchParams).section)
+  const params = await searchParams
+  const selected = moneyScanSection(params.section)
+  const sample = Array.isArray(params.sample) ? params.sample[0] : params.sample
+  const shownIncome = sample === "no-income" ? [] : income
   const money = primaryNav.find((item) => item.href === "/money")
   return (
     <AppShell session={previewSession}>
-      <div className="grid gap-5">
-        {money ? <SectionSegments label="Money" segments={railChildren(money)} tone="life" section={selected} /> : null}
-        <MoneyScan
-          section={selected}
-          today={today}
-          currency="USD"
-          bills={bills}
-          income={income}
-          goals={goals}
-          subscriptions={subscriptions}
-          cards={cards}
-          people={people}
-          payments={payments}
-        />
+      <div>
+        <div className="mb-4 md:mb-5">
+          <MoneySnapshot
+            today={today}
+            currency="USD"
+            bills={bills}
+            payments={payments}
+            income={shownIncome}
+            goals={goals}
+            subscriptions={subscriptions}
+          />
+        </div>
+        <div className="grid gap-5">
+          {money ? <SectionSegments label="Money" segments={railChildren(money)} tone="life" section={selected} /> : null}
+          <MoneyScan
+            section={selected}
+            today={today}
+            currency="USD"
+            bills={bills}
+            income={shownIncome}
+            goals={goals}
+            subscriptions={subscriptions}
+            cards={cards}
+            people={people}
+            payments={payments}
+          />
+        </div>
       </div>
     </AppShell>
   )
