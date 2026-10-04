@@ -10,6 +10,9 @@ import {
   MONEY_STARTERS,
   PHONE_MONEY_COPY,
   moneyScanBlockId,
+  moneyScanHref,
+  moneyScanSection,
+  moneyScanSectionFromHref,
   amountLabel,
   applyVisibility,
   balanceMetrics,
@@ -234,15 +237,37 @@ test("money scan block ids stay on the category page", () => {
   assert.equal(moneyScanBlockId("/money"), "")
 })
 
-test("money page is the six category scan and drops the spending dump", () => {
+test("each money pill has its own address and bills is the default", () => {
+  assert.equal(moneyScanSection(undefined), "bills")
+  assert.equal(moneyScanSection(null), "bills")
+  assert.equal(moneyScanSection(""), "bills")
+  assert.equal(moneyScanSection("budget"), "bills")
+  assert.equal(moneyScanSection("debt"), "bills")
+  assert.equal(moneyScanSection(["cards", "people"]), "cards")
+  assert.equal(moneyScanSection("people"), "people")
+  assert.equal(moneyScanHref("bills"), "/money")
+  assert.equal(moneyScanHref("income"), "/money?section=income")
+  assert.equal(moneyScanHref("savings"), "/money?section=savings")
+  assert.equal(moneyScanHref("subscriptions"), "/money?section=subscriptions")
+  assert.equal(moneyScanHref("cards"), "/money?section=cards")
+  assert.equal(moneyScanHref("people"), "/money?section=people")
+  assert.equal(moneyScanHref("cards", "/preview/money"), "/preview/money?section=cards")
+  assert.equal(moneyScanSectionFromHref("/money/bills"), "bills")
+  assert.equal(moneyScanSectionFromHref("/money/people"), "people")
+  assert.equal(moneyScanSectionFromHref("/money/budget"), null)
+  assert.equal(moneyScanSectionFromHref("/life/tasks"), null)
+})
+
+test("money page shows one scan section and drops the spending dump", () => {
   const page = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../app/(app)/money/page.tsx"), "utf8")
   const scan = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../components/money/money-scan.tsx"), "utf8")
   const shell = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../components/shell/app-shell.tsx"), "utf8")
   const segments = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../components/shell/section-segments.tsx"), "utf8")
   assert.match(page, /MoneyScan/)
+  assert.match(page, /moneyScanSection/)
   assert.doesNotMatch(page, /MoneyBoard|listMonthBudget|listExpenses\("expense"\)|Set budget|Log spending/)
   for (const label of ["BillsBoard", "IncomeBoard", "SavingsBoard", "SubscriptionsBoard", "CardsBoard", "PeopleBoard"]) {
-    assert.match(scan, new RegExp(label))
+    assert.match(scan, new RegExp(`section === "${label.replace("Board", "").toLowerCase()}"[\\s\\S]*<${label}`))
   }
   assert.match(scan, /useState<MoneyVisibility>\("all"\)/)
   assert.match(scan, /<PhoneFabClearance \/>/)
@@ -250,8 +275,8 @@ test("money page is the six category scan and drops the spending dump", () => {
   assert.match(shell, /href: "\/money", label: "Money"/)
   assert.doesNotMatch(shell, /href: "\/money\/bills", label: "Money"/)
   assert.match(segments, /pathname === "\/money"/)
-  assert.match(segments, /scrollIntoView/)
-  assert.match(segments, /moneyScanBlockId/)
+  assert.match(segments, /moneyScanHref/)
+  assert.doesNotMatch(segments, /scrollIntoView/)
 })
 
 test("money phone uses the shared FAB clearance and debt stays off income and savings", () => {

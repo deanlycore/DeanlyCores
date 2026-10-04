@@ -10,8 +10,10 @@ import { VisibilityFilter, type MoneyVisibility } from "@/components/money/money
 import { SavingsBoard } from "@/components/money/savings-board"
 import { SubscriptionsBoard } from "@/components/money/subscriptions-board"
 import type { BillRow, ExpenseRow, GoalRow, MoneyCardRow, MoneyPaymentRow, MoneyPersonRow, SubscriptionRow } from "@/lib/data/home"
+import type { MoneyScanSection } from "@/lib/money/board"
 
 export function MoneyScan({
+  section = "bills",
   today,
   currency,
   bills,
@@ -43,6 +45,7 @@ export function MoneyScan({
   payments: MoneyPaymentRow[]
   cardsError?: boolean
   peopleError?: boolean
+  section?: MoneyScanSection
 }) {
   const [filter, setFilter] = useState<MoneyVisibility>("all")
 
@@ -54,19 +57,31 @@ export function MoneyScan({
           <VisibilityFilter value={filter} onChange={setFilter} phoneTouch />
         </div>
       </header>
-      <BillsBoard scan scanFilter={filter} rows={bills} payments={payments} currency={currency} today={today} error={billsError} />
-      <IncomeBoard scan scanFilter={filter} rows={income} currency={currency} today={today} error={incomeError} />
-      <SavingsBoard scan scanFilter={filter} rows={goals} currency={currency} today={today} error={goalsError} />
-      <SubscriptionsBoard
-        scan
-        scanFilter={filter}
-        rows={subscriptions}
-        currency={currency}
-        today={today}
-        error={subscriptionsError}
-      />
-      <CardsBoard scan scanFilter={filter} rows={cards} payments={payments} currency={currency} today={today} error={cardsError} />
-      <PeopleBoard scan scanFilter={filter} rows={people} payments={payments} currency={currency} today={today} error={peopleError} />
+      {section === "bills" ? (
+        <BillsBoard scan scanFilter={filter} rows={bills} payments={payments} currency={currency} today={today} error={billsError} />
+      ) : null}
+      {section === "income" ? (
+        <IncomeBoard scan scanFilter={filter} rows={income} currency={currency} today={today} error={incomeError} />
+      ) : null}
+      {section === "savings" ? (
+        <SavingsBoard scan scanFilter={filter} rows={goals} currency={currency} today={today} error={goalsError} />
+      ) : null}
+      {section === "subscriptions" ? (
+        <SubscriptionsBoard
+          scan
+          scanFilter={filter}
+          rows={subscriptions}
+          currency={currency}
+          today={today}
+          error={subscriptionsError}
+        />
+      ) : null}
+      {section === "cards" ? (
+        <CardsBoard scan scanFilter={filter} rows={cards} payments={payments} currency={currency} today={today} error={cardsError} />
+      ) : null}
+      {section === "people" ? (
+        <PeopleBoard scan scanFilter={filter} rows={people} payments={payments} currency={currency} today={today} error={peopleError} />
+      ) : null}
       <PhoneFabClearance />
     </div>
   )

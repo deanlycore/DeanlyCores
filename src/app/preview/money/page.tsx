@@ -4,6 +4,7 @@ import { MoneyScan } from "@/components/money/money-scan"
 import { AppShell } from "@/components/shell/app-shell"
 import { SectionSegments } from "@/components/shell/section-segments"
 import type { BillRow, ExpenseRow, GoalRow, MoneyCardRow, MoneyPaymentRow, MoneyPersonRow, SubscriptionRow } from "@/lib/data/home"
+import { moneyScanSection } from "@/lib/money/board"
 import { primaryNav, railChildren } from "@/lib/navigation"
 
 import { previewSession } from "../shell-session"
@@ -59,14 +60,20 @@ const payments: MoneyPaymentRow[] = [
   },
 ]
 
-export default function PreviewMoney() {
+export default async function PreviewMoney({
+  searchParams,
+}: {
+  searchParams: Promise<{ section?: string | string[] }>
+}) {
   if (process.env.NODE_ENV === "production") notFound()
+  const selected = moneyScanSection((await searchParams).section)
   const money = primaryNav.find((item) => item.href === "/money")
   return (
     <AppShell session={previewSession}>
       <div className="grid gap-5">
-        {money ? <SectionSegments label="Money" segments={railChildren(money)} tone="life" /> : null}
+        {money ? <SectionSegments label="Money" segments={railChildren(money)} tone="life" section={selected} /> : null}
         <MoneyScan
+          section={selected}
           today={today}
           currency="USD"
           bills={bills}
