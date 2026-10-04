@@ -35,7 +35,6 @@ import {
   PHONE_MONEY_COPY,
   amountLabel,
   applyVisibility,
-  categoryGroupLabel,
   centsInput,
   groupMoney,
   moneySubtitle,
@@ -46,6 +45,7 @@ import {
   subscriptionGroupTotal,
   subscriptionMetrics,
 } from "@/lib/money/board"
+import { placeMoneyCategory } from "@/lib/money/category-match"
 import type { Visibility } from "@/lib/visibility"
 
 export function SubscriptionsBoard({
@@ -81,7 +81,7 @@ export function SubscriptionsBoard({
   const groups = groupMoney(
     "subscriptions",
     visible,
-    (row) => categoryGroupLabel("subscriptions", row.category),
+    (row) => placeMoneyCategory("subscriptions", row.name, row.category),
     subscriptionGroupTotal,
   )
   const usedCategories = items.map((row) => row.category)

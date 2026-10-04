@@ -48,13 +48,13 @@ import {
   applyVisibility,
   balanceMetrics,
   cardLimitLine,
-  categoryGroupLabel,
   centsInput,
   groupMoney,
   personGroupLabel,
   remainingCents,
   sortBalances,
 } from "@/lib/money/board"
+import { placeMoneyCategory } from "@/lib/money/category-match"
 import type { Visibility } from "@/lib/visibility"
 import { cn } from "cn"
 
@@ -160,7 +160,7 @@ function BalanceBoard({
     ? groupMoney(
         "cards",
         visible,
-        (row) => categoryGroupLabel("cards", row.category),
+        (row) => placeMoneyCategory("cards", row.name, row.category),
         (groupRows) => groupRows.reduce((sum, row) => sum + row.remaining_cents, 0),
       )
     : groupMoney(
@@ -426,6 +426,7 @@ function BalanceDialog({
   const formId = useId()
   const [message, setMessage] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
+  const [entryName, setEntryName] = useState(row?.name ?? "")
   const card = kind === "card"
   const visibilityDefault = row?.visibility ?? "private"
 
@@ -459,7 +460,14 @@ function BalanceDialog({
         <form key={row?.id ?? "new"} action={onSubmit} className="grid gap-3">
           <div className="grid gap-1.5">
             <Label htmlFor={`${formId}-name`}>Name</Label>
-            <Input id={`${formId}-name`} name="name" required defaultValue={row?.name} className={field} />
+            <Input
+              id={`${formId}-name`}
+              name="name"
+              required
+              defaultValue={row?.name}
+              onChange={card ? (event) => setEntryName(event.target.value) : undefined}
+              className={field}
+            />
           </div>
           <div className="grid gap-1.5">
             <Label htmlFor={`${formId}-amount`}>{card ? "Balance" : "Amount"}</Label>
@@ -483,7 +491,7 @@ function BalanceDialog({
           </div>
           {card ? (
             <>
-              <CategoryField section="cards" used={categories} value={row?.category} id={`${formId}-category`} />
+              <CategoryField section="cards" used={categories} value={row?.category} name={entryName} id={`${formId}-category`} />
               <div className="grid gap-1.5">
                 <Label htmlFor={`${formId}-limit`}>Limit</Label>
                 <Input

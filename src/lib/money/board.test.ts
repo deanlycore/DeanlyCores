@@ -8,6 +8,7 @@ import {
   DEBT_COPY,
   MONEY_COPY,
   MONEY_STARTERS,
+  OTHER_LABEL,
   PHONE_MONEY_COPY,
   moneyScanBlockId,
   moneyScanHref,
@@ -45,6 +46,7 @@ import {
   subscriptionGroupTotal,
   subscriptionMetrics,
 } from "./board.ts"
+import { CATEGORY_WORDS, categoryToStore, matchMoneyGroup, placeMoneyCategory } from "./category-match.ts"
 
 const today = "2026-10-02"
 
@@ -374,6 +376,83 @@ test("groups keep starter order, hide empty groups, and park a blank category in
   assert.equal(categoryGroupLabel("savings", null), "Other Goals")
 })
 
+test("a name match uses the starter list on this device and leaves a real group alone", () => {
+  assert.equal(matchMoneyGroup("bills", "Rent"), "Housing")
+  assert.equal(matchMoneyGroup("bills", "electric"), "Utilities")
+  assert.equal(matchMoneyGroup("bills", "Electric bill"), "Utilities")
+  assert.equal(matchMoneyGroup("subscriptions", "Netflix"), "Streaming")
+  assert.equal(matchMoneyGroup("bills", "Gym"), "Other")
+  assert.equal(matchMoneyGroup("subscriptions", "Gym"), "Fitness")
+  assert.equal(matchMoneyGroup("income", "Paycheck"), "Primary Income")
+  assert.equal(matchMoneyGroup("income", "Birthday money"), "Other Income")
+  assert.equal(matchMoneyGroup("savings", "Emergency fund"), "Emergency Fund")
+  assert.equal(matchMoneyGroup("cards", "Household visa"), "Credit Cards")
+  assert.equal(matchMoneyGroup("cards", "Everyday debit"), "Debit Cards")
+  assert.equal(matchMoneyGroup("cards", "Store card"), "Other")
+  assert.equal(matchMoneyGroup("bills", "car insurance"), "Insurance")
+  assert.equal(matchMoneyGroup("bills", "Truck payment"), "Debt & Loans")
+  assert.equal(matchMoneyGroup("bills", "Mortgage insurance"), "Housing")
+  assert.equal(matchMoneyGroup("bills", "Gas station"), "Transportation")
+  assert.equal(matchMoneyGroup("bills", "parent"), "Other")
+  assert.equal(matchMoneyGroup("bills", "carpet"), "Other")
+  assert.equal(matchMoneyGroup("subscriptions", "YouTube Music"), "Music")
+  assert.equal(matchMoneyGroup("cards", "Visa debit"), "Debit Cards")
+
+  assert.equal(categoryToStore("bills", "Rent", ""), "Housing")
+  assert.equal(categoryToStore("bills", "Rent", "Other"), "Housing")
+  assert.equal(categoryToStore("bills", "Rent", "  other "), "Housing")
+  assert.equal(categoryToStore("bills", "Rent", "Insurance", "manual"), "Insurance")
+  assert.equal(categoryToStore("bills", "Electric", "Housing", "auto"), "Utilities")
+  assert.equal(categoryToStore("bills", "Rent", "Lane"), "Lane")
+  assert.equal(categoryToStore("bills", "Rent", "<b>Lane</b>"), "Lane")
+  assert.equal(categoryToStore("bills", "Gym", null), null)
+  assert.equal(categoryToStore("bills", "Gym", "Other", "auto"), null)
+  assert.equal(categoryToStore("subscriptions", "Netflix", ""), "Streaming")
+  assert.equal(categoryToStore("income", "Birthday money", "Other Income"), null)
+  assert.equal(categoryToStore("cards", "Store card", "Other"), null)
+  assert.equal(placeMoneyCategory("bills", "Rent", null), "Housing")
+  assert.equal(placeMoneyCategory("bills", "Rent", "Other"), "Housing")
+  assert.equal(placeMoneyCategory("bills", "Netflix", "Housing"), "Housing")
+  assert.equal(placeMoneyCategory("bills", "Gym", null), "Other")
+  assert.equal(placeMoneyCategory("income", "", null), "Other Income")
+
+  const rows = [
+    { id: "rent", name: "Rent", category: null as string | null, visibility: "private" as const, left: 190000 },
+    { id: "power", name: "Electric", category: "Other", visibility: "shared" as const, left: 12000 },
+    { id: "gym", name: "Gym", category: null as string | null, visibility: "shared" as const, left: 3000 },
+    { id: "lane", name: "Rent", category: "Lane", visibility: "shared" as const, left: 4000 },
+  ]
+  const shared = applyVisibility(rows, "shared")
+  const groups = groupMoney(
+    "bills",
+    shared,
+    (row) => placeMoneyCategory("bills", row.name, row.category),
+    (groupRows) => groupRows.reduce((sum, row) => sum + row.left, 0),
+  )
+  assert.deepEqual(
+    groups.map((group) => [group.label, group.rows.map((row) => row.id), group.totalCents]),
+    [
+      ["Utilities", ["power"], 12000],
+      ["Lane", ["lane"], 4000],
+      ["Other", ["gym"], 3000],
+    ],
+  )
+  assert.equal(groups.some((group) => group.rows.some((row) => row.id === "rent")), false)
+  assert.equal(categoryChoices("bills", shared.map((row) => row.category)).includes("Secret gym fund"), false)
+
+  for (const section of Object.keys(MONEY_STARTERS) as (keyof typeof MONEY_STARTERS)[]) {
+    const starters = new Set<string>(MONEY_STARTERS[section])
+    const other = OTHER_LABEL[section]
+    for (const [group, list] of Object.entries(CATEGORY_WORDS[section])) {
+      assert.equal(starters.has(group), true, `${section} ${group}`)
+      assert.notEqual(group, other)
+      assert.ok(list.length > 0, group)
+    }
+    assert.equal(Object.hasOwn(CATEGORY_WORDS[section], other), false)
+  }
+  assert.equal(Object.hasOwn(CATEGORY_WORDS, "people"), false)
+})
+
 test("people split into I owe and They owe me, and an empty direction stays hidden", () => {
   const groups = groupMoney(
     "people",
@@ -483,6 +562,25 @@ test("money group migration adds category, direction, and limit without new priv
   assert.match(sliceFn(records, "createMoneyPerson"), /personDirection/)
   assert.doesNotMatch(sliceFn(records, "createMoneyPerson"), /activity_events/)
   assert.doesNotMatch(sliceFn(records, "createMoneyCard"), /activity_events/)
+  for (const [name, section] of [
+    ["createBill", "bills"],
+    ["updateBill", "bills"],
+    ["createGoal", "savings"],
+    ["updateGoal", "savings"],
+    ["createSubscription", "subscriptions"],
+    ["updateSubscription", "subscriptions"],
+    ["createMoneyCard", "cards"],
+    ["updateMoneyCard", "cards"],
+  ] as const) {
+    assert.match(sliceFn(records, name), new RegExp(`categoryFor\\("${section}"`))
+  }
+  assert.match(sliceFn(records, "createExpense"), /categoryFor\("income"/)
+  assert.match(sliceFn(records, "updateExpense"), /categoryFor\("income"/)
+  assert.doesNotMatch(sliceFn(records, "createMoneyPerson"), /categoryFor|categoryToStore/)
+  assert.doesNotMatch(sliceFn(records, "updateMoneyPerson"), /categoryFor|categoryToStore/)
+  const matcher = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "category-match.ts"), "utf8")
+  assert.doesNotMatch(matcher, /\bfetch\s*\(|supabase|https?:\/\//i)
+  assert.match(readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../components/money/category-field.tsx"), "utf8"), /category_mode/)
   assert.match(readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../components/money/category-field.tsx"), "utf8"), /Card balances stay on Cards/)
   assert.match(readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../components/money/money-groups.tsx"), "utf8"), /deanly-money-group-open/)
 })

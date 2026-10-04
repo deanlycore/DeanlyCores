@@ -31,7 +31,6 @@ import {
   MONEY_COPY,
   PHONE_MONEY_COPY,
   applyVisibility,
-  categoryGroupLabel,
   centsInput,
   goalPercent,
   groupMoney,
@@ -39,6 +38,7 @@ import {
   savingsMetrics,
   sortSharedFirst,
 } from "@/lib/money/board"
+import { placeMoneyCategory } from "@/lib/money/category-match"
 import type { Visibility } from "@/lib/visibility"
 
 export function SavingsBoard({
@@ -74,7 +74,7 @@ export function SavingsBoard({
   const groups = groupMoney(
     "savings",
     visible,
-    (goal) => categoryGroupLabel("savings", goal.category),
+    (goal) => placeMoneyCategory("savings", goal.name, goal.category),
     () => null,
   )
   const usedCategories = items.map((goal) => goal.category)

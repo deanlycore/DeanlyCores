@@ -32,7 +32,6 @@ import {
   MONEY_COPY,
   PHONE_MONEY_COPY,
   applyVisibility,
-  categoryGroupLabel,
   centsInput,
   groupMoney,
   incomeGap,
@@ -42,6 +41,7 @@ import {
   nextPayEvents,
   sortIncome,
 } from "@/lib/money/board"
+import { placeMoneyCategory } from "@/lib/money/category-match"
 import type { Visibility } from "@/lib/visibility"
 
 export function IncomeBoard({
@@ -77,7 +77,7 @@ export function IncomeBoard({
   const groups = groupMoney(
     "income",
     visible,
-    (row) => categoryGroupLabel("income", row.category),
+    (row) => placeMoneyCategory("income", row.name, row.category),
     (rows) => incomeGroupTotal(rows, today),
   )
   const usedCategories = items.map((row) => row.category)

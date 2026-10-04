@@ -148,6 +148,7 @@ export function RecordDialog({
   }
   const formId = useId()
   const [allDay, setAllDay] = useState(Boolean(initial?.allDay))
+  const [entryName, setEntryName] = useState(initial?.name ?? "")
   const visibilityDefault = initial?.visibility ?? defaultVisibilityFor(kind, defaultVisibility)
   const categorySection =
     kind === "bill" ? "bills" : kind === "income" ? "income" : kind === "goal" ? "savings" : kind === "subscription" ? "subscriptions" : null
@@ -190,7 +191,7 @@ export function RecordDialog({
         <form key={initial?.id ?? "new"} action={onSubmit} className="grid gap-3">
           {kind === "bill" ? (
             <>
-              <Field id={`${formId}-name`} label="Name" name="name" defaultValue={initial?.name} />
+              <Field id={`${formId}-name`} label="Name" name="name" defaultValue={initial?.name} onValueChange={setEntryName} />
               <Field id={`${formId}-amount`} label="Amount" name="amount" inputMode="decimal" placeholder="0.00" defaultValue={initial?.amount} />
               <Field id={`${formId}-due`} label="Due" name="due_on" type="date" defaultValue={initial?.date ?? today} />
             </>
@@ -253,7 +254,7 @@ export function RecordDialog({
           ) : null}
           {kind === "goal" ? (
             <>
-              <Field id={`${formId}-goal`} label="Goal" name="name" defaultValue={initial?.name} />
+              <Field id={`${formId}-goal`} label="Goal" name="name" defaultValue={initial?.name} onValueChange={setEntryName} />
               <Field id={`${formId}-target`} label="Target" name="target" inputMode="decimal" placeholder="0.00" defaultValue={initial?.target} />
               <Field id={`${formId}-current`} label="Already saved" name="current" inputMode="decimal" placeholder="0.00" required={false} defaultValue={initial?.current} />
             </>
@@ -261,7 +262,13 @@ export function RecordDialog({
           {kind === "budget" ? <Field label="Monthly budget" name="amount" inputMode="decimal" placeholder="0.00" /> : null}
           {kind === "expense" || kind === "income" ? (
             <>
-              <Field id={`${formId}-name`} label="Name" name="name" defaultValue={initial?.name} />
+              <Field
+                id={`${formId}-name`}
+                label="Name"
+                name="name"
+                defaultValue={initial?.name}
+                onValueChange={kind === "income" ? setEntryName : undefined}
+              />
               <Field id={`${formId}-amount`} label="Amount" name="amount" inputMode="decimal" placeholder="0.00" defaultValue={initial?.amount} />
               <Field id={`${formId}-date`} label="Date" name="spent_on" type="date" defaultValue={initial?.date ?? today} />
             </>
@@ -283,7 +290,7 @@ export function RecordDialog({
           ) : null}
           {kind === "subscription" ? (
             <>
-              <Field id={`${formId}-name`} label="Name" name="name" defaultValue={initial?.name} />
+              <Field id={`${formId}-name`} label="Name" name="name" defaultValue={initial?.name} onValueChange={setEntryName} />
               <Field id={`${formId}-amount`} label="Amount" name="amount" inputMode="decimal" placeholder="0.00" defaultValue={initial?.amount} />
               <Field id={`${formId}-renews`} label="Renews" name="renews_on" type="date" defaultValue={initial?.date ?? today} />
               <fieldset className="grid gap-2">
@@ -302,7 +309,13 @@ export function RecordDialog({
             </>
           ) : null}
           {categorySection ? (
-            <CategoryField section={categorySection} used={categories} value={initial?.category} id={`${formId}-category`} />
+            <CategoryField
+              section={categorySection}
+              used={categories}
+              value={initial?.category}
+              name={entryName}
+              id={`${formId}-category`}
+            />
           ) : null}
           <fieldset className="grid gap-2">
             <legend className="text-sm">Who can see this</legend>
@@ -371,6 +384,7 @@ function Field({
   defaultValue,
   placeholder,
   inputMode,
+  onValueChange,
 }: {
   id?: string
   label: string
@@ -380,6 +394,7 @@ function Field({
   defaultValue?: string
   placeholder?: string
   inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"]
+  onValueChange?: (value: string) => void
 }) {
   const fieldId = id ?? name
   return (
@@ -393,6 +408,7 @@ function Field({
         defaultValue={defaultValue}
         placeholder={placeholder}
         inputMode={inputMode}
+        onChange={onValueChange ? (event) => onValueChange(event.target.value) : undefined}
         className={field}
       />
     </div>

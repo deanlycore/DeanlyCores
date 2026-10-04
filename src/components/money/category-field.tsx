@@ -4,6 +4,7 @@ import { useState } from "react"
 
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { isOtherCategory, matchMoneyGroup } from "@/lib/money/category-match"
 import {
   OTHER_LABEL,
   categoryChoices,
@@ -20,20 +21,26 @@ export function CategoryField({
   section,
   used,
   value,
+  name = "",
   id,
 }: {
   section: CategorySection
   used: (string | null | undefined)[]
   value?: string | null
+  /** Current row name. Blank or Other follows it. A real group stays until the person changes it. */
+  name?: string
   id: string
 }) {
   const other = OTHER_LABEL[section]
   const choices = categoryChoices(section, value ? [value, ...used] : used)
-  const current = value ? categoryGroupLabel(section, value) : other
-  const [picked, setPicked] = useState(choices.includes(current) ? current : other)
+  const stored = value ? categoryGroupLabel(section, value) : other
+  const [manual, setManual] = useState<string | null>(isOtherCategory(section, value) ? null : stored)
   const [creating, setCreating] = useState(false)
   const [custom, setCustom] = useState("")
-  const posted = creating ? custom : picked === other ? "" : picked
+  const matched = matchMoneyGroup(section, name)
+  const picked = manual ?? (choices.includes(matched) ? matched : other)
+  const postingManual = creating || (manual != null && !isOtherCategory(section, manual))
+  const posted = creating ? custom : postingManual ? (manual ?? "") : ""
 
   return (
     <div className="grid gap-1.5">
@@ -48,13 +55,13 @@ export function CategoryField({
             return
           }
           setCreating(false)
-          setPicked(next)
+          setManual(isOtherCategory(section, next) ? null : next)
         }}
         className={field}
       >
-        {choices.map((name) => (
-          <option key={name} value={name}>
-            {name}
+        {choices.map((choice) => (
+          <option key={choice} value={choice}>
+            {choice}
           </option>
         ))}
         <option value="__new">New category</option>
@@ -70,6 +77,7 @@ export function CategoryField({
         />
       ) : null}
       <input type="hidden" name="category" value={posted} />
+      <input type="hidden" name="category_mode" value={postingManual ? "manual" : "auto"} />
       {section === "bills" ? <p className="text-[13px] text-muted-foreground">Card balances stay on Cards.</p> : null}
     </div>
   )
