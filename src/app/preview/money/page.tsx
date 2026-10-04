@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation"
 
+import { MoneyFlow } from "@/components/money/money-flow"
 import { MoneyScan } from "@/components/money/money-scan"
 import { MoneySnapshot } from "@/components/money/money-snapshot"
 import { AppShell } from "@/components/shell/app-shell"
@@ -75,7 +76,7 @@ export default async function PreviewMoney({
   return (
     <AppShell session={previewSession}>
       <div>
-        <div className="mb-4 md:mb-5">
+        <div className="mb-4 md:mb-5 grid gap-4 md:gap-5">
           <MoneySnapshot
             today={today}
             currency="USD"
@@ -84,6 +85,17 @@ export default async function PreviewMoney({
             income={shownIncome}
             goals={goals}
             subscriptions={subscriptions}
+          />
+          <MoneyFlow
+            today={today}
+            currency="USD"
+            bills={bills}
+            payments={payments}
+            income={shownIncome}
+            goals={goals}
+            subscriptions={subscriptions}
+            cards={cards}
+            people={people}
           />
         </div>
         <div className="grid gap-5">

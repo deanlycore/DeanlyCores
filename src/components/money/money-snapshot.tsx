@@ -55,7 +55,7 @@ function writeSafetyBuffer(cents: number) {
   }
 }
 
-function useSafetyBuffer() {
+export function useSafetyBuffer() {
   const cents = useSyncExternalStore(subscribeBuffer, readSafetyBuffer, () => 0)
   return [cents, writeSafetyBuffer] as const
 }
