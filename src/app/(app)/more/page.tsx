@@ -6,6 +6,7 @@ import { signOut } from "@/lib/actions/auth"
 export const metadata: Metadata = { title: "More" }
 
 const links = [
+  { href: "/life/family", label: "Family" },
   { href: "/vault", label: "Vault" },
   { href: "/reports", label: "Reports" },
   { href: "/notifications", label: "Notifications" },

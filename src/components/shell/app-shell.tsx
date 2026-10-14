@@ -18,7 +18,7 @@ import {
 
 import { signOut } from "@/lib/actions/auth"
 import { recentActivity } from "@/lib/actions/records"
-import { shellPathname } from "@/lib/navigation"
+import { mobileTabHref, shellPathname } from "@/lib/navigation"
 import { DesktopNav } from "@/components/shell/desktop-nav"
 import type { SessionView } from "@/lib/data/session"
 import { relativeTime } from "@/lib/home/metrics"
@@ -36,11 +36,11 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 const mobileTabs = [
-  { href: "/home", label: "Home", icon: Home, match: (path: string) => path === "/home" },
-  { href: "/money", label: "Money", icon: Wallet, match: (path: string) => path === "/money" || path.startsWith("/money/") },
-  { href: "/life/calendar", label: "Life", icon: SunMedium, match: (path: string) => path === "/life" || path.startsWith("/life/") },
-  { href: "/notes", label: "Notes", icon: NotebookPen, match: (path: string) => path === "/notes" || path.startsWith("/notes/") },
-  { href: "/more", label: "More", icon: MoreHorizontal, match: (path: string) => path === "/more" },
+  { href: "/home", label: "Home", icon: Home },
+  { href: "/money", label: "Money", icon: Wallet },
+  { href: "/life/calendar", label: "Life", icon: SunMedium },
+  { href: "/notes", label: "Notes", icon: NotebookPen },
+  { href: "/more", label: "More", icon: MoreHorizontal },
 ]
 
 function railCollapsed() {
@@ -172,7 +172,7 @@ export function AppShell({ session, children }: { session: SessionView; children
           style={{ paddingBottom: "max(0.4rem, env(safe-area-inset-bottom))" }}
         >
           {mobileTabs.map((item) => {
-            const active = item.match(current)
+            const active = mobileTabHref(current) === item.href
             const Icon = item.icon
             return (
               <Link

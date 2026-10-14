@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
-import { commandLinks, primaryNav, railChildren, shellPathname } from "./navigation.ts"
+import { commandLinks, isFamilyPath, mobileTabHref, primaryNav, railChildren, segmentChildren, shellPathname } from "./navigation.ts"
 
 test("money expands to bills, income, savings, subscriptions, cards, and people", () => {
   const money = primaryNav.find((item) => item.href === "/money")
@@ -29,11 +29,15 @@ test("money expands to bills, income, savings, subscriptions, cards, and people"
   assert.equal(people?.emptyBody, "Nothing owed to anyone yet.")
 })
 
-test("life expands to calendar, tasks, meals, and shopping", () => {
+test("life expands to calendar, tasks, meals, shopping, and family", () => {
   const life = primaryNav.find((item) => item.href === "/life")
   assert.equal(life?.expandOnly, true)
   assert.deepEqual(
     railChildren(life!).map((child) => child.href),
+    ["/life/calendar", "/life/tasks", "/life/meals", "/life/shopping", "/life/family"],
+  )
+  assert.deepEqual(
+    segmentChildren(life!).map((child) => child.href),
     ["/life/calendar", "/life/tasks", "/life/meals", "/life/shopping"],
   )
 })
@@ -51,6 +55,7 @@ test("rail children are unique and skip budget, debt, and vault", () => {
     "/life/tasks",
     "/life/meals",
     "/life/shopping",
+    "/life/family",
   ])
   assert.equal(new Set(hrefs).size, hrefs.length)
   assert.equal(hrefs.includes("/money/budget"), false)
@@ -67,6 +72,17 @@ test("search skips the life hub and keeps the money summary", () => {
   assert.equal(links.some((link) => link.href === "/money/people"), true)
   assert.equal(links.some((link) => link.href === "/life/subscriptions"), false)
   assert.equal(links.some((link) => link.href === "/money/debt" || link.label === "Debt"), false)
+})
+
+test("family sits on More for the phone and stays a life path", () => {
+  assert.equal(isFamilyPath("/life/family"), true)
+  assert.equal(isFamilyPath("/life/calendar"), false)
+  assert.equal(mobileTabHref("/life/family"), "/more")
+  assert.equal(mobileTabHref("/life/calendar"), "/life")
+  assert.equal(mobileTabHref("/more"), "/more")
+  assert.equal(mobileTabHref("/home"), "/home")
+  const links = commandLinks()
+  assert.equal(links.some((link) => link.href === "/life/family" && link.group === "Life"), true)
 })
 
 test("preview routes map onto the signed-in shell", () => {
