@@ -89,8 +89,8 @@ export function MoneyFlow({
               <ChevronDown
                 aria-hidden="true"
                 className={cn(
-                  "size-3.5 shrink-0 text-muted-foreground transition-transform duration-150",
-                  open ? "" : "ml-auto -rotate-90",
+                  "ml-auto size-4 shrink-0 text-muted-foreground transition-transform duration-150",
+                  !open && "-rotate-90",
                 )}
               />
             </button>
@@ -128,7 +128,7 @@ export function MoneyFlow({
             data-flow-today
             className={
               model.todayCents != null
-                ? "mt-1 font-display text-[22px] font-semibold leading-tight tabular-nums tracking-[-0.02em] text-ink md:text-[24px]"
+                ? "mt-1 overflow-visible font-display text-[22px] font-semibold leading-normal tabular-nums tracking-[-0.02em] text-ink md:text-[24px]"
                 : "mt-1 text-[15px] font-medium text-ink"
             }
           >

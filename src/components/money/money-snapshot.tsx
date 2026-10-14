@@ -3,6 +3,7 @@
 import { useState, useSyncExternalStore } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { ChevronDown } from "lucide-react"
 
 import { formatMoney, parseCents } from "@/lib/home/metrics"
 import { centsInput } from "@/lib/money/board"
@@ -58,6 +59,43 @@ function writeSafetyBuffer(cents: number) {
 export function useSafetyBuffer() {
   const cents = useSyncExternalStore(subscribeBuffer, readSafetyBuffer, () => 0)
   return [cents, writeSafetyBuffer] as const
+}
+
+function CardTitle({
+  id,
+  open,
+  onToggle,
+  title,
+  quiet,
+}: {
+  id: string
+  open: boolean
+  onToggle: () => void
+  title: string
+  quiet?: boolean
+}) {
+  return (
+    <h2 id={id}>
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={onToggle}
+        className={cn(
+          "flex w-full items-center gap-3 border-0 bg-transparent p-0 text-left text-[13px] max-md:min-h-11",
+          quiet ? "font-normal text-muted-foreground" : "font-medium text-ink",
+        )}
+      >
+        <span className="min-w-0">{title}</span>
+        <ChevronDown
+          aria-hidden="true"
+          className={cn(
+            "ml-auto size-4 shrink-0 text-muted-foreground transition-transform duration-150",
+            !open && "-rotate-90",
+          )}
+        />
+      </button>
+    </h2>
+  )
 }
 
 function Line({ label, children }: { label: string; children: React.ReactNode }) {
@@ -155,6 +193,8 @@ export function MoneySnapshot({
 }) {
   const pathname = usePathname()
   const [buffer, setBuffer] = useSafetyBuffer()
+  const [availableOpen, setAvailableOpen] = useState(false)
+  const [attentionOpen, setAttentionOpen] = useState(false)
   const model = buildMoneySnapshot({
     today,
     bills,
@@ -167,15 +207,21 @@ export function MoneySnapshot({
 
   return (
     <div data-money-snapshot className="grid gap-4 md:gap-5">
-      <section className={surface} aria-labelledby="money-available-title">
-        <h2 id="money-available-title" className="text-[13px] font-normal text-muted-foreground">
-          {SNAPSHOT_COPY.title}
-        </h2>
+      <section data-open={availableOpen ? "true" : "false"} className={surface} aria-labelledby="money-available-title">
+        <CardTitle
+          id="money-available-title"
+          open={availableOpen}
+          onToggle={() => setAvailableOpen((value) => !value)}
+          title={SNAPSHOT_COPY.title}
+          quiet
+        />
+        {availableOpen ? (
+          <>
         <p
           data-available
           className={
             model.hasIncome
-              ? "mt-1 font-display text-[22px] font-semibold leading-tight tabular-nums tracking-[-0.02em] text-ink md:text-[24px]"
+              ? "mt-1 overflow-visible font-display text-[22px] font-semibold leading-normal tabular-nums tracking-[-0.02em] text-ink md:text-[24px]"
               : "mt-1 text-[15px] font-medium text-ink"
           }
         >
@@ -196,33 +242,32 @@ export function MoneySnapshot({
             )}
           </Line>
           <Line label={SNAPSHOT_COPY.savings}>
-            {model.savingsState === "set" ? (
-              snapshotMoney(model.savingsCents, currency, true)
-            ) : (
-              <Missing
-                note={model.savingsState === "unset" ? SNAPSHOT_COPY.noContribution : SNAPSHOT_COPY.noneYet}
-                currency={currency}
-              />
-            )}
+            {model.savingsState === "set"
+              ? snapshotMoney(model.savingsCents, currency, true)
+              : model.savingsState === "unset"
+                ? SNAPSHOT_COPY.noContribution
+                : SNAPSHOT_COPY.noneYet}
           </Line>
           <Line label={SNAPSHOT_COPY.subscriptions}>
-            {model.hasSubscriptions ? (
-              snapshotMoney(model.subscriptionsCents, currency, true)
-            ) : (
-              <Missing note={SNAPSHOT_COPY.noneYet} currency={currency} />
-            )}
+            {model.hasSubscriptions ? snapshotMoney(model.subscriptionsCents, currency, true) : SNAPSHOT_COPY.noneYet}
           </Line>
           <Line label={SNAPSHOT_COPY.buffer}>
             <BufferAmount cents={model.bufferCents} currency={currency} onSave={setBuffer} />
           </Line>
         </ul>
         {model.shortfall ? <p className="mt-3 text-sm text-muted-foreground">{SNAPSHOT_COPY.shortfall}</p> : null}
+          </>
+        ) : null}
       </section>
       {model.attention.length > 0 ? (
-        <section className={surface} aria-labelledby="money-attention-title">
-          <h2 id="money-attention-title" className="text-[13px] font-medium text-ink">
-            {SNAPSHOT_COPY.attention}
-          </h2>
+        <section data-open={attentionOpen ? "true" : "false"} className={surface} aria-labelledby="money-attention-title">
+          <CardTitle
+            id="money-attention-title"
+            open={attentionOpen}
+            onToggle={() => setAttentionOpen((value) => !value)}
+            title={SNAPSHOT_COPY.attention}
+          />
+          {attentionOpen ? (
           <ul className="mt-2 grid">
             {model.attention.map((bill) => (
               <li key={bill.id}>
@@ -248,6 +293,7 @@ export function MoneySnapshot({
               </li>
             ))}
           </ul>
+          ) : null}
         </section>
       ) : null}
     </div>
