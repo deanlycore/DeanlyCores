@@ -1,8 +1,10 @@
 import { MoneyFlow } from "@/components/money/money-flow"
+import { MoneyInsights } from "@/components/money/money-insights"
 import { MoneySnapshot } from "@/components/money/money-snapshot"
 import { SectionSegments } from "@/components/shell/section-segments"
 import { listBills, listExpenses, listGoals, listMoneyCards, listMoneyPayments, listMoneyPeople, listSubscriptions } from "@/lib/data/lists"
 import { pageClock } from "@/lib/data/timezone"
+import { buildMoneyInsights } from "@/lib/money/insights"
 import { primaryNav, railChildren } from "@/lib/navigation"
 
 export default async function MoneyLayout({ children }: { children: React.ReactNode }) {
@@ -17,6 +19,17 @@ export default async function MoneyLayout({ children }: { children: React.ReactN
     listMoneyCards(),
     listMoneyPeople(),
   ])
+  const insights = buildMoneyInsights({
+    today: clock.today,
+    currency: bills.currency,
+    bills: bills.rows,
+    payments: payments.rows,
+    income: income.rows,
+    goals: goals.rows,
+    subscriptions: subscriptions.rows,
+    cards: cards.rows,
+    people: people.rows,
+  })
 
   return (
     <div>
@@ -41,6 +54,7 @@ export default async function MoneyLayout({ children }: { children: React.ReactN
           cards={cards.rows}
           people={people.rows}
         />
+        <MoneyInsights lines={insights} />
       </div>
       <div className="grid gap-5">
         {money ? <SectionSegments label="Money" segments={railChildren(money)} tone="life" /> : null}
