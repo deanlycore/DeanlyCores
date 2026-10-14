@@ -109,7 +109,8 @@ create index family_profiles_household_id_idx
 -- Insert ignores a client household_id and stores the caller's active household:
 -- the same membership lookup the app uses (user_id = auth.uid(), limit 1),
 -- not the oldest household they own. The caller must own that household.
--- Update refuses to move the row to another household.
+-- Update raises when household_id changes. The update policy must not read
+-- family_profiles to enforce that, or row level security recurses (42P17).
 create or replace function public.assign_family_profile_household()
 returns trigger
 language plpgsql
@@ -203,10 +204,5 @@ create policy family_profiles_update
       from public.households
       where households.id = family_profiles.household_id
         and households.owner_id = auth.uid()
-    )
-    and household_id is not distinct from (
-      select existing.household_id
-      from public.family_profiles as existing
-      where existing.id = family_profiles.id
     )
   );
