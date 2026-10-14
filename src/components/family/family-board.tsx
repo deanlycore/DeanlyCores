@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useSyncExternalStore } from "react"
 import { toast } from "sonner"
 
-import { archiveFamilyProfile, saveFamilyProfile } from "@/lib/actions/family"
+import { archiveFamilyProfile, removeHouseholdMember, saveFamilyProfile } from "@/lib/actions/family"
 import { PhoneFabClearance } from "@/components/life/life-chrome"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -22,6 +22,7 @@ import { WidgetError } from "@/components/ui/pills"
 import {
   FAMILY_COLORS,
   FAMILY_COPY,
+  HOUSEHOLD_PERMISSIONS,
   familyAvatarTint,
   familyDetail,
   familyInitials,
@@ -61,7 +62,7 @@ function blankForm() {
     birthday: "",
     color: "teal" as FamilyColor,
     notes: "",
-    permission: "member" as HouseholdPermission,
+    permission: "adult" as HouseholdPermission,
   }
 }
 
@@ -72,13 +73,13 @@ function formFrom(member: FamilyProfile) {
     birthday: member.birthday ?? "",
     color: member.color,
     notes: member.notes ?? "",
-    permission: member.permission ?? "member",
+    permission: member.permission ?? "adult",
   }
 }
 
 export function FamilyBoard({
   members,
-  canEdit,
+  viewerRole = null,
   viewerId = null,
   error = false,
   mode = "live",
@@ -87,7 +88,7 @@ export function FamilyBoard({
   beforeList = null,
 }: {
   members: FamilyProfile[]
-  canEdit: boolean
+  viewerRole?: HouseholdPermission | null
   viewerId?: string | null
   error?: boolean
   mode?: "live" | "preview"
@@ -124,11 +125,16 @@ export function FamilyBoard({
   const [removing, setRemoving] = useState(false)
 
   const editing = sheet?.kind === "edit" ? rows.find((row) => row.id === sheet.id) ?? null : null
-  const writing =
-    sheet?.kind === "add"
-      ? canEdit
-      : Boolean(editing && (canEdit || (editing.userId != null && editing.userId === viewerId)))
-  const writingPermission = Boolean(canEdit && editing?.userId)
+  const canAdd = viewerRole === "owner" || viewerRole === "adult"
+  const adding = sheet?.kind === "add"
+  const editingSelf = Boolean(editing?.userId && editing.userId === viewerId)
+  const editingKid = Boolean(editing && editing.userId == null)
+  const writingName = adding ? canAdd : viewerRole === "owner" || editingSelf || (editingKid && viewerRole === "adult")
+  const writingDetails = adding ? canAdd : viewerRole === "owner" || (editingKid && viewerRole === "adult")
+  const writingPermission = Boolean(viewerRole === "owner" && editing?.userId && !editingSelf)
+  const canRemoveTarget = (target: FamilyProfile | null) =>
+    Boolean(viewerRole === "owner" && target && target.userId !== viewerId)
+  const canRemove = canRemoveTarget(editing)
 
   function openAdd() {
     setForm(blankForm())
@@ -149,7 +155,7 @@ export function FamilyBoard({
 
   async function onSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!writing || pending) return
+    if (!writingName || pending) return
     const parsed = parseFamilyForm(form)
     if (!parsed.ok) {
       setFieldError({ [parsed.field]: parsed.message })
@@ -201,17 +207,21 @@ export function FamilyBoard({
   }
 
   async function onRemove() {
-    if (!confirming || !canEdit || removing) return
+    if (!confirming || !canRemoveTarget(confirming) || removing) return
     const member = confirming
     if (mode === "preview") {
-      setPreviewRows((current) => current.map((row) => (row.id === member.id ? { ...row, archivedAt: new Date().toISOString() } : row)))
+      setPreviewRows((current) =>
+        member.userId
+          ? current.filter((row) => row.id !== member.id)
+          : current.map((row) => (row.id === member.id ? { ...row, archivedAt: new Date().toISOString() } : row)),
+      )
       setConfirming(null)
       closeSheet()
       toast(removedToast(member.name))
       return
     }
     setRemoving(true)
-    const result = await archiveFamilyProfile(member.id)
+    const result = member.userId ? await removeHouseholdMember(member.userId) : await archiveFamilyProfile(member.id)
     setRemoving(false)
     if (!result.ok) {
       toast(result.message)
@@ -228,7 +238,7 @@ export function FamilyBoard({
     <div className="grid gap-5">
       <header className="flex items-center justify-between gap-3">
         <h1 className="font-display text-[28px] font-semibold tracking-[-0.02em] text-ink md:text-[30px]">{FAMILY_COPY.title}</h1>
-        {canEdit && !error ? (
+        {canAdd && !error ? (
           <Button type="button" onClick={openAdd} className="h-10 rounded-button px-3.5 text-primary-foreground max-md:min-h-11">
             {FAMILY_COPY.add}
           </Button>
@@ -241,8 +251,8 @@ export function FamilyBoard({
 
       {!error && visible.length === 0 ? (
         <div className="rounded-[12px] border border-border bg-surface px-5 py-8 text-center shadow-soft">
-          <p className="text-sm text-muted-foreground">{canEdit ? FAMILY_COPY.emptyOwner : FAMILY_COPY.emptyMember}</p>
-          {canEdit ? (
+          <p className="text-sm text-muted-foreground">{canAdd ? FAMILY_COPY.emptyOwner : FAMILY_COPY.emptyMember}</p>
+          {canAdd ? (
             <div className="mt-4 flex justify-center">
               <Button type="button" onClick={openAdd} className="h-10 rounded-button px-3.5 text-primary-foreground max-md:min-h-11">
                 {FAMILY_COPY.add}
@@ -306,7 +316,7 @@ export function FamilyBoard({
               <Input
                 id="family-name"
                 value={form.name}
-                disabled={!writing}
+                disabled={!writingName}
                 autoComplete="off"
                 aria-invalid={Boolean(fieldError.name)}
                 aria-describedby={fieldError.name ? "family-name-error" : undefined}
@@ -323,36 +333,44 @@ export function FamilyBoard({
               ) : null}
             </div>
             {editing?.userId ? (
-              <div className="grid gap-1.5">
-                <Label htmlFor="family-permission">{FAMILY_COPY.permissionLabel}</Label>
-                <select
-                  id="family-permission"
-                  value={form.permission}
-                  disabled={!writingPermission}
-                  aria-invalid={Boolean(fieldError.permission)}
-                  onChange={(event) => {
-                    const next = event.target.value
-                    if (!isHouseholdPermission(next)) return
-                    setForm((current) => ({ ...current, permission: next }))
-                    if (fieldError.permission) setFieldError((current) => ({ ...current, permission: undefined }))
-                  }}
-                  className="h-11 rounded-button border border-input bg-surface px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-70"
-                >
-                  <option value="owner">Owner</option>
-                  <option value="member">Member</option>
-                </select>
+              <fieldset className="grid gap-2" disabled={!writingPermission}>
+                <legend id="family-permission" className="text-sm font-medium">
+                  {FAMILY_COPY.permissionLabel}
+                </legend>
+                <div role="radiogroup" aria-labelledby="family-permission" className="grid gap-2">
+                  {HOUSEHOLD_PERMISSIONS.map((permission) => {
+                    const selected = form.permission === permission.id
+                    return (
+                      <label key={permission.id} className="flex items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          name="family-permission"
+                          value={permission.id}
+                          checked={selected}
+                          disabled={!writingPermission}
+                          onChange={() => {
+                            setForm((current) => ({ ...current, permission: permission.id }))
+                            if (fieldError.permission) setFieldError((current) => ({ ...current, permission: undefined }))
+                          }}
+                          className="size-4 accent-primary"
+                        />
+                        {permission.label}
+                      </label>
+                    )
+                  })}
+                </div>
                 {writingPermission ? null : (
                   <p className="text-sm text-muted-foreground">{FAMILY_COPY.permissionHint}</p>
                 )}
                 {fieldError.permission ? <p className="text-sm text-danger">{fieldError.permission}</p> : null}
-              </div>
+              </fieldset>
             ) : null}
             <div className="grid gap-1.5">
               <Label htmlFor="family-role">{FAMILY_COPY.roleLabel}</Label>
               <Input
                 id="family-role"
                 value={form.role}
-                disabled={!writing}
+                disabled={!writingDetails}
                 placeholder={FAMILY_COPY.rolePlaceholder}
                 autoComplete="off"
                 aria-invalid={Boolean(fieldError.role)}
@@ -367,7 +385,7 @@ export function FamilyBoard({
                 id="family-birthday"
                 type="date"
                 value={form.birthday}
-                disabled={!writing}
+                disabled={!writingDetails}
                 aria-invalid={Boolean(fieldError.birthday)}
                 onChange={(event) => setForm((current) => ({ ...current, birthday: event.target.value }))}
                 className="h-11 rounded-button bg-surface px-3"
@@ -386,7 +404,7 @@ export function FamilyBoard({
                       role="radio"
                       aria-checked={selected}
                       aria-label={color.label}
-                      disabled={!writing}
+                      disabled={!writingName}
                       onClick={() => setForm((current) => ({ ...current, color: color.id }))}
                       className={cn(
                         "size-10 rounded-full ring-offset-2 ring-offset-surface disabled:opacity-70",
@@ -405,7 +423,7 @@ export function FamilyBoard({
                 id="family-notes"
                 rows={3}
                 value={form.notes}
-                disabled={!writing}
+                disabled={!writingDetails}
                 aria-invalid={Boolean(fieldError.notes)}
                 onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))}
                 className="rounded-button border border-input bg-surface px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-70"
@@ -416,13 +434,13 @@ export function FamilyBoard({
               <Button type="button" variant="outline" className="h-10 rounded-button max-md:min-h-11" onClick={closeSheet}>
                 {FAMILY_COPY.cancel}
               </Button>
-              {writing ? (
+              {writingName ? (
                 <Button type="submit" disabled={pending} className="h-10 rounded-button text-primary-foreground max-md:min-h-11">
                   {pending ? "Saving…" : FAMILY_COPY.save}
                 </Button>
               ) : null}
             </div>
-            {canEdit && editing && !editing.userId ? (
+            {canRemove && editing ? (
               <button
                 type="button"
                 className="justify-self-start text-sm font-medium text-danger"
@@ -439,7 +457,9 @@ export function FamilyBoard({
         <DialogContent className="sm:max-w-[440px]">
           <DialogHeader>
             <DialogTitle className="font-display text-lg">{confirming ? removeTitle(confirming.name) : FAMILY_COPY.remove}</DialogTitle>
-            <DialogDescription className="text-sm text-muted-foreground">{FAMILY_COPY.removeBody}</DialogDescription>
+            <DialogDescription className="text-sm text-muted-foreground">
+              {confirming?.userId ? FAMILY_COPY.removeLoginBody : FAMILY_COPY.removeBody}
+            </DialogDescription>
           </DialogHeader>
           <div className="flex items-center justify-end gap-3">
             <Button type="button" variant="outline" className="h-10 rounded-button" disabled={removing} onClick={() => setConfirming(null)}>

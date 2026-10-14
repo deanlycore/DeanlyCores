@@ -2,9 +2,10 @@ import { requireHousehold } from "@/lib/data/context"
 import { getSessionView } from "@/lib/data/session"
 import {
   isFamilyColor,
-  isHouseholdPermission,
+  normalizeHouseholdPermission,
   visibleProfiles,
   type FamilyProfile,
+  type HouseholdPermission,
 } from "@/lib/family/profile"
 
 function columnMissing(error: { message: string } | null) {
@@ -13,20 +14,14 @@ function columnMissing(error: { message: string } | null) {
 
 export async function loadFamily(): Promise<{
   members: FamilyProfile[]
-  canEdit: boolean
+  viewerRole: HouseholdPermission | null
   viewerId: string | null
   error: boolean
 }> {
   const [ctx, session] = await Promise.all([requireHousehold(), getSessionView()])
-  if (!ctx) return { members: [], canEdit: false, viewerId: null, error: false }
+  if (!ctx) return { members: [], viewerRole: null, viewerId: null, error: false }
 
-  let canEdit = session.role === "owner"
-  const ownerLookup = await ctx.supabase.from("households").select("owner_id").eq("id", ctx.householdId).maybeSingle()
-  if (!ownerLookup.error && ownerLookup.data && typeof ownerLookup.data.owner_id === "string") {
-    canEdit = ownerLookup.data.owner_id === ctx.userId
-  } else if (ownerLookup.error && !columnMissing(ownerLookup.error)) {
-    canEdit = false
-  }
+  const viewerRole = session.role
 
   const withLogin = await ctx.supabase
     .from("family_profiles")
@@ -47,7 +42,7 @@ export async function loadFamily(): Promise<{
     : withLogin
 
   if (listed.error) {
-    return { members: [], canEdit, viewerId: ctx.userId, error: true }
+    return { members: [], viewerRole, viewerId: ctx.userId, error: true }
   }
 
   const memberships = await ctx.supabase
@@ -56,11 +51,14 @@ export async function loadFamily(): Promise<{
     .eq("household_id", ctx.householdId)
 
   if (memberships.error) {
-    return { members: [], canEdit, viewerId: ctx.userId, error: true }
+    return { members: [], viewerRole, viewerId: ctx.userId, error: true }
   }
 
   const roleByUser = new Map(
-    (memberships.data ?? []).map((row) => [row.user_id, isHouseholdPermission(row.role) ? row.role : "member"] as const),
+    (memberships.data ?? []).flatMap((row) => {
+      const permission = normalizeHouseholdPermission(row.role)
+      return permission ? [[row.user_id, permission] as const] : []
+    }),
   )
 
   const members = visibleProfiles(
@@ -83,5 +81,5 @@ export async function loadFamily(): Promise<{
     }),
   )
 
-  return { members, canEdit, viewerId: ctx.userId, error: false }
+  return { members, viewerRole, viewerId: ctx.userId, error: false }
 }

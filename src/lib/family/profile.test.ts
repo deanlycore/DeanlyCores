@@ -130,12 +130,13 @@ test("family_profiles migration locks reads to members and writes to the househo
   assert.match(assign, /households\.id = active[\s\S]*households\.owner_id = auth\.uid\(\)/)
 })
 
-test("a login shows as Owner or Member beside a relationship label", () => {
+test("a login shows Owner, Adult, or View only beside a relationship label", () => {
   assert.equal(accountPermissionLabel("owner"), "Owner")
-  assert.equal(accountPermissionLabel("member"), "Member")
+  assert.equal(accountPermissionLabel("adult"), "Adult")
+  assert.equal(accountPermissionLabel("view_only"), "View only")
   assert.equal(accountPermissionLabel(null), null)
   assert.equal(familyDetail({ role: null, userId: "owner", permission: "owner" }), "Owner")
-  assert.equal(familyDetail({ role: "Partner", userId: "member", permission: "member" }), "Member · Partner")
+  assert.equal(familyDetail({ role: "Partner", userId: "adult", permission: "adult" }), "Adult · Partner")
   assert.equal(familyDetail({ role: "Son", userId: null, permission: null }), "Son")
 })
 
@@ -169,6 +170,31 @@ test("household logins are linked onto Family without a broad security definer",
   assert.match(board, /family-permission/)
   assert.match(board, /FAMILY_COPY\.permissionLabel/)
   assert.match(familyPage, /viewerId=\{family\.viewerId\}/)
+  assert.match(familyPage, /viewerRole=\{family\.viewerRole\}/)
+})
+
+test("any owner can edit a household, and view only cannot write shared rows", () => {
+  const rules = readFileSync(join(workspace, "supabase/migrations/20261015020100_household_role_rules.sql"), "utf8")
+  assert.match(rules, /A household needs at least one owner\./)
+  assert.match(rules, /You cannot change your own role\./)
+  assert.match(rules, /public\.is_household_owner\(family_profiles\.household_id\)/)
+  assert.match(rules, /public\.can_write_household_content\(household_id\)/)
+  assert.match(rules, /visibility = 'private'/)
+  assert.match(rules, /is distinct from 'view_only'/)
+  assert.equal(/DeanFamily|Andrey|Arabella/.test(rules), false)
+  assert.equal(/grant\s+[^;]*service_role/i.test(rules), false)
+  assert.match(rules, /revoke all on table public\.family_profiles from anon/)
+  const updateStart = rules.indexOf("create policy family_profiles_update")
+  const updateEnd = rules.indexOf("drop policy if exists profiles_update_household_owner")
+  const updatePolicy = rules.slice(updateStart, updateEnd)
+  assert.ok(updateStart > 0 && updateEnd > updateStart)
+  assert.equal(/from public\.family_profiles/.test(updatePolicy), false)
+  assert.equal(/households\.owner_id/.test(updatePolicy), false)
+  const rolePolicy = rules.slice(rules.indexOf("create policy household_members_update_role"), rules.indexOf("drop policy if exists household_members_delete_self_or_owner"))
+  assert.equal(/households\.owner_id/.test(rolePolicy), false)
+  assert.match(rolePolicy, /is_household_owner\(household_id\)/)
+  assert.match(board, /HOUSEHOLD_PERMISSIONS/)
+  assert.match(readFileSync(join(src, "lib/family/profile.ts"), "utf8"), /View only/)
 })
 
 test("family and household copy is not pinned to one household", () => {

@@ -21,7 +21,7 @@ const session: SessionView = {
   role: "owner",
   members: [
     { userId: "1", role: "owner", displayName: "Alex Dean", avatarUrl: null },
-    { userId: "2", role: "member", displayName: "Sam Dean", avatarUrl: null },
+    { userId: "2", role: "adult", displayName: "Sam Dean", avatarUrl: null },
   ],
 }
 

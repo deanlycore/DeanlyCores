@@ -24,16 +24,23 @@ export const FAMILY_COPY = {
   colorLabel: "Color",
   notesLabel: "Notes",
   permissionLabel: "Permissions",
-  permissionHint: "Only the household owner can change permissions.",
+  permissionHint: "Only an owner can change someone else’s permissions.",
   save: "Save",
   cancel: "Cancel",
   remove: "Remove member",
+  removeLoginBody: "They leave this household. Shared items stay. Private items are removed.",
   saved: "Saved.",
   removeBody: "Their chores and notes stay. Anything assigned to them becomes Unassigned.",
   unassigned: "Unassigned",
 } as const
 
-export type HouseholdPermission = "owner" | "member"
+export type HouseholdPermission = "owner" | "adult" | "view_only"
+
+export const HOUSEHOLD_PERMISSIONS: { id: HouseholdPermission; label: string }[] = [
+  { id: "owner", label: "Owner" },
+  { id: "adult", label: "Adult" },
+  { id: "view_only", label: "View only" },
+]
 
 export type FamilyProfile = {
   id: string
@@ -65,14 +72,18 @@ export function isFamilyColor(value: string | null | undefined): value is Family
 }
 
 export function isHouseholdPermission(value: string | null | undefined): value is HouseholdPermission {
-  return value === "owner" || value === "member"
+  return value === "owner" || value === "adult" || value === "view_only"
 }
 
-/** Owner or Member for a login. Empty for a person without an account. */
+/** Older rows used member for the adult permission. */
+export function normalizeHouseholdPermission(value: string | null | undefined): HouseholdPermission | null {
+  if (value === "member") return "adult"
+  return isHouseholdPermission(value) ? value : null
+}
+
+/** Owner, Adult, or View only for a login. Empty for a person without an account. */
 export function accountPermissionLabel(permission: HouseholdPermission | null | undefined) {
-  if (permission === "owner") return "Owner"
-  if (permission === "member") return "Member"
-  return null
+  return HOUSEHOLD_PERMISSIONS.find((entry) => entry.id === permission)?.label ?? null
 }
 
 /** Login permission, then the relationship label, on one line. */

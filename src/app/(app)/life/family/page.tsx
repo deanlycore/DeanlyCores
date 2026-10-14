@@ -33,7 +33,7 @@ export default async function Page() {
   return (
     <FamilyBoard
       members={family.members}
-      canEdit={family.canEdit}
+      viewerRole={family.viewerRole}
       viewerId={family.viewerId}
       error={family.error}
       beforeList={

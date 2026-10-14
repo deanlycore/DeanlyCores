@@ -23,8 +23,14 @@ function calm(error: { message: string } | null, fallback: string): FamilyAction
   if (message.includes("cannot be reassigned") || message.includes("login link cannot be changed")) {
     return { ok: false, message: "You don’t have access to change that." }
   }
-  if (message.includes("last owner")) {
-    return { ok: false, message: "The household needs an owner." }
+  if (message.includes("at least one owner") || message.includes("last owner")) {
+    return { ok: false, message: "A household needs at least one owner." }
+  }
+  if (message.includes("own role")) {
+    return { ok: false, message: "You can’t change your own permissions." }
+  }
+  if (message.includes("own name and color")) {
+    return { ok: false, message: "You can change your own name and color." }
   }
   if (message.includes("stays on family")) {
     return { ok: false, message: "A household login stays on Family." }
@@ -53,7 +59,7 @@ export async function saveFamilyProfile(formData: FormData): Promise<FamilyActio
   const permissionRaw = text(formData.get("permission")).trim()
   const permission = permissionRaw ? (isHouseholdPermission(permissionRaw) ? permissionRaw : null) : null
   if (permissionRaw && !permission) {
-    return { ok: false, message: "Choose owner or member.", field: "permission" }
+    return { ok: false, message: "Choose a permission.", field: "permission" }
   }
 
   const payload = {
@@ -77,9 +83,16 @@ export async function saveFamilyProfile(formData: FormData): Promise<FamilyActio
   }
 
   if (permission && linkedUserId) {
-    const home = await ctx.supabase.from("households").select("owner_id").eq("id", ctx.householdId).maybeSingle()
-    const ownerId = !home.error && home.data && typeof home.data.owner_id === "string" ? home.data.owner_id : null
-    if (ownerId !== ctx.userId) {
+    if (linkedUserId === ctx.userId) {
+      return { ok: false, message: "You can’t change your own permissions." }
+    }
+    const mine = await ctx.supabase
+      .from("household_members")
+      .select("role")
+      .eq("household_id", ctx.householdId)
+      .eq("user_id", ctx.userId)
+      .maybeSingle()
+    if (mine.error || mine.data?.role !== "owner") {
       return { ok: false, message: "You don’t have access to change that." }
     }
 
@@ -129,6 +142,39 @@ export async function archiveFamilyProfile(id: string): Promise<FamilyActionResu
     .eq("id", profileId)
     .is("archived_at", null)
     .select("id")
+
+  const failed = calm(error, "Couldn’t remove that member.")
+  if (failed) return failed
+  if (!data?.length) return { ok: false, message: "You don’t have access to change that." }
+
+  revalidatePath("/life/family")
+  return { ok: true }
+}
+
+export async function removeHouseholdMember(userId: string): Promise<FamilyActionResult> {
+  const memberId = userId.trim()
+  if (!memberId) return { ok: false, message: "Couldn’t remove that member." }
+
+  const ctx = await requireHousehold()
+  if (!ctx) return { ok: false, message: "Create your household first." }
+  if (memberId === ctx.userId) return { ok: false, message: "You can’t change your own permissions." }
+
+  const mine = await ctx.supabase
+    .from("household_members")
+    .select("role")
+    .eq("household_id", ctx.householdId)
+    .eq("user_id", ctx.userId)
+    .maybeSingle()
+  if (mine.error || mine.data?.role !== "owner") {
+    return { ok: false, message: "You don’t have access to change that." }
+  }
+
+  const { error, data } = await ctx.supabase
+    .from("household_members")
+    .delete()
+    .eq("household_id", ctx.householdId)
+    .eq("user_id", memberId)
+    .select("user_id")
 
   const failed = calm(error, "Couldn’t remove that member.")
   if (failed) return failed

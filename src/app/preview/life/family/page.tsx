@@ -3,7 +3,7 @@ import { notFound } from "next/navigation"
 import { FamilyBoard } from "@/components/family/family-board"
 import { HouseholdPanel } from "@/components/family/household-panel"
 import type { MemberView } from "@/lib/data/session"
-import type { FamilyProfile } from "@/lib/family/profile"
+import type { FamilyProfile, HouseholdPermission } from "@/lib/family/profile"
 import type { InviteCodeView } from "@/lib/invite"
 
 import { previewSession } from "../../shell-session"
@@ -25,7 +25,8 @@ const previewCodes: InviteCodeView[] = [
 
 const previewLogins: MemberView[] = [
   { userId: "alex", role: "owner", displayName: "Alex", avatarUrl: null },
-  { userId: "sam", role: "member", displayName: "Sam", avatarUrl: null },
+  { userId: "sam", role: "adult", displayName: "Sam", avatarUrl: null },
+  { userId: "quinn", role: "view_only", displayName: "Quinn", avatarUrl: null },
 ]
 
 const familyPreviewSession = {
@@ -58,7 +59,19 @@ const previewFamily: FamilyProfile[] = [
     createdAt: "2026-01-01T00:00:00.000Z",
     archivedAt: null,
     userId: "sam",
-    permission: "member",
+    permission: "adult",
+  },
+  {
+    id: "quinn",
+    name: "Quinn",
+    role: null,
+    birthday: null,
+    color: "ink",
+    notes: null,
+    createdAt: "2026-01-01T00:00:00.000Z",
+    archivedAt: null,
+    userId: "quinn",
+    permission: "view_only",
   },
   {
     id: "jordan",
@@ -120,22 +133,23 @@ export default async function PreviewFamily({
   const view = Array.isArray(params.view) ? params.view[0] : params.view
   const role = Array.isArray(params.role) ? params.role[0] : params.role
   const who = Array.isArray(params.who) ? params.who[0] : params.who
+  const viewerRole: HouseholdPermission = role === "adult" || role === "view_only" ? role : "owner"
   const initialSheet = view === "add" || view === "edit" || view === "remove" ? view : null
   return (
-    <LifePreview session={familyPreviewSession}>
+    <LifePreview session={{ ...familyPreviewSession, role: viewerRole }}>
       <FamilyBoard
         members={view === "empty" ? [] : previewFamily}
-        canEdit={role !== "member"}
-        viewerId={role === "member" ? "sam" : "alex"}
+        viewerRole={viewerRole}
+        viewerId={viewerRole === "owner" ? "alex" : viewerRole === "view_only" ? "quinn" : "sam"}
         mode="preview"
         initialSheet={initialSheet}
         initialEditId={who ?? (initialSheet === "edit" ? "sam" : null)}
         beforeList={
           <HouseholdPanel
             name="My household"
-            canRename={role !== "member"}
+            canRename={viewerRole === "owner"}
             members={previewLogins}
-            inviteCodes={role === "member" ? [] : previewCodes}
+            inviteCodes={viewerRole === "owner" ? previewCodes : []}
           />
         }
       />

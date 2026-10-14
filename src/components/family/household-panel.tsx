@@ -1,5 +1,6 @@
 import { InviteCodesCard } from "@/components/settings/invite-codes-card"
 import { HouseholdNameForm } from "@/components/settings/settings-forms"
+import { accountPermissionLabel } from "@/lib/family/profile"
 import type { InviteCodeView } from "@/lib/invite"
 import type { MemberView } from "@/lib/data/session"
 
@@ -30,7 +31,7 @@ export function HouseholdPanel({
           {members.map((member) => (
             <li key={member.userId} className="flex items-center justify-between text-sm">
               <span>{member.displayName}</span>
-              <span className="text-muted-foreground">{member.role === "owner" ? "Owner" : "Member"}</span>
+              <span className="text-muted-foreground">{accountPermissionLabel(member.role)}</span>
             </li>
           ))}
         </ul>
