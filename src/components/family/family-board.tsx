@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, type FormEvent } from "react"
+import { useState, type FormEvent, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
 import { useSyncExternalStore } from "react"
 import { toast } from "sonner"
@@ -71,12 +71,14 @@ export function FamilyBoard({
   error = false,
   mode = "live",
   initialSheet = null,
+  beforeList = null,
 }: {
   members: FamilyProfile[]
   canEdit: boolean
   error?: boolean
   mode?: "live" | "preview"
   initialSheet?: "add" | "edit" | "remove" | null
+  beforeList?: ReactNode
 }) {
   const router = useRouter()
   const side = useSheetSide()
@@ -203,6 +205,8 @@ export function FamilyBoard({
           </Button>
         ) : null}
       </header>
+
+      {beforeList}
 
       {error ? <WidgetError /> : null}
 

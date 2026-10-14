@@ -18,6 +18,8 @@ const src = join(dirname(fileURLToPath(import.meta.url)), "../..")
 const sql = readFileSync(join(workspace, "supabase/migrations/20261014214051_family_profiles.sql"), "utf8")
 const board = readFileSync(join(src, "components/family/family-board.tsx"), "utf8")
 const more = readFileSync(join(src, "app/(app)/more/page.tsx"), "utf8")
+const settings = readFileSync(join(src, "app/(app)/settings/page.tsx"), "utf8")
+const familyPage = readFileSync(join(src, "app/(app)/life/family/page.tsx"), "utf8")
 
 test("birthday is month and day, with no age", () => {
   assert.equal(formatBirthday("1992-03-12"), "Mar 12")
@@ -83,6 +85,10 @@ test("family copy stays household-wide and the phone entry is More", () => {
   assert.equal(/LifeFab/.test(board), false)
   assert.match(board, /FAMILY_COPY\.removeBody/)
   assert.match(more, /href: "\/life\/family"/)
+  assert.match(familyPage, /HouseholdPanel/)
+  assert.match(familyPage, /beforeList/)
+  assert.match(settings, /href="\/life\/family"/)
+  assert.equal(/HouseholdNameForm|InviteCodesCard/.test(settings), false)
 })
 
 test("family_profiles migration locks reads to members and writes to the household owner", () => {

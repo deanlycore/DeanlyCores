@@ -29,6 +29,13 @@ test("money expands to bills, income, savings, subscriptions, cards, and people"
   assert.equal(people?.emptyBody, "Nothing owed to anyone yet.")
 })
 
+test("household controls are found on Family, and Family stays in the Life rail", () => {
+  const household = commandLinks().find((link) => link.label === "Household")
+  assert.equal(household?.href, "/life/family")
+  const life = primaryNav.find((item) => item.href === "/life")
+  assert.equal(life?.children?.some((child) => child.href === "/life/family" && child.rail), true)
+})
+
 test("life expands to calendar, tasks, meals, shopping, and family", () => {
   const life = primaryNav.find((item) => item.href === "/life")
   assert.equal(life?.expandOnly, true)
