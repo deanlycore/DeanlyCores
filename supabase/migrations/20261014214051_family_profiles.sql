@@ -3,6 +3,7 @@
 --
 -- households.owner_id is the login allowed to insert or update a profile.
 -- It is backfilled from the earliest owner membership (user id breaks a tie).
+-- When a household has two owner memberships, only that earliest owner can edit Family.
 
 alter table public.households
   add column owner_id uuid references auth.users (id);
@@ -18,6 +19,30 @@ set owner_id = (
 )
 where home.owner_id is null;
 
+-- Fail here, before set not null, so a household with no owner membership
+-- stops the migration with a count instead of a generic not-null error.
+do $$
+declare
+  missing integer;
+begin
+  select count(*)::integer
+    into missing
+  from public.households as home
+  where not exists (
+    select 1
+    from public.household_members as members
+    where members.household_id = home.id
+      and members.role = 'owner'
+  );
+
+  if missing > 0 then
+    raise exception
+      'Cannot require households.owner_id: % household(s) have no owner membership.',
+      missing;
+  end if;
+end;
+$$;
+
 alter table public.households
   alter column owner_id set not null;
 
@@ -26,6 +51,13 @@ alter table public.households
 
 create index households_owner_id_idx
   on public.households (owner_id);
+
+-- Direct inserts must name the caller as owner. A client cannot pass someone else's id.
+create policy households_insert_self
+  on public.households
+  for insert
+  to authenticated
+  with check (owner_id = auth.uid());
 
 create or replace function public.protect_household_owner_id()
 returns trigger
@@ -74,7 +106,9 @@ comment on column public.family_profiles.household_id is
 create index family_profiles_household_id_idx
   on public.family_profiles (household_id);
 
--- Insert ignores a client household_id and stores the caller's household.
+-- Insert ignores a client household_id and stores the caller's active household:
+-- the same membership lookup the app uses (user_id = auth.uid(), limit 1),
+-- not the oldest household they own. The caller must own that household.
 -- Update refuses to move the row to another household.
 create or replace function public.assign_family_profile_household()
 returns trigger
@@ -82,7 +116,7 @@ language plpgsql
 set search_path to 'public'
 as $$
 declare
-  owned uuid;
+  active uuid;
 begin
   if tg_op = 'UPDATE' then
     if new.household_id is distinct from old.household_id then
@@ -91,18 +125,22 @@ begin
     return new;
   end if;
 
-  select households.id
-    into owned
-  from public.households
-  where households.owner_id = auth.uid()
-  order by households.created_at, households.id
+  select members.household_id
+    into active
+  from public.household_members as members
+  where members.user_id = auth.uid()
   limit 1;
 
-  if owned is null then
+  if active is null or not exists (
+    select 1
+    from public.households
+    where households.id = active
+      and households.owner_id = auth.uid()
+  ) then
     raise exception 'Only the household owner can add a family member.';
   end if;
 
-  new.household_id := owned;
+  new.household_id := active;
   return new;
 end;
 $$;

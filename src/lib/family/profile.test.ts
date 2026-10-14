@@ -95,7 +95,20 @@ test("family_profiles migration locks reads to members and writes to the househo
   assert.match(sql, /grant select, insert, update on table public\.family_profiles to authenticated/)
   assert.match(sql, /revoke truncate on table public\.family_profiles from authenticated/)
   assert.equal(/grant\s+[^;]*service_role/i.test(sql), false)
-  assert.match(sql, /new\.household_id := owned/)
+  assert.match(sql, /new\.household_id := active/)
   assert.match(sql, /household_id is not distinct from/)
   assert.match(sql, /color in \('teal', 'deep', 'sand', 'success', 'warn', 'ink'\)/)
+
+  const guard = sql.indexOf("have no owner membership")
+  const notNull = sql.search(/alter column owner_id set not null/i)
+  assert.ok(guard > 0 && guard < notNull)
+  assert.match(sql, /Cannot require households\.owner_id: % household\(s\) have no owner membership\./)
+
+  assert.match(sql, /create policy households_insert_self[\s\S]*for insert[\s\S]*with check \(owner_id = auth\.uid\(\)\)/)
+
+  const assign = sql.slice(sql.indexOf("function public.assign_family_profile_household"))
+  assert.match(assign, /members\.user_id = auth\.uid\(\)/)
+  assert.match(assign, /limit 1/)
+  assert.equal(/order by households\.created_at/.test(assign), false)
+  assert.match(assign, /households\.id = active[\s\S]*households\.owner_id = auth\.uid\(\)/)
 })
