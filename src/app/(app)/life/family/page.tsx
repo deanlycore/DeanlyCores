@@ -34,6 +34,7 @@ export default async function Page() {
     <FamilyBoard
       members={family.members}
       canEdit={family.canEdit}
+      viewerId={family.viewerId}
       error={family.error}
       beforeList={
         <HouseholdPanel

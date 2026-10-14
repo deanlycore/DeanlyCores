@@ -7,7 +7,9 @@ import { fileURLToPath } from "node:url"
 import {
   FAMILY_COLORS,
   FAMILY_COPY,
+  accountPermissionLabel,
   assigneeLabel,
+  familyDetail,
   formatBirthday,
   parseFamilyForm,
   visibleProfiles,
@@ -16,6 +18,7 @@ import {
 const workspace = join(dirname(fileURLToPath(import.meta.url)), "../../..")
 const src = join(dirname(fileURLToPath(import.meta.url)), "../..")
 const sql = readFileSync(join(workspace, "supabase/migrations/20261014214051_family_profiles.sql"), "utf8")
+const linkSql = readFileSync(join(workspace, "supabase/migrations/20261014233000_family_member_link.sql"), "utf8")
 const board = readFileSync(join(src, "components/family/family-board.tsx"), "utf8")
 const more = readFileSync(join(src, "app/(app)/more/page.tsx"), "utf8")
 const settings = readFileSync(join(src, "app/(app)/settings/page.tsx"), "utf8")
@@ -122,4 +125,45 @@ test("family_profiles migration locks reads to members and writes to the househo
   assert.match(assign, /limit 1/)
   assert.equal(/order by households\.created_at/.test(assign), false)
   assert.match(assign, /households\.id = active[\s\S]*households\.owner_id = auth\.uid\(\)/)
+})
+
+test("a login shows as Owner or Member beside a relationship label", () => {
+  assert.equal(accountPermissionLabel("owner"), "Owner")
+  assert.equal(accountPermissionLabel("member"), "Member")
+  assert.equal(accountPermissionLabel(null), null)
+  assert.equal(familyDetail({ role: null, userId: "andrey", permission: "owner" }), "Owner")
+  assert.equal(familyDetail({ role: "Partner", userId: "arabella", permission: "member" }), "Member · Partner")
+  assert.equal(familyDetail({ role: "Son", userId: null, permission: null }), "Son")
+})
+
+test("household logins are linked onto Family without a broad security definer", () => {
+  assert.match(linkSql, /add column user_id uuid references auth\.users/)
+  assert.match(linkSql, /where user_id is not null/)
+  assert.equal(/security definer/i.test(linkSql), false)
+  assert.equal(/for delete/i.test(linkSql), false)
+  assert.equal(/grant\s+[^;]*service_role/i.test(linkSql), false)
+  assert.match(linkSql, /revoke all on table public\.family_profiles from anon/)
+  assert.match(linkSql, /revoke all on table public\.household_members from anon/)
+  assert.match(linkSql, /revoke all on table public\.profiles from anon/)
+  assert.match(linkSql, /grant update \(role\) on table public\.household_members to authenticated/)
+  assert.match(linkSql, /The last owner cannot be demoted\./)
+  assert.match(linkSql, /A household login stays on Family\./)
+  assert.match(linkSql, /Only the household owner can change permissions\./)
+  assert.match(linkSql, /new\.household_id := active/)
+  assert.match(linkSql, /members\.user_id = auth\.uid\(\)/)
+  assert.match(linkSql, /limit 1/)
+
+  const updateStart = linkSql.indexOf("create policy family_profiles_update")
+  const updateEnd = linkSql.indexOf("create or replace function public.sync_family_profile_display_name")
+  const updatePolicy = linkSql.slice(updateStart, updateEnd)
+  assert.ok(updateStart > 0 && updateEnd > updateStart)
+  assert.equal(/from public\.family_profiles/.test(updatePolicy), false)
+  assert.match(updatePolicy, /households\.owner_id = auth\.uid\(\)/)
+  assert.match(updatePolicy, /family_profiles\.user_id = auth\.uid\(\)/)
+
+  const rolePolicy = linkSql.slice(linkSql.indexOf("create policy household_members_update_role"))
+  assert.match(rolePolicy, /households\.owner_id = auth\.uid\(\)/)
+  assert.match(board, /family-permission/)
+  assert.match(board, /FAMILY_COPY\.permissionLabel/)
+  assert.match(familyPage, /viewerId=\{family\.viewerId\}/)
 })

@@ -23,6 +23,8 @@ export const FAMILY_COPY = {
   birthdayLabel: "Birthday",
   colorLabel: "Color",
   notesLabel: "Notes",
+  permissionLabel: "Permissions",
+  permissionHint: "Only the household owner can change permissions.",
   save: "Save",
   cancel: "Cancel",
   remove: "Remove member",
@@ -30,6 +32,8 @@ export const FAMILY_COPY = {
   removeBody: "Their chores and notes stay. Anything assigned to them becomes Unassigned.",
   unassigned: "Unassigned",
 } as const
+
+export type HouseholdPermission = "owner" | "member"
 
 export type FamilyProfile = {
   id: string
@@ -40,9 +44,11 @@ export type FamilyProfile = {
   notes: string | null
   createdAt: string
   archivedAt: string | null
+  userId: string | null
+  permission: HouseholdPermission | null
 }
 
-export type FamilyField = "name" | "role" | "birthday" | "notes" | "color"
+export type FamilyField = "name" | "role" | "birthday" | "notes" | "color" | "permission"
 
 export type FamilyInput = {
   name: string
@@ -56,6 +62,27 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 
 export function isFamilyColor(value: string | null | undefined): value is FamilyColor {
   return FAMILY_COLORS.some((color) => color.id === value)
+}
+
+export function isHouseholdPermission(value: string | null | undefined): value is HouseholdPermission {
+  return value === "owner" || value === "member"
+}
+
+/** Owner or Member for a login. Empty for a person without an account. */
+export function accountPermissionLabel(permission: HouseholdPermission | null | undefined) {
+  if (permission === "owner") return "Owner"
+  if (permission === "member") return "Member"
+  return null
+}
+
+/** Login permission, then the relationship label, on one line. */
+export function familyDetail(member: {
+  role: string | null
+  userId: string | null
+  permission: HouseholdPermission | null
+}) {
+  const permission = member.userId ? accountPermissionLabel(member.permission) : null
+  return [permission, member.role].filter((part) => part).join(" · ")
 }
 
 export function familySwatch(color: FamilyColor) {

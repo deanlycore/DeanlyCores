@@ -23,8 +23,10 @@ import {
   FAMILY_COLORS,
   FAMILY_COPY,
   familyAvatarTint,
+  familyDetail,
   familyInitials,
   formatBirthday,
+  isHouseholdPermission,
   parseFamilyForm,
   removeTitle,
   removedToast,
@@ -32,6 +34,7 @@ import {
   type FamilyColor,
   type FamilyField,
   type FamilyProfile,
+  type HouseholdPermission,
 } from "@/lib/family/profile"
 import { cn } from "cn"
 
@@ -52,7 +55,14 @@ function useSheetSide() {
 }
 
 function blankForm() {
-  return { name: "", role: "", birthday: "", color: "teal" as FamilyColor, notes: "" }
+  return {
+    name: "",
+    role: "",
+    birthday: "",
+    color: "teal" as FamilyColor,
+    notes: "",
+    permission: "member" as HouseholdPermission,
+  }
 }
 
 function formFrom(member: FamilyProfile) {
@@ -62,27 +72,37 @@ function formFrom(member: FamilyProfile) {
     birthday: member.birthday ?? "",
     color: member.color,
     notes: member.notes ?? "",
+    permission: member.permission ?? "member",
   }
 }
 
 export function FamilyBoard({
   members,
   canEdit,
+  viewerId = null,
   error = false,
   mode = "live",
   initialSheet = null,
+  initialEditId = null,
   beforeList = null,
 }: {
   members: FamilyProfile[]
   canEdit: boolean
+  viewerId?: string | null
   error?: boolean
   mode?: "live" | "preview"
   initialSheet?: "add" | "edit" | "remove" | null
+  initialEditId?: string | null
   beforeList?: ReactNode
 }) {
   const router = useRouter()
   const side = useSheetSide()
-  const seeded = visibleProfiles(members)[0] ?? null
+  const visibleSeed = visibleProfiles(members)
+  const seeded =
+    (initialEditId ? visibleSeed.find((row) => row.id === initialEditId) : null) ??
+    visibleSeed.find((row) => (initialSheet === "remove" ? row.userId == null : row.userId != null)) ??
+    visibleSeed[0] ??
+    null
   const [previewRows, setPreviewRows] = useState(members)
   const [hiddenIds, setHiddenIds] = useState<string[]>([])
   const [edits, setEdits] = useState<Record<string, FamilyProfile>>({})
@@ -104,6 +124,11 @@ export function FamilyBoard({
   const [removing, setRemoving] = useState(false)
 
   const editing = sheet?.kind === "edit" ? rows.find((row) => row.id === sheet.id) ?? null : null
+  const writing =
+    sheet?.kind === "add"
+      ? canEdit
+      : Boolean(editing && (canEdit || (editing.userId != null && editing.userId === viewerId)))
+  const writingPermission = Boolean(canEdit && editing?.userId)
 
   function openAdd() {
     setForm(blankForm())
@@ -124,7 +149,7 @@ export function FamilyBoard({
 
   async function onSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!canEdit || pending) return
+    if (!writing || pending) return
     const parsed = parseFamilyForm(form)
     if (!parsed.ok) {
       setFieldError({ [parsed.field]: parsed.message })
@@ -140,6 +165,9 @@ export function FamilyBoard({
       notes: parsed.value.notes,
       createdAt: editing?.createdAt ?? new Date().toISOString(),
       archivedAt: null,
+      userId: editing?.userId ?? null,
+      permission:
+        writingPermission && isHouseholdPermission(form.permission) ? form.permission : editing?.permission ?? null,
     }
     if (mode === "preview") {
       setPreviewRows((current) =>
@@ -158,6 +186,7 @@ export function FamilyBoard({
     body.set("birthday", form.birthday)
     body.set("color", form.color)
     body.set("notes", form.notes)
+    if (writingPermission) body.set("permission", form.permission)
     const result = await saveFamilyProfile(body)
     setPending(false)
     if (!result.ok) {
@@ -227,6 +256,7 @@ export function FamilyBoard({
         <ul className="grid gap-2.5 md:grid-cols-2">
           {visible.map((member) => {
             const birthday = formatBirthday(member.birthday)
+            const detail = familyDetail(member)
             return (
               <li key={member.id}>
                 <button
@@ -243,8 +273,8 @@ export function FamilyBoard({
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-display text-[16px] font-semibold leading-5 text-ink">{member.name}</span>
-                    {member.role ? (
-                      <span className="mt-0.5 block truncate font-sans text-[14px] text-muted-foreground">{member.role}</span>
+                    {detail ? (
+                      <span className="mt-0.5 block truncate font-sans text-[14px] text-muted-foreground">{detail}</span>
                     ) : null}
                   </span>
                   {birthday ? <span className="shrink-0 font-sans text-[14px] text-muted-foreground">{birthday}</span> : null}
@@ -268,7 +298,7 @@ export function FamilyBoard({
           {side === "bottom" ? <div aria-hidden="true" className="mx-auto mt-3 h-1 w-10 rounded-full bg-border" /> : null}
           <SheetHeader className="pr-10">
             <SheetTitle className="font-display text-lg">{sheet?.kind === "edit" ? FAMILY_COPY.editTitle : FAMILY_COPY.addTitle}</SheetTitle>
-            <SheetDescription className="sr-only">Name, role, birthday, color, and notes.</SheetDescription>
+            <SheetDescription className="sr-only">Name, permissions, role, birthday, color, and notes.</SheetDescription>
           </SheetHeader>
           <form onSubmit={onSave} className="grid gap-4 px-4 pb-5">
             <div className="grid gap-1.5">
@@ -276,7 +306,7 @@ export function FamilyBoard({
               <Input
                 id="family-name"
                 value={form.name}
-                disabled={!canEdit}
+                disabled={!writing}
                 autoComplete="off"
                 aria-invalid={Boolean(fieldError.name)}
                 aria-describedby={fieldError.name ? "family-name-error" : undefined}
@@ -292,12 +322,37 @@ export function FamilyBoard({
                 </p>
               ) : null}
             </div>
+            {editing?.userId ? (
+              <div className="grid gap-1.5">
+                <Label htmlFor="family-permission">{FAMILY_COPY.permissionLabel}</Label>
+                <select
+                  id="family-permission"
+                  value={form.permission}
+                  disabled={!writingPermission}
+                  aria-invalid={Boolean(fieldError.permission)}
+                  onChange={(event) => {
+                    const next = event.target.value
+                    if (!isHouseholdPermission(next)) return
+                    setForm((current) => ({ ...current, permission: next }))
+                    if (fieldError.permission) setFieldError((current) => ({ ...current, permission: undefined }))
+                  }}
+                  className="h-11 rounded-button border border-input bg-surface px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-70"
+                >
+                  <option value="owner">Owner</option>
+                  <option value="member">Member</option>
+                </select>
+                {writingPermission ? null : (
+                  <p className="text-sm text-muted-foreground">{FAMILY_COPY.permissionHint}</p>
+                )}
+                {fieldError.permission ? <p className="text-sm text-danger">{fieldError.permission}</p> : null}
+              </div>
+            ) : null}
             <div className="grid gap-1.5">
               <Label htmlFor="family-role">{FAMILY_COPY.roleLabel}</Label>
               <Input
                 id="family-role"
                 value={form.role}
-                disabled={!canEdit}
+                disabled={!writing}
                 placeholder={FAMILY_COPY.rolePlaceholder}
                 autoComplete="off"
                 aria-invalid={Boolean(fieldError.role)}
@@ -312,7 +367,7 @@ export function FamilyBoard({
                 id="family-birthday"
                 type="date"
                 value={form.birthday}
-                disabled={!canEdit}
+                disabled={!writing}
                 aria-invalid={Boolean(fieldError.birthday)}
                 onChange={(event) => setForm((current) => ({ ...current, birthday: event.target.value }))}
                 className="h-11 rounded-button bg-surface px-3"
@@ -331,7 +386,7 @@ export function FamilyBoard({
                       role="radio"
                       aria-checked={selected}
                       aria-label={color.label}
-                      disabled={!canEdit}
+                      disabled={!writing}
                       onClick={() => setForm((current) => ({ ...current, color: color.id }))}
                       className={cn(
                         "size-10 rounded-full ring-offset-2 ring-offset-surface disabled:opacity-70",
@@ -350,7 +405,7 @@ export function FamilyBoard({
                 id="family-notes"
                 rows={3}
                 value={form.notes}
-                disabled={!canEdit}
+                disabled={!writing}
                 aria-invalid={Boolean(fieldError.notes)}
                 onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))}
                 className="rounded-button border border-input bg-surface px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-70"
@@ -361,13 +416,13 @@ export function FamilyBoard({
               <Button type="button" variant="outline" className="h-10 rounded-button max-md:min-h-11" onClick={closeSheet}>
                 {FAMILY_COPY.cancel}
               </Button>
-              {canEdit ? (
+              {writing ? (
                 <Button type="submit" disabled={pending} className="h-10 rounded-button text-primary-foreground max-md:min-h-11">
                   {pending ? "Saving…" : FAMILY_COPY.save}
                 </Button>
               ) : null}
             </div>
-            {canEdit && editing ? (
+            {canEdit && editing && !editing.userId ? (
               <button
                 type="button"
                 className="justify-self-start text-sm font-medium text-danger"

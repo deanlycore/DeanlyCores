@@ -1,14 +1,24 @@
 import { requireHousehold } from "@/lib/data/context"
 import { getSessionView } from "@/lib/data/session"
-import { isFamilyColor, visibleProfiles, type FamilyProfile } from "@/lib/family/profile"
+import {
+  isFamilyColor,
+  isHouseholdPermission,
+  visibleProfiles,
+  type FamilyProfile,
+} from "@/lib/family/profile"
 
 function columnMissing(error: { message: string } | null) {
   return Boolean(error && /column/i.test(error.message) && /does not exist/i.test(error.message))
 }
 
-export async function loadFamily(): Promise<{ members: FamilyProfile[]; canEdit: boolean; error: boolean }> {
+export async function loadFamily(): Promise<{
+  members: FamilyProfile[]
+  canEdit: boolean
+  viewerId: string | null
+  error: boolean
+}> {
   const [ctx, session] = await Promise.all([requireHousehold(), getSessionView()])
-  if (!ctx) return { members: [], canEdit: false, error: false }
+  if (!ctx) return { members: [], canEdit: false, viewerId: null, error: false }
 
   let canEdit = session.role === "owner"
   const ownerLookup = await ctx.supabase.from("households").select("owner_id").eq("id", ctx.householdId).maybeSingle()
@@ -18,30 +28,60 @@ export async function loadFamily(): Promise<{ members: FamilyProfile[]; canEdit:
     canEdit = false
   }
 
-  const listed = await ctx.supabase
+  const withLogin = await ctx.supabase
     .from("family_profiles")
-    .select("id, name, role, birthday, color, notes, created_at, archived_at")
+    .select("id, name, role, birthday, color, notes, created_at, archived_at, user_id")
     .eq("household_id", ctx.householdId)
     .is("archived_at", null)
     .order("name", { ascending: true })
     .limit(100)
 
+  const listed = withLogin.error && columnMissing(withLogin.error)
+    ? await ctx.supabase
+        .from("family_profiles")
+        .select("id, name, role, birthday, color, notes, created_at, archived_at")
+        .eq("household_id", ctx.householdId)
+        .is("archived_at", null)
+        .order("name", { ascending: true })
+        .limit(100)
+    : withLogin
+
   if (listed.error) {
-    return { members: [], canEdit, error: true }
+    return { members: [], canEdit, viewerId: ctx.userId, error: true }
   }
 
-  const members = visibleProfiles(
-    (listed.data ?? []).map((row) => ({
-      id: row.id,
-      name: row.name,
-      role: row.role,
-      birthday: row.birthday,
-      color: isFamilyColor(row.color) ? row.color : "teal",
-      notes: row.notes,
-      createdAt: row.created_at,
-      archivedAt: row.archived_at,
-    })),
+  const memberships = await ctx.supabase
+    .from("household_members")
+    .select("user_id, role")
+    .eq("household_id", ctx.householdId)
+
+  if (memberships.error) {
+    return { members: [], canEdit, viewerId: ctx.userId, error: true }
+  }
+
+  const roleByUser = new Map(
+    (memberships.data ?? []).map((row) => [row.user_id, isHouseholdPermission(row.role) ? row.role : "member"] as const),
   )
 
-  return { members, canEdit, error: false }
+  const members = visibleProfiles(
+    (listed.data ?? []).flatMap((row) => {
+      const userId = "user_id" in row && typeof row.user_id === "string" ? row.user_id : null
+      if (userId && !roleByUser.has(userId)) return []
+      const profile: FamilyProfile = {
+        id: row.id,
+        name: row.name,
+        role: row.role,
+        birthday: row.birthday,
+        color: isFamilyColor(row.color) ? row.color : "teal",
+        notes: row.notes,
+        createdAt: row.created_at,
+        archivedAt: row.archived_at,
+        userId,
+        permission: userId ? roleByUser.get(userId) ?? null : null,
+      }
+      return [profile]
+    }),
+  )
+
+  return { members, canEdit, viewerId: ctx.userId, error: false }
 }
