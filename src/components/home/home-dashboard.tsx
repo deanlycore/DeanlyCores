@@ -211,7 +211,7 @@ function Checklist({
         <p className="mt-1 text-sm text-muted-foreground">Add a bill, invite someone in, or upload a paper when you’re ready.</p>
         <div className="mt-3 flex flex-wrap gap-3 text-sm">
           <RecordDialog kind="bill" today={today} defaultVisibility={visibility} trigger={<TextLink>Add bill</TextLink>} />
-          <Link href="/settings#household" className="font-medium text-brand-deep">
+          <Link href="/life/family" className="font-medium text-brand-deep">
             {members < 2 ? "Invite partner" : "Household"}
           </Link>
           <RecordDialog kind="upload" today={today} defaultVisibility="private" trigger={<TextLink>Upload doc</TextLink>} />

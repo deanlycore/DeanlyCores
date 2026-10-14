@@ -1,11 +1,26 @@
 import { notFound } from "next/navigation"
 
 import { FamilyBoard } from "@/components/family/family-board"
+import { HouseholdPanel } from "@/components/family/household-panel"
 import type { FamilyProfile } from "@/lib/family/profile"
+import type { InviteCodeView } from "@/lib/invite"
+
+import { previewSession } from "../../shell-session"
 
 import { LifePreview } from "../chrome"
 
 export const dynamic = "force-dynamic"
+
+const previewCodes: InviteCodeView[] = [
+  {
+    id: "preview-code",
+    code: "DEAN-7K2M4P9Q",
+    createdAt: "2026-10-01T16:00:00.000Z",
+    expiresAt: null,
+    maxUses: 2,
+    uses: 0,
+  },
+]
 
 const previewFamily: FamilyProfile[] = [
   {
@@ -67,6 +82,14 @@ export default async function PreviewFamily({
         canEdit={role !== "member"}
         mode="preview"
         initialSheet={initialSheet}
+        beforeList={
+          <HouseholdPanel
+            name={previewSession.householdName ?? "DeanFamily"}
+            canRename={role !== "member"}
+            members={previewSession.members}
+            inviteCodes={role === "member" ? [] : previewCodes}
+          />
+        }
       />
     </LifePreview>
   )

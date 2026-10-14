@@ -228,7 +228,7 @@ function AccountMenu({ session }: { session: SessionView }) {
           <Link href="/settings#profile">Profile</Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link href="/settings#household">Household</Link>
+          <Link href="/life/family">Household</Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>

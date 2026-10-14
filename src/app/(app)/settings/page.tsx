@@ -4,13 +4,11 @@ import { cookies } from "next/headers"
 
 import { signOut } from "@/lib/actions/auth"
 import { AppearanceControl } from "@/components/settings/appearance-control"
-import { InviteCodesCard } from "@/components/settings/invite-codes-card"
-import { CurrencyForm, HouseholdNameForm, NameForm } from "@/components/settings/settings-forms"
+import { CurrencyForm, NameForm } from "@/components/settings/settings-forms"
 import { SharedPushToggle } from "@/components/settings/shared-push-toggle"
 import { getSessionView } from "@/lib/data/session"
 import { requireHousehold } from "@/lib/data/context"
 import { getVapidPublicKey } from "@/lib/push/env"
-import { toActiveInvite, type InviteCodeRecord, type InviteCodeView } from "@/lib/invite"
 import { APPEARANCE_COOKIE, parseAppearance } from "@/lib/theme"
 
 export const metadata: Metadata = { title: "Settings" }
@@ -29,29 +27,11 @@ export default async function SettingsPage() {
       ).data ?? []
     : []
 
-  let inviteCodes: InviteCodeView[] = []
-  let inviteCodesReady = true
-  if (ctx && session.role === "owner") {
-    const { data, error } = await ctx.supabase
-      .from("household_invite_codes")
-      .select("id, code, created_at, expires_at, max_uses, uses, revoked_at, purpose")
-      .eq("household_id", ctx.householdId)
-      .order("created_at", { ascending: false })
-    if (error) {
-      inviteCodesReady = false
-    } else {
-      inviteCodes = (data ?? []).flatMap((row) => {
-        const view = toActiveInvite(row as InviteCodeRecord)
-        return view ? [view] : []
-      })
-    }
-  }
-
   return (
     <div className="mx-auto grid max-w-3xl gap-4">
       <header>
         <h1 className="font-display text-[28px] font-semibold tracking-tight">Settings</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Profile, appearance, household, notifications, and how amounts are shown.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Profile, appearance, notifications, and how amounts are shown.</p>
       </header>
 
       <section id="profile" className="deanly-card grid gap-3 p-5">
@@ -65,25 +45,12 @@ export default async function SettingsPage() {
         <p className="text-sm text-muted-foreground">Night is easier on evening shifts.</p>
       </section>
 
-      <section id="household" className="grid gap-4">
-        <div className="deanly-card grid gap-3 p-5">
-          <h2 className="font-medium">Household</h2>
-          {session.role === "owner" ? (
-            <HouseholdNameForm name={session.householdName ?? "My household"} />
-          ) : (
-            <p className="text-sm font-medium">{session.householdName ?? "Household"}</p>
-          )}
-          <p className="text-sm text-muted-foreground">People listed here share this household.</p>
-          <ul className="grid gap-2">
-            {session.members.map((member) => (
-              <li key={member.userId} className="flex items-center justify-between text-sm">
-                <span>{member.displayName}</span>
-                <span className="text-muted-foreground">{member.role === "owner" ? "Owner" : "Member"}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-        {session.role === "owner" ? <InviteCodesCard codes={inviteCodes} ready={inviteCodesReady} /> : null}
+      <section id="household" className="deanly-card p-5">
+        <h2 className="font-medium">Household</h2>
+        <p className="mt-2 text-sm text-muted-foreground">Name, members, and invite codes are on Family.</p>
+        <Link href="/life/family" className="mt-2 inline-block text-sm font-medium text-brand-deep">
+          Open Family
+        </Link>
       </section>
 
       <section id="categories" className="deanly-card p-5">
