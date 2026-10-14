@@ -24,33 +24,40 @@ const previewCodes: InviteCodeView[] = [
 ]
 
 const previewLogins: MemberView[] = [
-  { userId: "andrey", role: "owner", displayName: "Andrey", avatarUrl: null },
-  { userId: "arabella", role: "member", displayName: "Arabella", avatarUrl: null },
+  { userId: "alex", role: "owner", displayName: "Alex", avatarUrl: null },
+  { userId: "sam", role: "member", displayName: "Sam", avatarUrl: null },
 ]
+
+const familyPreviewSession = {
+  ...previewSession,
+  displayName: "Alex",
+  householdName: "My household",
+  members: previewLogins,
+}
 
 const previewFamily: FamilyProfile[] = [
   {
-    id: "andrey",
-    name: "Andrey",
+    id: "alex",
+    name: "Alex",
     role: null,
     birthday: null,
     color: "teal",
     notes: null,
     createdAt: "2026-01-01T00:00:00.000Z",
     archivedAt: null,
-    userId: "andrey",
+    userId: "alex",
     permission: "owner",
   },
   {
-    id: "arabella",
-    name: "Arabella",
+    id: "sam",
+    name: "Sam",
     role: null,
     birthday: null,
     color: "deep",
     notes: null,
     createdAt: "2026-01-01T00:00:00.000Z",
     archivedAt: null,
-    userId: "arabella",
+    userId: "sam",
     permission: "member",
   },
   {
@@ -115,17 +122,17 @@ export default async function PreviewFamily({
   const who = Array.isArray(params.who) ? params.who[0] : params.who
   const initialSheet = view === "add" || view === "edit" || view === "remove" ? view : null
   return (
-    <LifePreview>
+    <LifePreview session={familyPreviewSession}>
       <FamilyBoard
         members={view === "empty" ? [] : previewFamily}
         canEdit={role !== "member"}
-        viewerId={role === "member" ? "arabella" : "andrey"}
+        viewerId={role === "member" ? "sam" : "alex"}
         mode="preview"
         initialSheet={initialSheet}
-        initialEditId={who ?? (initialSheet === "edit" ? "arabella" : null)}
+        initialEditId={who ?? (initialSheet === "edit" ? "sam" : null)}
         beforeList={
           <HouseholdPanel
-            name={previewSession.householdName ?? "DeanFamily"}
+            name="My household"
             canRename={role !== "member"}
             members={previewLogins}
             inviteCodes={role === "member" ? [] : previewCodes}

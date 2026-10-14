@@ -23,6 +23,9 @@ const board = readFileSync(join(src, "components/family/family-board.tsx"), "utf
 const more = readFileSync(join(src, "app/(app)/more/page.tsx"), "utf8")
 const settings = readFileSync(join(src, "app/(app)/settings/page.tsx"), "utf8")
 const familyPage = readFileSync(join(src, "app/(app)/life/family/page.tsx"), "utf8")
+const familyPreview = readFileSync(join(src, "app/preview/life/family/page.tsx"), "utf8")
+const inviteCard = readFileSync(join(src, "components/settings/invite-codes-card.tsx"), "utf8")
+const nameSql = readFileSync(join(workspace, "supabase/migrations/20261015004500_household_name_default.sql"), "utf8")
 
 test("birthday is month and day, with no age", () => {
   assert.equal(formatBirthday("1992-03-12"), "Mar 12")
@@ -131,8 +134,8 @@ test("a login shows as Owner or Member beside a relationship label", () => {
   assert.equal(accountPermissionLabel("owner"), "Owner")
   assert.equal(accountPermissionLabel("member"), "Member")
   assert.equal(accountPermissionLabel(null), null)
-  assert.equal(familyDetail({ role: null, userId: "andrey", permission: "owner" }), "Owner")
-  assert.equal(familyDetail({ role: "Partner", userId: "arabella", permission: "member" }), "Member · Partner")
+  assert.equal(familyDetail({ role: null, userId: "owner", permission: "owner" }), "Owner")
+  assert.equal(familyDetail({ role: "Partner", userId: "member", permission: "member" }), "Member · Partner")
   assert.equal(familyDetail({ role: "Son", userId: null, permission: null }), "Son")
 })
 
@@ -166,4 +169,13 @@ test("household logins are linked onto Family without a broad security definer",
   assert.match(board, /family-permission/)
   assert.match(board, /FAMILY_COPY\.permissionLabel/)
   assert.match(familyPage, /viewerId=\{family\.viewerId\}/)
+})
+
+test("family and household copy is not pinned to one household", () => {
+  assert.equal(/Andrey|Arabella|DeanFamily/.test(familyPreview), false)
+  assert.equal(/DeanFamily/.test(inviteCard), false)
+  assert.match(familyPreview, /My household/)
+  assert.match(nameSql, /alter column name set default 'My household'/)
+  assert.match(nameSql, /chosen := 'My household'/)
+  assert.equal(/DeanFamily/.test(nameSql), false)
 })

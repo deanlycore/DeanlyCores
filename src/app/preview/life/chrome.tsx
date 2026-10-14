@@ -1,11 +1,12 @@
 import { LifeSectionNav } from "@/components/life/life-section-nav"
 import { AppShell } from "@/components/shell/app-shell"
+import type { SessionView } from "@/lib/data/session"
 
 import { previewSession } from "../shell-session"
 
-export function LifePreview({ children }: { children: React.ReactNode }) {
+export function LifePreview({ children, session = previewSession }: { children: React.ReactNode; session?: SessionView }) {
   return (
-    <AppShell session={previewSession}>
+    <AppShell session={session}>
       <div className="grid gap-5">
         <LifeSectionNav />
         {children}
