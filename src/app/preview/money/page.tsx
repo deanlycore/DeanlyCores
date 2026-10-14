@@ -1,12 +1,14 @@
 import { notFound } from "next/navigation"
 
 import { MoneyFlow } from "@/components/money/money-flow"
+import { MoneyInsights } from "@/components/money/money-insights"
 import { MoneyScan } from "@/components/money/money-scan"
 import { MoneySnapshot } from "@/components/money/money-snapshot"
 import { AppShell } from "@/components/shell/app-shell"
 import { SectionSegments } from "@/components/shell/section-segments"
 import type { BillRow, ExpenseRow, GoalRow, MoneyCardRow, MoneyPaymentRow, MoneyPersonRow, SubscriptionRow } from "@/lib/data/home"
 import { moneyScanSection } from "@/lib/money/board"
+import { buildMoneyInsights } from "@/lib/money/insights"
 import { primaryNav, railChildren } from "@/lib/navigation"
 
 import { previewSession } from "../shell-session"
@@ -71,7 +73,25 @@ export default async function PreviewMoney({
   const params = await searchParams
   const selected = moneyScanSection(params.section)
   const sample = Array.isArray(params.sample) ? params.sample[0] : params.sample
-  const shownIncome = sample === "no-income" ? [] : income
+  const blank = sample === "empty"
+  const shownBills = blank ? [] : bills
+  const shownIncome = blank || sample === "no-income" ? [] : income
+  const shownGoals = blank ? [] : goals
+  const shownSubscriptions = blank ? [] : subscriptions
+  const shownCards = blank ? [] : cards
+  const shownPeople = blank ? [] : people
+  const shownPayments = blank ? [] : payments
+  const insights = buildMoneyInsights({
+    today,
+    currency: "USD",
+    bills: shownBills,
+    payments: shownPayments,
+    income: shownIncome,
+    goals: shownGoals,
+    subscriptions: shownSubscriptions,
+    cards: shownCards,
+    people: shownPeople,
+  })
   const money = primaryNav.find((item) => item.href === "/money")
   return (
     <AppShell session={previewSession}>
@@ -80,23 +100,24 @@ export default async function PreviewMoney({
           <MoneySnapshot
             today={today}
             currency="USD"
-            bills={bills}
-            payments={payments}
+            bills={shownBills}
+            payments={shownPayments}
             income={shownIncome}
-            goals={goals}
-            subscriptions={subscriptions}
+            goals={shownGoals}
+            subscriptions={shownSubscriptions}
           />
           <MoneyFlow
             today={today}
             currency="USD"
-            bills={bills}
-            payments={payments}
+            bills={shownBills}
+            payments={shownPayments}
             income={shownIncome}
-            goals={goals}
-            subscriptions={subscriptions}
-            cards={cards}
-            people={people}
+            goals={shownGoals}
+            subscriptions={shownSubscriptions}
+            cards={shownCards}
+            people={shownPeople}
           />
+          <MoneyInsights lines={insights} />
         </div>
         <div className="grid gap-5">
           {money ? <SectionSegments label="Money" segments={railChildren(money)} tone="life" section={selected} /> : null}
@@ -104,13 +125,13 @@ export default async function PreviewMoney({
             section={selected}
             today={today}
             currency="USD"
-            bills={bills}
+            bills={shownBills}
             income={shownIncome}
-            goals={goals}
-            subscriptions={subscriptions}
-            cards={cards}
-            people={people}
-            payments={payments}
+            goals={shownGoals}
+            subscriptions={shownSubscriptions}
+            cards={shownCards}
+            people={shownPeople}
+            payments={shownPayments}
           />
         </div>
       </div>
