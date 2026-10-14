@@ -16,6 +16,7 @@ import {
   ShoppingCart,
   CreditCard,
   UserRound,
+  Users,
   SquareCheckBig,
   SunMedium,
   TrendingUp,
@@ -55,6 +56,7 @@ const childIcons: Record<RailIcon, LucideIcon> = {
   tasks: SquareCheckBig,
   meals: Utensils,
   shopping: ShoppingCart,
+  family: Users,
 }
 
 const rowClass =

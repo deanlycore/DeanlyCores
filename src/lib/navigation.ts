@@ -13,6 +13,7 @@ export type RailIcon =
   | "tasks"
   | "meals"
   | "shopping"
+  | "family"
 
 export type SectionLink = {
   href: string
@@ -23,6 +24,8 @@ export type SectionLink = {
   emptyBody: string
   /** Shown as a desktop rail child. Budget, the old debt placeholder, and vault stay off the rail. */
   rail?: boolean
+  /** Phone section pills. Omitted follows the rail. Family stays off the phone Life pills. */
+  segment?: boolean
   icon?: RailIcon
 }
 
@@ -178,6 +181,16 @@ export const primaryNav: PrimaryNavItem[] = [
         rail: true,
         icon: "shopping",
       },
+      {
+        href: "/life/family",
+        label: "Family",
+        description: "People in the household, without a login.",
+        emptyTitle: "Add your family.",
+        emptyBody: "Add your family.",
+        rail: true,
+        segment: false,
+        icon: "family",
+      },
     ],
   },
   {
@@ -237,6 +250,25 @@ export const settingsNav = [
 export function railChildren(item: PrimaryNavItem) {
   if (!item.expandOnly) return []
   return (item.children ?? []).filter((child) => child.rail)
+}
+
+/** Phone section pills. Family is in the desktop Life rail and under More on the phone. */
+export function segmentChildren(item: PrimaryNavItem) {
+  return railChildren(item).filter((child) => child.segment !== false)
+}
+
+export function isFamilyPath(pathname: string) {
+  return pathname === "/life/family" || pathname.startsWith("/life/family/")
+}
+
+/** Bottom nav target. Family stays on More. Other routes keep their current tab. */
+export function mobileTabHref(pathname: string) {
+  if (isFamilyPath(pathname) || pathname === "/more") return "/more"
+  if (pathname === "/home") return "/home"
+  if (pathname === "/money" || pathname.startsWith("/money/")) return "/money"
+  if (pathname === "/life" || pathname.startsWith("/life/")) return "/life"
+  if (pathname === "/notes" || pathname.startsWith("/notes/")) return "/notes"
+  return null
 }
 
 export function pathMatches(pathname: string, href: string) {
