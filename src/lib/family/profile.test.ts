@@ -212,6 +212,19 @@ test("any owner can edit a household, and view only cannot write shared rows", (
   assert.match(readFileSync(join(src, "lib/family/profile.ts"), "utf8"), /Can see shared items/)
 })
 
+test("private-row purge is trigger-only and not an RPC", () => {
+  const purge = readFileSync(join(workspace, "supabase/migrations/20261015041000_purge_private_rows_trigger_only.sql"), "utf8")
+  assert.match(purge, /function public\.protect_household_member_delete\(\)/)
+  assert.match(purge, /security definer/)
+  assert.match(purge, /set search_path to 'public'/)
+  assert.match(purge, /visibility = ''private''/)
+  assert.match(purge, /drop function public\.purge_private_household_rows\(uuid, uuid\)/)
+  assert.match(purge, /revoke all on function public\.protect_household_member_delete\(\) from public, anon, authenticated, service_role/)
+  assert.equal(/grant execute on function public\.purge_private_household_rows/i.test(purge), false)
+  assert.equal(/grant execute on function public\.protect_household_member_delete/i.test(purge), false)
+  assert.equal(/DeanFamily|Andrey|Arabella/.test(purge), false)
+})
+
 test("role changes lock owner rows and invite role comes from the code", () => {
   const locks = readFileSync(join(workspace, "supabase/migrations/20261015030200_household_access_locks.sql"), "utf8")
   assert.match(locks, /for update/)
