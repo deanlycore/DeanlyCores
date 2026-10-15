@@ -65,9 +65,9 @@ function SegmentBar({
       aria-label={label}
       className={
         scan
-          ? "sticky top-0 z-20 -mx-4 flex gap-1 overflow-x-auto border-b border-border bg-background/95 px-4 py-2 backdrop-blur md:top-14 md:-mx-6 md:px-6"
+          ? "-mx-4 flex gap-1 overflow-x-auto border-b border-border px-4 py-2 md:-mx-6 md:px-6"
           : life
-            ? "sticky top-0 z-20 -mx-4 flex gap-1 overflow-x-auto border-b border-border bg-background/95 px-4 py-2 backdrop-blur md:hidden"
+            ? "-mx-4 flex gap-1 overflow-x-auto border-b border-border px-4 py-2 md:hidden"
             : "-mx-1 flex gap-1 overflow-x-auto px-1 md:hidden"
       }
     >

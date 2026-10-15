@@ -279,6 +279,8 @@ test("money page shows one scan section and drops the spending dump", () => {
   assert.match(segments, /pathname === "\/money"/)
   assert.match(segments, /moneyScanHref/)
   assert.doesNotMatch(segments, /scrollIntoView/)
+  assert.doesNotMatch(segments, /sticky|fixed /)
+  assert.match(shell, /sticky top-0 z-20 hidden h-14/)
 })
 
 test("money phone uses the shared FAB clearance and debt stays off income and savings", () => {
