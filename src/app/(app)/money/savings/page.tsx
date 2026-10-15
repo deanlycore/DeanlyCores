@@ -2,20 +2,29 @@ import type { Metadata } from "next"
 
 import { SavingsBoard } from "@/components/money/savings-board"
 import { getSessionView } from "@/lib/data/session"
-import { listGoals } from "@/lib/data/lists"
+import { listMoneyOverviewSources } from "@/lib/data/lists"
 import { pageClock } from "@/lib/data/timezone"
 
 export const metadata: Metadata = { title: "Savings" }
 
 export default async function Page() {
-  const [clock, goals, session] = await Promise.all([pageClock(), listGoals(), getSessionView()])
+  const [clock, money, session] = await Promise.all([pageClock(), listMoneyOverviewSources(), getSessionView()])
   return (
     <SavingsBoard
-      rows={goals.rows}
-      currency={goals.currency}
+      rows={money.goals.rows}
+      currency={money.goals.currency}
       today={clock.today}
       householdName={session.householdName}
-      error={goals.error}
+      error={money.goals.error}
+      overview={{
+        bills: money.bills.rows,
+        payments: money.payments.rows,
+        income: money.income.rows,
+        goals: money.goals.rows,
+        subscriptions: money.subscriptions.rows,
+        cards: money.cards.rows,
+        people: money.people.rows,
+      }}
     />
   )
 }

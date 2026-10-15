@@ -25,6 +25,7 @@ import {
   useScrollToItemHash,
 } from "@/components/money/money-chrome"
 import { MoneyGroups } from "@/components/money/money-groups"
+import { ScopedMoneyOverview, scopedOverviewSources, type MoneyOverviewSources } from "@/components/money/money-overview"
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { VisibilityPill, WidgetError } from "@/components/ui/pills"
 import { deleteSubscription, setSubscriptionActive, setSubscriptionVisibility } from "@/lib/actions/records"
@@ -54,6 +55,7 @@ export function SubscriptionsBoard({
   today,
   householdName,
   error,
+  overview,
   scan = false,
   scanFilter,
 }: {
@@ -62,6 +64,7 @@ export function SubscriptionsBoard({
   today: string
   householdName?: string | null
   error?: boolean
+  overview?: Partial<MoneyOverviewSources>
   scan?: boolean
   scanFilter?: MoneyVisibility
 }) {
@@ -277,6 +280,14 @@ export function SubscriptionsBoard({
       }
       filter={filter}
       onFilter={setFilter}
+      overview={
+        <ScopedMoneyOverview
+          filter={filter}
+          today={today}
+          currency={currency}
+          sources={scopedOverviewSources(overview, { subscriptions: items })}
+        />
+      }
       chips={
         <>
           <MetricChip tone={metrics.renewing > 0 ? "brand" : "muted"}>{metrics.renewing} renewing this month</MetricChip>

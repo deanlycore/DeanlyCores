@@ -24,6 +24,7 @@ import {
   useScrollToItemHash,
 } from "@/components/money/money-chrome"
 import { MoneyGroups } from "@/components/money/money-groups"
+import { ScopedMoneyOverview, scopedOverviewSources, type MoneyOverviewSources } from "@/components/money/money-overview"
 import { VisibilityPill, WidgetError } from "@/components/ui/pills"
 import { deleteExpense, setExpenseVisibility } from "@/lib/actions/records"
 import type { ExpenseRow } from "@/lib/data/home"
@@ -50,6 +51,7 @@ export function IncomeBoard({
   today,
   householdName,
   error,
+  overview,
   scan = false,
   scanFilter,
 }: {
@@ -58,6 +60,7 @@ export function IncomeBoard({
   today: string
   householdName?: string | null
   error?: boolean
+  overview?: Partial<MoneyOverviewSources>
   scan?: boolean
   scanFilter?: MoneyVisibility
 }) {
@@ -255,6 +258,14 @@ export function IncomeBoard({
       }
       filter={filter}
       onFilter={setFilter}
+      overview={
+        <ScopedMoneyOverview
+          filter={filter}
+          today={today}
+          currency={currency}
+          sources={scopedOverviewSources(overview, { income: items })}
+        />
+      }
       chips={
         <>
           <MetricChip tone={metrics.nextDate ? "brand" : "muted"}>

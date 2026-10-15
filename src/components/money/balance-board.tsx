@@ -25,6 +25,7 @@ import {
 } from "@/components/money/money-chrome"
 import { CategoryField } from "@/components/money/category-field"
 import { MoneyGroups } from "@/components/money/money-groups"
+import { ScopedMoneyOverview, scopedOverviewSources, type MoneyOverviewSources } from "@/components/money/money-overview"
 import { LogPaymentDialog, PaymentList, usePaymentRemoval } from "@/components/money/payment-sheet"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -127,6 +128,7 @@ type BoardProps<T> = {
   currency: string
   today: string
   error?: boolean
+  overview?: Partial<MoneyOverviewSources>
   scan?: boolean
   scanFilter?: MoneyVisibility
 }
@@ -138,6 +140,7 @@ function BalanceBoard({
   currency,
   today,
   error,
+  overview,
   scan = false,
   scanFilter,
 }: BoardProps<MoneyCardRow | MoneyPersonRow> & { kind: Kind }) {
@@ -344,6 +347,17 @@ function BalanceBoard({
         subtitle={subtitle}
         filter={filter}
         onFilter={setFilter}
+        overview={
+          <ScopedMoneyOverview
+            filter={filter}
+            today={today}
+            currency={currency}
+            sources={scopedOverviewSources(
+              overview,
+              card ? { cards: merge(rows), payments } : { people: merge(rows), payments },
+            )}
+          />
+        }
         action={
           <div className="hidden md:block">
             <MoneyAddButton onClick={() => setAdding(true)}>{addLabel}</MoneyAddButton>

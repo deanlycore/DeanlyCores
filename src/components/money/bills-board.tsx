@@ -27,7 +27,7 @@ import {
   useScrollToItemHash,
 } from "@/components/money/money-chrome"
 import { MoneyGroups } from "@/components/money/money-groups"
-import { MoneyOverview } from "@/components/money/money-overview"
+import { ScopedMoneyOverview, scopedOverviewSources, type MoneyOverviewSources } from "@/components/money/money-overview"
 import { LogPaymentDialog, PaymentList, orderedPayments, usePaymentRemoval } from "@/components/money/payment-sheet"
 import { deleteBill, markBillPaid, setBillVisibility } from "@/lib/actions/records"
 import { formatMoney, formatShortDate } from "@/lib/home/metrics"
@@ -74,6 +74,7 @@ export function BillsBoard({
   subscriptions = [],
   cards = [],
   people = [],
+  overview,
   error,
   scan = false,
   scanFilter,
@@ -90,6 +91,7 @@ export function BillsBoard({
   subscriptions?: SubscriptionRow[]
   cards?: MoneyCardRow[]
   people?: MoneyPersonRow[]
+  overview?: Partial<MoneyOverviewSources>
   error?: boolean
   /** Category block on /money. Child route chrome stays when this is omitted. */
   scan?: boolean
@@ -388,16 +390,22 @@ export function BillsBoard({
       filter={filter}
       onFilter={setFilter}
       overview={
-        <MoneyOverview
+        <ScopedMoneyOverview
+          filter={filter}
           today={today}
           currency={currency}
-          bills={applyVisibility(items, filter)}
-          payments={payments}
-          income={applyVisibility(income, filter)}
-          goals={applyVisibility(goals, filter)}
-          subscriptions={applyVisibility(subscriptions, filter)}
-          cards={applyVisibility(cards, filter)}
-          people={applyVisibility(people, filter)}
+          sources={scopedOverviewSources(
+            {
+              payments,
+              income,
+              goals,
+              subscriptions,
+              cards,
+              people,
+              ...overview,
+            },
+            { bills: items, payments: overview?.payments ?? payments },
+          )}
         />
       }
       chips={

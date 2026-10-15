@@ -332,6 +332,19 @@ export async function listSubscriptions() {
   )
 }
 
+export async function listMoneyOverviewSources() {
+  const [bills, income, goals, subscriptions, cards, people, payments] = await Promise.all([
+    listBills(),
+    listExpenses("income"),
+    listGoals(),
+    listSubscriptions(),
+    listMoneyCards(),
+    listMoneyPeople(),
+    listMoneyPayments(),
+  ])
+  return { bills, income, goals, subscriptions, cards, people, payments }
+}
+
 export async function getNote(id: string) {
   const ctx = await requireHousehold()
   if (!ctx) return null
