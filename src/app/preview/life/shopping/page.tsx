@@ -7,11 +7,23 @@ import { previewPantry, previewShopping, previewShoppingLists, previewToday } fr
 
 export const dynamic = "force-dynamic"
 
-export default function PreviewShopping() {
+export default async function PreviewShopping({
+  searchParams,
+}: {
+  searchParams: Promise<{ prompt?: string }>
+}) {
   if (process.env.NODE_ENV === "production") notFound()
+  const params = await searchParams
   return (
     <LifePreview>
-      <ShoppingBoard rows={previewShopping} lists={previewShoppingLists} pantry={previewPantry} today={previewToday} currency="USD" />
+      <ShoppingBoard
+        rows={previewShopping}
+        lists={previewShoppingLists}
+        pantry={previewPantry}
+        today={previewToday}
+        currency="USD"
+        homePrompt={params.prompt === "1"}
+      />
     </LifePreview>
   )
 }

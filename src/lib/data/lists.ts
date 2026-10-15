@@ -112,7 +112,7 @@ export async function listMeals() {
   )
 }
 
-const SHOPPING_COLUMNS = "id, name, checked_at, visibility, store, need_soon, list_id, qty, unit, price_cents, notes, category, updated_at"
+const SHOPPING_COLUMNS = "id, name, checked_at, visibility, store, need_soon, list_id, manual_amount_raw, manual_unit_raw, manual_qty, manual_unit, auto_qty, auto_unit, price_cents, notes, category, updated_at"
 
 export async function listShopping() {
   const ctx = await requireHousehold()
@@ -155,7 +155,7 @@ export async function listPantry() {
   if (!ctx) return { rows: [] as PantryRow[], error: false }
   const result = await ctx.supabase
     .from("pantry_items")
-    .select("id, name, qty, unit, category, notes, visibility, shopping_item_id, updated_at")
+    .select("id, name, manual_amount_raw, manual_unit_raw, manual_qty, manual_unit, auto_qty, auto_unit, category, notes, visibility, shopping_item_id, updated_at")
     .eq("household_id", ctx.householdId)
     .order("name", { ascending: true })
   if (result.error && (columnMissing(result.error) || relationMissing(result.error))) return { rows: [] as PantryRow[], error: false }

@@ -168,15 +168,19 @@ A list name is whatever the household types. The backfill name `Groceries` is a 
 
 Keep `id`, `household_id`, `owner_id` (this table’s created-by column), `visibility`, `name`, `checked_at`, `store`, `need_soon`, timestamps. `checked_at` remains the completed flag: null means open, a timestamp means checked off. Do not add a second boolean.
 
-Slice 1 stores one numeric `qty` and the unit text the person typed. That quantity is the person’s amount. A later sync slice keeps auto quantity on `meal_shopping_needs` and must not shrink `qty` when a meal is removed.
+Slice 1 stores the person’s amount and the meal-sync amount apart. The screen total adds them only when the units share a group.
 
 Add:
 
 | Column | Rule |
 | --- | --- |
 | `list_id` | not null after backfill. Composite fk `(list_id, household_id, visibility)` → `shopping_lists (id, household_id, visibility)`, `on update no action`, `on delete cascade` |
-| `qty` | numeric(8,2) null, or `> 0` and `<= 9999`. Null when they typed no amount. Existing rows stay null. Do not invent a quantity |
-| `unit` | text null, trimmed length 1–24. Stored as typed (`g`, `kg`, `cup`). Merge only inside one unit group |
+| `manual_amount_raw` | text null, trimmed length 1–40. Exactly what the person typed (`1/2`, `500`). Null when they typed no amount |
+| `manual_unit_raw` | text null, trimmed length 1–24. Exactly the unit they typed |
+| `manual_qty` | numeric(8,2) null, or `> 0` and `<= 9999`. Parsed from `manual_amount_raw` for math. Null when the text does not parse |
+| `manual_unit` | text null, trimmed length 1–24. Canonical unit (`g`, `kg`, `cup`). Null when the typed unit is unknown |
+| `auto_qty` | numeric(8,2) null, or `> 0` and `<= 9999`. Meal sync only. A person saving the row does not write this |
+| `auto_unit` | text null, trimmed length 1–24. Canonical unit for `auto_qty` |
 | `price_cents` | integer null, check null or `0 <= price_cents <= 100000000`. The line price, not qty times a unit price |
 | `notes` | text null, or length `<= 500`. The person’s own note. Sync does not replace it |
 | `system_note` | text null, or length `<= 200`. Set only when an auto line is kept after no meal needs it. Fixed sentence, no meal title |
@@ -205,7 +209,7 @@ Composite foreign key so an item cannot sit on a list from another household or 
 
 Index `(list_id, checked_at, name)`.
 
-Existing rows backfill as `source = 'manual'`, `user_edited = false`, `category = 'other'`, `qty` null, `unit` null, `system_note` null. They had no amount to preserve. `store` and `need_soon` stay so the home widget and older clients keep working. Switching a list to Just me while a child still references the shared key is rejected (`on update no action`). The toggle stays on Shared and the screen shows: “Some items on this list are shared. Make them Just me or remove them first.” Making an item Just me moves that item onto the person’s Just me list.
+Existing rows backfill as `source = 'manual'`, `user_edited = false`, `category = 'other'`, every manual and auto amount null, `system_note` null. They had no amount to preserve, so nothing is copied into `auto_*`. `store` and `need_soon` stay so the home widget and older clients keep working. Switching a list to Just me while a child still references the shared key is rejected (`on update no action`). The toggle stays on Shared and the screen shows: “Some items on this list are shared. Make them Just me or remove them first.” Making an item Just me moves that item onto the person’s Just me list.
 
 Checking an item off still only sets `checked_at`. The client then offers “mark at home”. Accepting that calls a different action, which inserts a pantry row. Dismissing it leaves pantry untouched. Unchecking clears `checked_at` and does not remove the pantry row.
 
@@ -218,8 +222,7 @@ What is already at home. Not list status, and not `checked_at`.
 | `id` | uuid pk |
 | `household_id`, `created_by`, `visibility` | same household rules, default visibility `shared` |
 | `name` | not null, trimmed length 1–140. Stored as typed |
-| `qty` | numeric(8,2) null, or `> 0` and `<= 9999` |
-| `unit` | text null, trimmed length 1–24. Stored as typed |
+| `manual_amount_raw`, `manual_unit_raw`, `manual_qty`, `manual_unit`, `auto_qty`, `auto_unit` | same split as `shopping_items`. Mark at home copies the list line’s manual and auto amounts |
 | `category` | not null default `other`, same nine values |
 | `notes` | text null, or length `<= 500` |
 | `shopping_item_id` | uuid null. Set when “mark at home” started from a list line. `on delete set null`. No cascade from the list line into pantry, and none the other way |
@@ -452,7 +455,7 @@ SE approved this with the changes at the top. The migration is `supabase/migrati
 In scope, as built:
 
 - `shopping_lists` with `household_id`, `created_by`, `visibility`, policies, and grants limited to `select`, `insert`, `update`, and `delete`.
-- `shopping_items.list_id`, `qty`, `unit`, `price_cents`, `notes`, `system_note`, `category` (the nine labels above, including `beverages`), `source`, `user_edited`.
+- `shopping_items.list_id`, `manual_amount_raw`, `manual_unit_raw`, `manual_qty`, `manual_unit`, `auto_qty`, `auto_unit`, `price_cents`, `notes`, `system_note`, `category` (the nine labels above, including `beverages`), `source`, `user_edited`. The displayed amount is manual plus auto when the units match. Existing rows keep a null manual amount.
 - Composite fk `on update no action` `on delete cascade`. Parent checks in `protect_household_row`: a missing list and a hidden list both raise `That list is not available.`
 - Backfill: one shared default `Groceries` list per household that has a shared item (`created_by` is the oldest shared item’s `owner_id`); one private default list per `(household_id, owner_id)`; items stay `source = 'manual'`, `category = 'other'`, `qty` null. A household with no shopping rows gets no list until the first add.
 - `pantry_items` for Have at home. Checking an item sets `checked_at` and only offers “Mark as at home?”. Accepting inserts a pantry row. Dismissing does not. Unchecking does not remove pantry.

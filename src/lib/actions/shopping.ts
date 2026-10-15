@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache"
 import { requireHousehold } from "@/lib/data/context"
 import { firstName } from "@/lib/home/metrics"
 import { LIST_JUST_ME_BLOCKED, STALE_SAVE, shoppingCategory, type ShoppingCategory } from "@/lib/life/shopping"
+import { normalizeTypedAmount } from "@/lib/life/units"
 import { defaultVisibilityFor, type Visibility } from "@/lib/visibility"
 
 export type ShoppingActionResult = { ok: true; id?: string } | { ok: false; message: string; conflict?: boolean }
@@ -19,12 +20,16 @@ function textOf(value: FormDataEntryValue | null, max: number) {
   return text
 }
 
-function qtyOf(value: FormDataEntryValue | null) {
-  const raw = String(value ?? "").trim()
-  if (!raw) return null
-  const qty = Number(raw)
-  if (!Number.isFinite(qty) || qty <= 0 || qty > 9999) return Number.NaN
-  return Math.round(qty * 100) / 100
+function amountFields(formData: FormData) {
+  const manual_amount_raw = textOf(formData.get("manual_amount_raw"), 40)
+  const manual_unit_raw = textOf(formData.get("manual_unit_raw"), 24)
+  const normalized = normalizeTypedAmount(manual_amount_raw, manual_unit_raw)
+  return {
+    manual_amount_raw,
+    manual_unit_raw,
+    manual_qty: normalized.qty,
+    manual_unit: normalized.unit,
+  }
 }
 
 function centsOf(value: FormDataEntryValue | null) {
@@ -99,8 +104,6 @@ export async function saveShoppingItem(formData: FormData): Promise<ShoppingActi
   if (!ready.ctx) return ready
   const name = textOf(formData.get("name"), 140)
   if (!name) return { ok: false, message: "Add an item." }
-  const qty = qtyOf(formData.get("qty"))
-  if (Number.isNaN(qty)) return { ok: false, message: "Use a quantity greater than zero." }
   const price = centsOf(formData.get("price"))
   if (Number.isNaN(price)) return { ok: false, message: "Use a price of zero or more." }
   const visibility = visibilityOf(formData.get("visibility"), defaultVisibilityFor("shopping", ready.ctx.lastVisibility))
@@ -131,8 +134,7 @@ export async function saveShoppingItem(formData: FormData): Promise<ShoppingActi
   if (!list.id) return { ok: false, message: "Choose a list." }
   const fields = {
     name,
-    qty,
-    unit: textOf(formData.get("unit"), 24),
+    ...amountFields(formData),
     price_cents: price,
     notes: textOf(formData.get("notes"), 500),
     category: categoryOf(formData.get("category")),
@@ -201,7 +203,7 @@ export async function markShoppingAtHome(id: string): Promise<ShoppingActionResu
   if (!ready.ctx) return ready
   const item = await ready.ctx.supabase
     .from("shopping_items")
-    .select("id, name, qty, unit, category, notes, visibility, household_id")
+    .select("id, name, manual_amount_raw, manual_unit_raw, manual_qty, manual_unit, auto_qty, auto_unit, category, notes, visibility, household_id")
     .eq("id", id)
     .maybeSingle()
   if (item.error || !item.data) return { ok: false, message: "Couldn’t update that item." }
@@ -212,8 +214,12 @@ export async function markShoppingAtHome(id: string): Promise<ShoppingActionResu
       created_by: ready.ctx.userId,
       visibility: item.data.visibility,
       name: item.data.name,
-      qty: item.data.qty,
-      unit: item.data.unit,
+      manual_amount_raw: item.data.manual_amount_raw,
+      manual_unit_raw: item.data.manual_unit_raw,
+      manual_qty: item.data.manual_qty,
+      manual_unit: item.data.manual_unit,
+      auto_qty: item.data.auto_qty,
+      auto_unit: item.data.auto_unit,
       category: item.data.category,
       notes: item.data.notes,
       shopping_item_id: item.data.id,
@@ -240,6 +246,23 @@ export async function setShoppingListVisibility(id: string, visibility: Visibili
     }
     return { ok: false, message: "Couldn’t update that list." }
   }
+  if (!saved.data?.length) return { ok: false, message: STALE_SAVE, conflict: true }
+  refresh()
+  return { ok: true, id }
+}
+
+export async function updateShoppingList(id: string, name: string, updatedAt: string): Promise<ShoppingActionResult> {
+  const ready = await gate()
+  if (!ready.ctx) return ready
+  const clean = name.trim()
+  if (!clean || clean.length > 40) return { ok: false, message: "Name that list." }
+  const saved = await ready.ctx.supabase
+    .from("shopping_lists")
+    .update({ name: clean })
+    .eq("id", id)
+    .eq("updated_at", updatedAt)
+    .select("id")
+  if (saved.error) return { ok: false, message: "Couldn’t save that list." }
   if (!saved.data?.length) return { ok: false, message: STALE_SAVE, conflict: true }
   refresh()
   return { ok: true, id }

@@ -79,6 +79,7 @@ export function MoneyFrame({
   children,
   phoneTouch = false,
   phoneLayout = false,
+  compact = false,
   phoneSubtitle,
   detail,
 }: {
@@ -96,14 +97,16 @@ export function MoneyFrame({
   phoneTouch?: boolean
   /** Phone Money stack. Desktop title, subtitle, and chip wrap stay on md+. */
   phoneLayout?: boolean
+  /** Tighter phone rhythm so the first list group stays on screen. */
+  compact?: boolean
   phoneSubtitle?: string
   /** Muted line under the subtitle. Subscriptions use it for the monthly sum. */
   detail?: string | null
 }) {
   return (
-    <div className={cn("relative grid gap-5", phoneLayout && "max-md:min-w-0")}>
+    <div className={cn("relative grid gap-5", compact && "max-md:gap-2", phoneLayout && "max-md:min-w-0")}>
       <div aria-hidden="true" className="deanly-wash pointer-events-none absolute -left-6 -top-8 z-0 h-40 w-72" />
-      <div className={cn("relative z-10 grid gap-5", phoneLayout && "max-md:min-w-0")}>
+      <div className={cn("relative z-10 grid gap-5", compact && "max-md:gap-2", phoneLayout && "max-md:min-w-0")}>
         <header className={cn("flex flex-wrap items-start justify-between gap-4", phoneLayout && "max-md:flex-col max-md:gap-3")}>
           <div className="min-w-0">
             <h1

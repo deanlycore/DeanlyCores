@@ -46,6 +46,40 @@ function trimQty(value: number) {
   return Math.round(value * 1000) / 1000
 }
 
+/** Plain number, fraction, or mixed fraction. Unparsed text stays on the raw column. */
+export function parseTypedAmount(raw: string | null | undefined): number | null {
+  const text = raw?.trim() ?? ""
+  if (!text) return null
+  const mixed = text.match(/^(\d+)\s+(\d+)\/(\d+)$/)
+  if (mixed) {
+    const denominator = Number(mixed[3])
+    if (denominator === 0) return null
+    return boundedAmount(Number(mixed[1]) + Number(mixed[2]) / denominator)
+  }
+  const fraction = text.match(/^(\d+)\/(\d+)$/)
+  if (fraction) {
+    const denominator = Number(fraction[2])
+    if (denominator === 0) return null
+    return boundedAmount(Number(fraction[1]) / denominator)
+  }
+  const amount = Number(text)
+  if (!Number.isFinite(amount)) return null
+  return boundedAmount(amount)
+}
+
+function boundedAmount(value: number): number | null {
+  if (!(value > 0) || value > 9999) return null
+  return Math.round(value * 100) / 100
+}
+
+/** Canonical qty and unit for math. Unknown units stay raw and do not merge. */
+export function normalizeTypedAmount(amountRaw: string | null | undefined, unitRaw: string | null | undefined) {
+  const qty = parseTypedAmount(amountRaw)
+  const unit = unitRaw ? resolveUnit(unitRaw) : null
+  if (qty == null || !unit) return { qty: null as number | null, unit: null as string | null }
+  return { qty, unit: unit.canonical }
+}
+
 /** Sum amounts in one unit group. Different groups, including cup and g, do not merge. */
 export function mergeAmounts(lines: Amount[]): Amount | null {
   if (lines.length === 0) return null

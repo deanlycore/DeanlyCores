@@ -13,6 +13,7 @@ import {
 import {
   LIST_JUST_ME_BLOCKED,
   SHOPPING_CATEGORIES,
+  displayAmount,
   groupShopping,
   shoppingTiles,
 } from "./shopping.ts"
@@ -55,6 +56,15 @@ test("amounts merge inside one unit group and never across groups", () => {
   assert.deepEqual(mergeAmounts([{ qty: 500, unit: "grams" }, { qty: 1, unit: "kilogram" }]), { qty: 1.5, unit: "kg" })
   assert.equal(mergeAmounts([{ qty: 1, unit: "cup" }, { qty: 500, unit: "g" }]), null)
   assert.deepEqual(mergeAmounts([{ qty: 1, unit: "cup" }, { qty: 1, unit: "cups" }]), { qty: 2, unit: "cup" })
+  assert.equal(
+    displayAmount({ manual_amount_raw: "500", manual_unit_raw: "g", manual_qty: 500, manual_unit: "g", auto_qty: 1, auto_unit: "kg" }),
+    "1.5 kg",
+  )
+  assert.equal(
+    displayAmount({ manual_amount_raw: "1", manual_unit_raw: "cup", manual_qty: 1, manual_unit: "cup", auto_qty: 500, auto_unit: "g" }),
+    "1 cup + 500 g",
+  )
+  assert.equal(displayAmount({ manual_amount_raw: "1/2", manual_unit_raw: "cup", manual_qty: 0.5, manual_unit: "cup" }), "1/2 cup")
 })
 
 test("estimated total counts only priced items that are still to buy", () => {
@@ -94,7 +104,11 @@ test("checked items leave the category groups for Bought", () => {
 test("list visibility stays Shared when shared items still reference it", () => {
   assert.equal(LIST_JUST_ME_BLOCKED, "Some items on this list are shared. Make them Just me or remove them first.")
   assert.match(board, /LIST_JUST_ME_BLOCKED/)
-  assert.match(board, /text-muted-foreground">\{listNote\}/)
+  assert.match(board, /text-muted-foreground">\{note\}/)
+  assert.doesNotMatch(board, /VisibilityPill/)
+  assert.doesNotMatch(board, /All categories/)
+  assert.match(board, /For \{item\.for_meal\}/)
+  assert.match(board, /Bought\. Mark as at home\?/)
   assert.match(board, /w-\[420px\]/)
   assert.match(board, /Mark as at home\?/)
   const check = board.slice(board.indexOf("async function checkItem"), board.indexOf("async function changeListVisibility"))
@@ -110,6 +124,14 @@ test("shopping migration keeps parent checks, authenticated catalog reads, and a
   assert.match(sql, /on update no action/)
   assert.match(sql, /on delete cascade/)
   assert.match(sql, /is_staple boolean not null default false/)
+  assert.match(sql, /manual_amount_raw text/)
+  assert.match(sql, /manual_unit_raw text/)
+  assert.match(sql, /manual_qty numeric/)
+  assert.match(sql, /auto_qty numeric/)
+  assert.match(sql, /auto_unit text/)
+  assert.match(sql, /Existing rows have no amount/)
+  assert.doesNotMatch(sql, /add column qty\b/)
+  assert.doesNotMatch(sql, /add column unit\b/)
   assert.match(sql, /'beverages'/)
   assert.match(sql, /'meat'/)
   assert.match(sql, /grant select on table public\.unit_aliases to authenticated/)

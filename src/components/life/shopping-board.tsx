@@ -7,7 +7,7 @@ import { toast } from "sonner"
 import { CheckControl, LifeFab, PhoneFabClearance, useLifeVisibility } from "@/components/life/life-chrome"
 import { ConfirmRemove, EmptyState, FilterEmpty, MoneyAddButton, MoneyCard, MoneyFrame, RowMenu } from "@/components/money/money-chrome"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { VisibilityPill, WidgetError } from "@/components/ui/pills"
+import { WidgetError } from "@/components/ui/pills"
 import { deleteShoppingItem, setShoppingChecked } from "@/lib/actions/records"
 import {
   createShoppingList,
@@ -17,6 +17,7 @@ import {
   saveShoppingItem,
   setShoppingItemChecked,
   setShoppingListVisibility,
+  updateShoppingList,
 } from "@/lib/actions/shopping"
 import type { ShoppingRow } from "@/lib/data/home"
 import { formatMoney } from "@/lib/home/metrics"
@@ -24,8 +25,8 @@ import { filterLife, LIFE_COPY, lifeSubtitle } from "@/lib/life/board"
 import {
   LIST_JUST_ME_BLOCKED,
   SHOPPING_CATEGORIES,
+  displayAmount,
   filterShoppingItems,
-  formatQty,
   groupShopping,
   shoppingCategory,
   shoppingCategoryLabel,
@@ -45,6 +46,7 @@ export function ShoppingBoard({
   today,
   currency = "USD",
   error,
+  homePrompt = false,
 }: {
   rows: ShoppingRow[]
   lists: ShoppingListRow[]
@@ -52,6 +54,7 @@ export function ShoppingBoard({
   today: string
   currency?: string
   error?: boolean
+  homePrompt?: boolean
 }) {
   const router = useRouter()
   const { filter, setFilter } = useLifeVisibility()
@@ -68,8 +71,9 @@ export function ShoppingBoard({
   const [listNote, setListNote] = useState("")
   const [quick, setQuick] = useState("")
   const [desktop, setDesktop] = useState(false)
-  const [newList, setNewList] = useState(false)
+  const [listPanel, setListPanel] = useState<null | "new" | "edit">(null)
   const [listName, setListName] = useState("")
+  const [newVisibility, setNewVisibility] = useState<Visibility>("shared")
 
   useEffect(() => {
     const media = window.matchMedia("(min-width: 768px)")
@@ -131,6 +135,7 @@ export function ShoppingBoard({
     <>
       <MoneyFrame
         phoneTouch
+        compact
         title="Shopping"
         subtitle={lifeSubtitle("shopping")}
         filter={filter}
@@ -148,7 +153,7 @@ export function ShoppingBoard({
           </>
         }
         pulse={
-          <div className="grid gap-3">
+          <div className="grid gap-2">
             <div className="flex gap-2 overflow-x-auto">
               {visibleLists.map((list) => (
                 <button
@@ -164,32 +169,32 @@ export function ShoppingBoard({
                   {list.name}
                 </button>
               ))}
-              <button type="button" className="inline-flex min-h-11 shrink-0 items-center rounded-full border border-border bg-surface px-3 text-[13px] text-muted-foreground" onClick={() => setNewList(true)}>
+              <button
+                type="button"
+                className="inline-flex h-9 shrink-0 items-center rounded-full border border-border bg-surface px-3 text-[13px] text-muted-foreground"
+                onClick={() => {
+                  setListName("")
+                  setNewVisibility(filter === "private" ? "private" : "shared")
+                  setListNote("")
+                  setListPanel("new")
+                }}
+              >
                 New list
               </button>
+              {active ? (
+                <button
+                  type="button"
+                  className="inline-flex h-9 shrink-0 items-center rounded-full border border-border bg-surface px-3 text-[13px] text-muted-foreground"
+                  onClick={() => {
+                    setListName(active.name)
+                    setListNote("")
+                    setListPanel("edit")
+                  }}
+                >
+                  Edit list
+                </button>
+              ) : null}
             </div>
-            {active ? (
-              <div>
-                <div role="radiogroup" aria-label="List visibility" className="inline-flex rounded-full border border-border bg-surface p-0.5">
-                  {(["shared", "private"] as const).map((value) => (
-                    <button
-                      key={value}
-                      type="button"
-                      role="radio"
-                      aria-checked={active.visibility === value}
-                      onClick={() => void changeListVisibility(value)}
-                      className={cn(
-                        "min-h-11 rounded-full px-3 text-[13px]",
-                        active.visibility === value ? "bg-brand-soft text-on-brand-soft" : "text-muted-foreground",
-                      )}
-                    >
-                      {value === "shared" ? "Shared" : "Just me"}
-                    </button>
-                  ))}
-                </div>
-                {listNote ? <p className="mt-2 text-[13px] text-muted-foreground">{listNote}</p> : null}
-              </div>
-            ) : null}
             <div className="flex gap-2">
               {(["buy", "home"] as const).map((value) => (
                 <button
@@ -206,59 +211,74 @@ export function ShoppingBoard({
                 </button>
               ))}
             </div>
-            <form
-              className="flex gap-2"
-              onSubmit={(event) => {
-                event.preventDefault()
-                const body = new FormData()
-                body.set("name", quick)
-                body.set("list_id", active?.id ?? "")
-                body.set("visibility", active?.visibility ?? "shared")
-                void quickAddShoppingItem(body).then((result) => {
-                  if (!result.ok) toast(result.message)
-                  else {
-                    setQuick("")
-                    router.refresh()
-                  }
-                })
-              }}
-            >
-              <input
-                value={quick}
-                onChange={(event) => setQuick(event.target.value)}
-                placeholder="Quick add"
-                aria-label="Quick add"
-                className="h-11 min-w-0 flex-1 rounded-[10px] border border-border bg-surface px-3 text-sm text-ink"
-              />
-              <button type="submit" className="inline-flex min-h-11 items-center rounded-full bg-brand px-3 text-[13px] text-primary-foreground">
-                Add
+            <div className="flex gap-2">
+              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search" aria-label="Search items" className="h-10 min-w-0 flex-1 rounded-[10px] border border-border bg-surface px-3 text-sm text-ink" />
+              <form
+                className="flex min-w-0 flex-1 gap-2"
+                onSubmit={(event) => {
+                  event.preventDefault()
+                  const body = new FormData()
+                  body.set("name", quick)
+                  body.set("list_id", active?.id ?? "")
+                  body.set("visibility", active?.visibility ?? "shared")
+                  void quickAddShoppingItem(body).then((result) => {
+                    if (!result.ok) toast(result.message)
+                    else {
+                      setQuick("")
+                      router.refresh()
+                    }
+                  })
+                }}
+              >
+                <input
+                  value={quick}
+                  onChange={(event) => setQuick(event.target.value)}
+                  placeholder="Quick add"
+                  aria-label="Quick add"
+                  className="h-10 min-w-0 flex-1 rounded-[10px] border border-border bg-surface px-3 text-sm text-ink"
+                />
+                <button type="submit" className="inline-flex h-10 shrink-0 items-center rounded-full bg-brand px-3 text-[13px] text-primary-foreground">
+                  Add
+                </button>
+              </form>
+            </div>
+            <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1">
+              <button type="button" aria-pressed={category === "all"} onClick={() => setCategory("all")} className={cn("inline-flex h-9 shrink-0 items-center rounded-full border px-3 text-[13px]", category === "all" ? "border-border bg-surface-muted text-ink" : "border-border bg-surface text-muted-foreground")}>
+                All
               </button>
-            </form>
-            <div className="grid gap-2 md:grid-cols-3">
-              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search" aria-label="Search items" className="h-11 rounded-[10px] border border-border bg-surface px-3 text-sm text-ink" />
-              <select value={category} aria-label="Category" onChange={(event) => setCategory(event.target.value as typeof category)} className="h-11 rounded-[10px] border border-border bg-surface px-3 text-sm text-ink">
-                <option value="all">All categories</option>
-                {SHOPPING_CATEGORIES.map((entry) => <option key={entry.id} value={entry.id}>{entry.label}</option>)}
-              </select>
-              <select value={sort} aria-label="Sort" onChange={(event) => setSort(event.target.value as ShoppingSort)} className="h-11 rounded-[10px] border border-border bg-surface px-3 text-sm text-ink">
-                <option value="category">Category</option>
-                <option value="name">Name</option>
-                <option value="price">Price</option>
-                <option value="recent">Recent</option>
-              </select>
+              {SHOPPING_CATEGORIES.map((entry) => (
+                <button key={entry.id} type="button" aria-pressed={category === entry.id} onClick={() => setCategory(entry.id)} className={cn("inline-flex h-9 shrink-0 items-center rounded-full border px-3 text-[13px]", category === entry.id ? "border-border bg-surface-muted text-ink" : "border-border bg-surface text-muted-foreground")}>
+                  {entry.label}
+                </button>
+              ))}
+              <button
+                type="button"
+                aria-label={`Sort by ${sort}`}
+                onClick={() => {
+                  const order: ShoppingSort[] = ["category", "name", "price", "recent"]
+                  setSort(order[(order.indexOf(sort) + 1) % order.length] ?? "category")
+                }}
+                className="inline-flex h-9 shrink-0 items-center rounded-full border border-border bg-surface px-3 text-[13px] text-muted-foreground"
+              >
+                Sort
+              </button>
             </div>
           </div>
         }
       >
         {error ? <WidgetError /> : null}
-        {offer ? (
+        {offer || homePrompt ? (
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-[12px] border border-border bg-surface px-3 py-3">
-            <p className="text-sm text-ink">Mark as at home?</p>
+            <p className="text-sm text-ink">Bought. Mark as at home?</p>
             <div className="flex gap-2">
               <button
                 type="button"
                 className="min-h-11 rounded-full bg-brand-soft px-3 text-[13px] text-on-brand-soft"
                 onClick={() => {
+                  if (!offer) {
+                    setOffer(null)
+                    return
+                  }
                   void markShoppingAtHome(offer.id).then((result) => {
                     if (!result.ok) toast(result.message)
                     else router.refresh()
@@ -279,7 +299,7 @@ export function ShoppingBoard({
             <MoneyCard key={item.id}>
               <div className="py-2">
                 <p className="text-[15px] font-medium text-ink">{item.name}</p>
-                <p className="text-[13px] text-muted-foreground">{[formatQty(item.qty, item.unit), shoppingCategoryLabel(item.category)].filter(Boolean).join(" · ")}</p>
+                <p className="text-[13px] text-muted-foreground">{[displayAmount(item), shoppingCategoryLabel(item.category), item.visibility === "private" ? "Just me" : ""].filter(Boolean).join(" · ")}</p>
               </div>
             </MoneyCard>
           ))
@@ -364,26 +384,43 @@ export function ShoppingBoard({
             router.refresh()
           }}
         />
-        {newList ? (
-          <form
-            className="flex gap-2"
-            onSubmit={(event) => {
-              event.preventDefault()
-              void createShoppingList(listName, filter === "private" ? "private" : "shared").then((result) => {
+        <ListSheet
+          open={listPanel != null}
+          desktop={desktop}
+          mode={listPanel ?? "new"}
+          name={listName}
+          visibility={listPanel === "edit" ? (active?.visibility ?? "shared") : newVisibility}
+          note={listNote}
+          onName={setListName}
+          onVisibility={(visibility) => {
+            if (listPanel === "edit") void changeListVisibility(visibility)
+            else setNewVisibility(visibility)
+          }}
+          onOpenChange={(open) => {
+            if (!open) setListPanel(null)
+          }}
+          onSave={() => {
+            if (listPanel === "edit" && active) {
+              void updateShoppingList(active.id, listName, active.updated_at).then((result) => {
                 if (!result.ok) toast(result.message)
                 else {
-                  setListName("")
-                  setNewList(false)
-                  if (result.id) setListId(result.id)
+                  setListPanel(null)
                   router.refresh()
                 }
               })
-            }}
-          >
-            <input value={listName} onChange={(event) => setListName(event.target.value)} aria-label="List name" placeholder="List name" className="h-11 flex-1 rounded-[10px] border border-border bg-surface px-3 text-sm text-ink" />
-            <button type="submit" className="min-h-11 rounded-full bg-brand px-3 text-[13px] text-primary-foreground">Save list</button>
-          </form>
-        ) : null}
+              return
+            }
+            void createShoppingList(listName, newVisibility).then((result) => {
+              if (!result.ok) toast(result.message)
+              else {
+                setListName("")
+                setListPanel(null)
+                if (result.id) setListId(result.id)
+                router.refresh()
+              }
+            })
+          }}
+        />
         <ConfirmRemove
           sheetOnPhone
           open={Boolean(removing)}
@@ -403,6 +440,7 @@ export function ShoppingBoard({
             router.refresh()
           }}
         />
+        <div aria-hidden="true" className="h-16 md:hidden" />
         <PhoneFabClearance />
       </MoneyFrame>
       <LifeFab>
@@ -416,7 +454,7 @@ export function ShoppingBoard({
 
 function Tile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-w-28 rounded-[12px] border border-border bg-surface px-3 py-2 shadow-soft">
+    <div className="min-w-28 flex-1 rounded-[12px] border border-border bg-surface px-3 py-2 shadow-soft max-md:min-w-0 max-md:px-2 max-md:py-1.5">
       <p className="text-[12px] text-muted-foreground">{label}</p>
       <p className="text-[15px] font-medium text-ink">{value}</p>
     </div>
@@ -448,12 +486,10 @@ function ItemRow({
           onToggle={() => onCheck(!checked)}
         />
         <div className="min-w-0 flex-1 pt-2.5">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className={cn("text-[15px] font-medium text-ink", checked && "text-muted-foreground line-through")}>{item.name}</p>
-            <VisibilityPill visibility={item.visibility} />
-          </div>
+          <p className={cn("text-[15px] font-medium text-ink", checked && "text-muted-foreground line-through")}>{item.name}</p>
+          {item.for_meal ? <p className="text-[13px] text-muted-foreground">For {item.for_meal}</p> : null}
           <p className="text-[13px] text-muted-foreground">
-            {[formatQty(item.qty, item.unit), item.price_cents != null ? formatMoney(item.price_cents, currency) : "", item.notes ?? ""].filter(Boolean).join(" · ")}
+            {[displayAmount(item), item.price_cents != null ? formatMoney(item.price_cents, currency) : "", item.notes ?? "", item.visibility === "private" ? "Just me" : ""].filter(Boolean).join(" · ")}
           </p>
         </div>
         <div className="ml-auto pt-1" onClick={(event) => event.stopPropagation()}>
@@ -468,6 +504,103 @@ function ItemRow({
         </div>
       </div>
     </MoneyCard>
+  )
+}
+
+function CategoryField({ initial }: { initial: ReturnType<typeof shoppingCategory> }) {
+  const [value, setValue] = useState(initial)
+  return (
+    <div className="grid gap-1">
+      <p className="text-sm text-ink">Category</p>
+      <input type="hidden" name="category" value={value} />
+      <div className="flex gap-1.5 overflow-x-auto">
+        {SHOPPING_CATEGORIES.map((entry) => (
+          <button
+            key={entry.id}
+            type="button"
+            aria-pressed={value === entry.id}
+            onClick={() => setValue(entry.id)}
+            className={cn(
+              "inline-flex h-9 shrink-0 items-center rounded-full border px-3 text-[13px]",
+              value === entry.id ? "border-border bg-surface-muted text-ink" : "border-border bg-surface text-muted-foreground",
+            )}
+          >
+            {entry.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function ListSheet({
+  open,
+  desktop,
+  mode,
+  name,
+  visibility,
+  note,
+  onName,
+  onVisibility,
+  onOpenChange,
+  onSave,
+}: {
+  open: boolean
+  desktop: boolean
+  mode: "new" | "edit"
+  name: string
+  visibility: Visibility
+  note: string
+  onName: (value: string) => void
+  onVisibility: (visibility: Visibility) => void
+  onOpenChange: (open: boolean) => void
+  onSave: () => void
+}) {
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent
+        side={desktop ? "right" : "bottom"}
+        className={desktop ? "w-[420px] sm:max-w-none data-[side=right]:w-[420px] data-[side=right]:sm:max-w-[420px]" : undefined}
+        style={desktop ? { width: 420, maxWidth: 420 } : undefined}
+      >
+        <SheetHeader>
+          <SheetTitle>{mode === "edit" ? "Edit list" : "New list"}</SheetTitle>
+        </SheetHeader>
+        <form
+          className="grid gap-3 px-4 pb-4"
+          onSubmit={(event) => {
+            event.preventDefault()
+            onSave()
+          }}
+        >
+          <label className="grid gap-1 text-sm text-ink">
+            Name
+            <input value={name} onChange={(event) => onName(event.target.value)} aria-label="List name" className="h-11 rounded-[10px] border border-border bg-surface px-3" />
+          </label>
+          <div>
+            <div role="radiogroup" aria-label="List visibility" className="inline-flex rounded-full border border-border bg-surface p-0.5">
+              {(["shared", "private"] as const).map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  role="radio"
+                  aria-checked={visibility === value}
+                  onClick={() => onVisibility(value)}
+                  className={cn(
+                    "min-h-11 rounded-full px-3 text-[13px]",
+                    visibility === value ? "bg-brand-soft text-on-brand-soft" : "text-muted-foreground",
+                  )}
+                >
+                  {value === "shared" ? "Shared" : "Just me"}
+                </button>
+              ))}
+            </div>
+            {note ? <p className="mt-2 text-[13px] text-muted-foreground">{note}</p> : null}
+          </div>
+          <button type="submit" className="min-h-11 rounded-full bg-brand px-3 text-[13px] text-primary-foreground">Save list</button>
+        </form>
+      </SheetContent>
+    </Sheet>
   )
 }
 
@@ -519,23 +652,18 @@ function ItemSheet({
           <div className="grid grid-cols-2 gap-2">
             <label className="grid gap-1 text-sm text-ink">
               Qty
-              <input name="qty" inputMode="decimal" defaultValue={item?.qty ?? ""} className="h-11 rounded-[10px] border border-border bg-surface px-3" />
+              <input name="manual_amount_raw" defaultValue={item?.manual_amount_raw ?? ""} placeholder="1/2" className="h-11 rounded-[10px] border border-border bg-surface px-3" />
             </label>
             <label className="grid gap-1 text-sm text-ink">
               Unit
-              <input name="unit" defaultValue={item?.unit ?? ""} className="h-11 rounded-[10px] border border-border bg-surface px-3" />
+              <input name="manual_unit_raw" defaultValue={item?.manual_unit_raw ?? ""} placeholder="g" className="h-11 rounded-[10px] border border-border bg-surface px-3" />
             </label>
           </div>
           <label className="grid gap-1 text-sm text-ink">
             Price
             <input name="price" inputMode="decimal" placeholder="Optional" defaultValue={item?.price_cents != null ? (item.price_cents / 100).toFixed(2) : ""} className="h-11 rounded-[10px] border border-border bg-surface px-3" />
           </label>
-          <label className="grid gap-1 text-sm text-ink">
-            Category
-            <select name="category" defaultValue={shoppingCategory(item?.category)} className="h-11 rounded-[10px] border border-border bg-surface px-3">
-              {SHOPPING_CATEGORIES.map((entry) => <option key={entry.id} value={entry.id}>{entry.label}</option>)}
-            </select>
-          </label>
+          <CategoryField initial={shoppingCategory(item?.category)} />
           <label className="grid gap-1 text-sm text-ink">
             Notes
             <input name="notes" defaultValue={item?.notes ?? ""} className="h-11 rounded-[10px] border border-border bg-surface px-3" />

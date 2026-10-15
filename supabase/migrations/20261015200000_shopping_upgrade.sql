@@ -34,8 +34,12 @@ create unique index shopping_lists_visibility_key
 
 alter table public.shopping_items
   add column list_id uuid,
-  add column qty numeric(8, 2),
-  add column unit text,
+  add column manual_amount_raw text,
+  add column manual_unit_raw text,
+  add column manual_qty numeric(8, 2),
+  add column manual_unit text,
+  add column auto_qty numeric(8, 2),
+  add column auto_unit text,
   add column price_cents integer,
   add column notes text,
   add column system_note text,
@@ -44,8 +48,12 @@ alter table public.shopping_items
   add column user_edited boolean not null default false;
 
 alter table public.shopping_items
-  add constraint shopping_items_qty_ok check (qty is null or (qty > 0 and qty <= 9999)),
-  add constraint shopping_items_unit_len check (unit is null or char_length(btrim(unit)) between 1 and 24),
+  add constraint shopping_items_manual_amount_len check (manual_amount_raw is null or char_length(btrim(manual_amount_raw)) between 1 and 40),
+  add constraint shopping_items_manual_unit_raw_len check (manual_unit_raw is null or char_length(btrim(manual_unit_raw)) between 1 and 24),
+  add constraint shopping_items_manual_qty_ok check (manual_qty is null or (manual_qty > 0 and manual_qty <= 9999)),
+  add constraint shopping_items_manual_unit_len check (manual_unit is null or char_length(btrim(manual_unit)) between 1 and 24),
+  add constraint shopping_items_auto_qty_ok check (auto_qty is null or (auto_qty > 0 and auto_qty <= 9999)),
+  add constraint shopping_items_auto_unit_len check (auto_unit is null or char_length(btrim(auto_unit)) between 1 and 24),
   add constraint shopping_items_price_ok check (price_cents is null or (price_cents >= 0 and price_cents <= 100000000)),
   add constraint shopping_items_notes_len check (notes is null or char_length(notes) <= 500),
   add constraint shopping_items_system_note_len check (system_note is null or char_length(system_note) <= 200),
@@ -71,11 +79,19 @@ from public.shopping_items
 where visibility = 'private'
 group by household_id, owner_id;
 
+-- Existing rows have no amount. Leave manual_* and auto_* null. Do not invent a quantity.
+-- A later meal sync may set auto_qty and auto_unit. It must not write manual_*.
 update public.shopping_items as item
 set list_id = list.id,
     category = 'other',
     source = 'manual',
-    user_edited = false
+    user_edited = false,
+    manual_amount_raw = null,
+    manual_unit_raw = null,
+    manual_qty = null,
+    manual_unit = null,
+    auto_qty = null,
+    auto_unit = null
 from public.shopping_lists as list
 where item.list_id is null
   and list.household_id = item.household_id
@@ -102,15 +118,23 @@ create table public.pantry_items (
   created_by uuid not null references auth.users (id) on delete cascade,
   visibility public.visibility not null default 'shared',
   name text not null check (char_length(btrim(name)) between 1 and 140),
-  qty numeric(8, 2),
-  unit text,
+  manual_amount_raw text,
+  manual_unit_raw text,
+  manual_qty numeric(8, 2),
+  manual_unit text,
+  auto_qty numeric(8, 2),
+  auto_unit text,
   category text not null default 'other',
   notes text,
   shopping_item_id uuid references public.shopping_items (id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  constraint pantry_items_qty_ok check (qty is null or (qty > 0 and qty <= 9999)),
-  constraint pantry_items_unit_len check (unit is null or char_length(btrim(unit)) between 1 and 24),
+  constraint pantry_items_manual_amount_len check (manual_amount_raw is null or char_length(btrim(manual_amount_raw)) between 1 and 40),
+  constraint pantry_items_manual_unit_raw_len check (manual_unit_raw is null or char_length(btrim(manual_unit_raw)) between 1 and 24),
+  constraint pantry_items_manual_qty_ok check (manual_qty is null or (manual_qty > 0 and manual_qty <= 9999)),
+  constraint pantry_items_manual_unit_len check (manual_unit is null or char_length(btrim(manual_unit)) between 1 and 24),
+  constraint pantry_items_auto_qty_ok check (auto_qty is null or (auto_qty > 0 and auto_qty <= 9999)),
+  constraint pantry_items_auto_unit_len check (auto_unit is null or char_length(btrim(auto_unit)) between 1 and 24),
   constraint pantry_items_notes_len check (notes is null or char_length(notes) <= 500),
   constraint pantry_items_category_ok check (
     category in ('produce', 'meat', 'dairy', 'bakery', 'pantry', 'frozen', 'beverages', 'household', 'other')

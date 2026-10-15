@@ -40,11 +40,18 @@ export type ShoppingListRow = {
   updated_at: string
 }
 
-export type PantryRow = {
+export type AmountFields = {
+  manual_amount_raw?: string | null
+  manual_unit_raw?: string | null
+  manual_qty?: number | null
+  manual_unit?: string | null
+  auto_qty?: number | null
+  auto_unit?: string | null
+}
+
+export type PantryRow = AmountFields & {
   id: string
   name: string
-  qty: number | null
-  unit: string | null
   category: string | null
   notes: string | null
   visibility: Visibility
@@ -75,7 +82,7 @@ export function filterShoppingItems(
   const matched = items.filter((item) => {
     if (input.category !== "all" && shoppingCategory(item.category) !== input.category) return false
     if (!query) return true
-    const haystack = `${item.name} ${item.notes ?? ""} ${item.unit ?? ""}`.toLowerCase()
+    const haystack = `${item.name} ${item.notes ?? ""} ${item.manual_amount_raw ?? ""} ${item.manual_unit_raw ?? ""} ${item.for_meal ?? ""}`.toLowerCase()
     return haystack.includes(query)
   })
   return [...matched].sort((a, b) => compareShopping(a, b, input.sort))
@@ -111,7 +118,35 @@ export function formatQty(qty: number | null | undefined, unit: string | null | 
   return unit?.trim() ? `${amount} ${unit.trim()}` : amount
 }
 
-export function lineAmounts(items: { qty: number | null | undefined; unit: string | null | undefined }[]) {
-  const lines = items.flatMap((item) => (item.qty != null && item.unit ? [{ qty: item.qty, unit: item.unit }] : []))
+export function lineAmounts(items: AmountFields[]) {
+  const lines = items.flatMap((item) => {
+    const parts = []
+    if (item.manual_qty != null && item.manual_unit) parts.push({ qty: Number(item.manual_qty), unit: item.manual_unit })
+    if (item.auto_qty != null && item.auto_unit) parts.push({ qty: Number(item.auto_qty), unit: item.auto_unit })
+    return parts
+  })
   return mergeAmounts(lines)
+}
+
+function typedAmount(amount: string | null | undefined, unit: string | null | undefined) {
+  const left = amount?.trim() ?? ""
+  const right = unit?.trim() ?? ""
+  if (left && right) return `${left} ${right}`
+  return left || right
+}
+
+/** Manual plus auto when they share a unit group. Otherwise both amounts stay visible. */
+export function displayAmount(item: AmountFields) {
+  const manualText = typedAmount(item.manual_amount_raw, item.manual_unit_raw)
+  const autoText = item.auto_qty != null ? formatQty(Number(item.auto_qty), item.auto_unit) : ""
+  const manual = item.manual_qty != null && item.manual_unit ? { qty: Number(item.manual_qty), unit: item.manual_unit } : null
+  const auto = item.auto_qty != null && item.auto_unit ? { qty: Number(item.auto_qty), unit: item.auto_unit } : null
+  if (manual && auto) {
+    const merged = mergeAmounts([manual, auto])
+    if (merged) return formatQty(merged.qty, merged.unit)
+    return [manualText || formatQty(manual.qty, manual.unit), autoText].filter(Boolean).join(" + ")
+  }
+  if (manualText) return manualText
+  if (manual) return formatQty(manual.qty, manual.unit)
+  return autoText
 }

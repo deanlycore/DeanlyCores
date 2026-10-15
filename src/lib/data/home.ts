@@ -63,8 +63,13 @@ export type ShoppingRow = {
   store?: string | null
   need_soon?: boolean | null
   list_id?: string | null
-  qty?: number | null
-  unit?: string | null
+  manual_amount_raw?: string | null
+  manual_unit_raw?: string | null
+  manual_qty?: number | null
+  manual_unit?: string | null
+  auto_qty?: number | null
+  auto_unit?: string | null
+  for_meal?: string | null
   price_cents?: number | null
   notes?: string | null
   category?: string | null
