@@ -12,12 +12,15 @@ export function SectionSegments({
   segments,
   tone = "default",
   section,
+  wrap = false,
 }: {
   label: string
   segments: { href: string; label: string }[]
   tone?: "default" | "life"
   /** Set on /money. Bills is the default. Other money routes keep their own links. */
   section?: MoneyScanSection
+  /** Life phone pills wrap in the page. Money keeps its own scroller. */
+  wrap?: boolean
 }) {
   const rawPath = usePathname()
   const pathname = shellPathname(rawPath)
@@ -28,13 +31,14 @@ export function SectionSegments({
   const selected = section ?? "bills"
   const scanBase = rawPath.startsWith("/preview") ? "/preview/money" : "/money"
 
-  return <SegmentBar label={label} segments={segments} life={life} scan={scan} selected={selected} scanBase={scanBase} pathname={pathname} />
+  return <SegmentBar label={label} segments={segments} life={life} wrap={wrap} scan={scan} selected={selected} scanBase={scanBase} pathname={pathname} />
 }
 
 function SegmentBar({
   label,
   segments,
   life,
+  wrap,
   scan,
   selected,
   scanBase,
@@ -43,6 +47,7 @@ function SegmentBar({
   label: string
   segments: { href: string; label: string }[]
   life: boolean
+  wrap: boolean
   scan: boolean
   selected: MoneyScanSection
   scanBase: string
@@ -67,7 +72,9 @@ function SegmentBar({
         scan
           ? "-mx-4 flex gap-1 overflow-x-auto border-b border-border px-4 py-2 md:-mx-6 md:px-6"
           : life
-            ? "-mx-4 flex gap-1 overflow-x-auto border-b border-border px-4 py-2 md:hidden"
+            ? wrap
+              ? "flex min-w-0 w-full max-w-full flex-wrap gap-1 border-b border-border py-2 md:hidden"
+              : "-mx-4 flex gap-1 overflow-x-auto border-b border-border px-4 py-2 md:hidden"
             : "-mx-1 flex gap-1 overflow-x-auto px-1 md:hidden"
       }
     >

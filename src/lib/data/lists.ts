@@ -1,5 +1,6 @@
 import { requireHousehold } from "@/lib/data/context"
 import { monthStart } from "@/lib/home/metrics"
+import type { PantryRow, ShoppingListRow } from "@/lib/life/shopping"
 import type {
   BillRow,
   EventRow,
@@ -111,15 +112,17 @@ export async function listMeals() {
   )
 }
 
+const SHOPPING_COLUMNS = "id, name, checked_at, visibility, store, need_soon, list_id, manual_amount_raw, manual_unit_raw, manual_qty, manual_unit, auto_qty, auto_unit, price_cents, notes, category, updated_at"
+
 export async function listShopping() {
   const ctx = await requireHousehold()
   if (!ctx) return listed<ShoppingRow>(Promise.resolve({ data: [], error: null }))
   const full = await ctx.supabase
     .from("shopping_items")
-    .select("id, name, checked_at, visibility, store, need_soon")
+    .select(SHOPPING_COLUMNS)
     .eq("household_id", ctx.householdId)
     .order("created_at", { ascending: false })
-    .limit(80)
+    .limit(200)
   if (!full.error) {
     return { rows: full.data ?? [], error: false, currency: ctx.currency, visibility: ctx.lastVisibility }
   }
@@ -133,6 +136,30 @@ export async function listShopping() {
       .order("created_at", { ascending: false })
       .limit(80),
   )
+}
+
+export async function listShoppingLists() {
+  const ctx = await requireHousehold()
+  if (!ctx) return { rows: [] as ShoppingListRow[], error: false }
+  const result = await ctx.supabase
+    .from("shopping_lists")
+    .select("id, name, visibility, is_default, created_by, updated_at")
+    .eq("household_id", ctx.householdId)
+    .order("name", { ascending: true })
+  if (result.error && (columnMissing(result.error) || relationMissing(result.error))) return { rows: [] as ShoppingListRow[], error: false }
+  return { rows: (result.data ?? []) as ShoppingListRow[], error: Boolean(result.error) }
+}
+
+export async function listPantry() {
+  const ctx = await requireHousehold()
+  if (!ctx) return { rows: [] as PantryRow[], error: false }
+  const result = await ctx.supabase
+    .from("pantry_items")
+    .select("id, name, manual_amount_raw, manual_unit_raw, manual_qty, manual_unit, auto_qty, auto_unit, category, notes, visibility, shopping_item_id, updated_at")
+    .eq("household_id", ctx.householdId)
+    .order("name", { ascending: true })
+  if (result.error && (columnMissing(result.error) || relationMissing(result.error))) return { rows: [] as PantryRow[], error: false }
+  return { rows: (result.data ?? []) as PantryRow[], error: Boolean(result.error) }
 }
 
 export async function listGoals() {

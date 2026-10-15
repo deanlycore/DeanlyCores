@@ -15,6 +15,7 @@ import {
   subscriptionCadence,
   type PaymentParent,
 } from "@/lib/money/board"
+import { shoppingDbMessage } from "@/lib/life/shopping"
 import { defaultVisibilityFor, type Visibility } from "@/lib/visibility"
 import { createClient } from "@/lib/supabase/server"
 
@@ -32,6 +33,10 @@ function textOf(value: FormDataEntryValue | null, max: number) {
 
 function columnMissing(error: { message: string } | null) {
   return Boolean(error && /column/i.test(error.message) && /does not exist/i.test(error.message))
+}
+
+function schemaMissing(error: { message: string } | null) {
+  return Boolean(error && /does not exist|schema cache/i.test(error.message))
 }
 
 function optionalLimit(value: FormDataEntryValue | null) {
@@ -76,19 +81,13 @@ function categoryFor(
   return categoryToStore(section, name, formData.get("category"), formData.get("category_mode"))
 }
 
-function calm(error: { message: string } | null, fallback: string): ActionResult | null {
+function calm(error: { code?: string; message: string; details?: string | null } | null, fallback: string): ActionResult | null {
   if (!error) return null
   const message = error.message.toLowerCase()
   if (message.includes("duplicate") || message.includes("budgets_shared") || message.includes("budgets_private")) {
     return { ok: false, message: "That budget is already set for this month." }
   }
-  if (message.includes("only the person who added this")) {
-    return { ok: false, message: "Only the person who added this can change who sees it." }
-  }
-  if (message.includes("row-level") || message.includes("permission")) {
-    return { ok: false, message: "You don’t have access to change that." }
-  }
-  return { ok: false, message: fallback }
+  return { ok: false, message: shoppingDbMessage(error, fallback) }
 }
 
 function refresh() {
@@ -417,6 +416,33 @@ export async function setMealVisibility(id: string, visibility: Visibility) {
   return setRecordVisibility("meals", id, visibility, "Couldn’t update that meal.")
 }
 
+async function defaultShoppingList(ctx: NonNullable<Awaited<ReturnType<typeof requireHousehold>>>, visibility: Visibility) {
+  const query = ctx.supabase
+    .from("shopping_lists")
+    .select("id")
+    .eq("household_id", ctx.householdId)
+    .eq("visibility", visibility)
+    .eq("is_default", true)
+  const scoped = visibility === "private" ? query.eq("created_by", ctx.userId) : query
+  const found = await scoped.maybeSingle()
+  if (found.error && schemaMissing(found.error)) return { id: null as string | null, missing: true }
+  if (found.error) return { id: null, missing: false }
+  if (found.data?.id) return { id: found.data.id, missing: false }
+  const created = await ctx.supabase
+    .from("shopping_lists")
+    .insert({
+      household_id: ctx.householdId,
+      created_by: ctx.userId,
+      visibility,
+      name: "Groceries",
+      is_default: true,
+    })
+    .select("id")
+    .single()
+  if (created.error && schemaMissing(created.error)) return { id: null, missing: true }
+  return { id: created.data?.id ?? null, missing: false }
+}
+
 export async function createShoppingItem(formData: FormData): Promise<ActionResult> {
   const ready = await gate()
   if (!ready.ctx) return ready
@@ -424,6 +450,8 @@ export async function createShoppingItem(formData: FormData): Promise<ActionResu
   if (!name) return { ok: false, message: "Add an item." }
   const visibility = visibilityOf(formData.get("visibility"), defaultVisibilityFor("shopping", ready.ctx.lastVisibility))
   const extras = { store: storeOf(formData), need_soon: needSoonOf(formData) }
+  const list = await defaultShoppingList(ready.ctx, visibility)
+  if (!list.missing && !list.id) return { ok: false, message: "Couldn’t add that item." }
   let result = await ready.ctx.supabase
     .from("shopping_items")
     .insert({
@@ -431,6 +459,7 @@ export async function createShoppingItem(formData: FormData): Promise<ActionResu
       owner_id: ready.ctx.userId,
       visibility,
       name,
+      ...(list.id ? { list_id: list.id } : {}),
       ...extras,
     })
     .select("id")
@@ -468,8 +497,22 @@ export async function updateShoppingItem(id: string, formData: FormData): Promis
   if (!name) return { ok: false, message: "Add an item." }
   const visibility = visibilityOf(formData.get("visibility"), "shared")
   const extras = { store: storeOf(formData), need_soon: needSoonOf(formData) }
-  let { error } = await ready.ctx.supabase.from("shopping_items").update({ name, visibility, ...extras }).eq("id", id)
-  if (columnMissing(error)) {
+  const current = await ready.ctx.supabase.from("shopping_items").select("visibility").eq("id", id).maybeSingle()
+  const patch: { name: string; visibility: Visibility; store: string | null; need_soon: boolean; list_id?: string; user_edited?: boolean } = {
+    name,
+    visibility,
+    ...extras,
+  }
+  if (current.data && current.data.visibility !== visibility) {
+    const list = await defaultShoppingList(ready.ctx, visibility)
+    if (!list.missing) {
+      if (!list.id) return { ok: false, message: "Couldn’t save that item." }
+      patch.list_id = list.id
+      patch.user_edited = true
+    }
+  }
+  let { error } = await ready.ctx.supabase.from("shopping_items").update(patch).eq("id", id)
+  if (columnMissing(error) || schemaMissing(error)) {
     const retry = await ready.ctx.supabase.from("shopping_items").update({ name, visibility }).eq("id", id)
     error = retry.error
   }
@@ -485,7 +528,20 @@ export async function deleteShoppingItem(id: string) {
 }
 
 export async function setShoppingVisibility(id: string, visibility: Visibility) {
-  return setRecordVisibility("shopping_items", id, visibility, "Couldn’t update that item.")
+  const ready = await gate()
+  if (!ready.ctx) return ready
+  const list = await defaultShoppingList(ready.ctx, visibility)
+  if (list.missing) return setRecordVisibility("shopping_items", id, visibility, "Couldn’t update that item.")
+  if (!list.id) return { ok: false, message: "Couldn’t update that item." }
+  const { error } = await ready.ctx.supabase
+    .from("shopping_items")
+    .update({ visibility, list_id: list.id, user_edited: true })
+    .eq("id", id)
+  const failed = calm(error, "Couldn’t update that item.")
+  if (failed) return failed
+  await remember(ready.ctx, visibility)
+  refresh()
+  return { ok: true }
 }
 
 export async function setShoppingChecked(id: string, checked: boolean): Promise<ActionResult> {
