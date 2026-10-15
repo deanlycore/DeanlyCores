@@ -20,8 +20,8 @@ const mono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" })
 
 export const metadata: Metadata = {
   title: {
-    default: "Deanly Tracking — DeanFamily",
-    template: "%s · Deanly Tracking — DeanFamily",
+    default: "Deanly Tracking",
+    template: "%s · Deanly Tracking",
   },
   description: "Keep life together, effortlessly.",
   applicationName: "Deanly Tracking",

@@ -29,7 +29,7 @@ export default async function PreviewSavings() {
       <div className="grid gap-4">
         <AppearanceControl appearance={appearance} />
         {money ? <SectionSegments label="Money" segments={railChildren(money)} tone="life" /> : null}
-        <SavingsBoard rows={rows} currency="USD" today="2026-10-02" householdName="DeanFamily" />
+        <SavingsBoard rows={rows} currency="USD" today="2026-10-02" householdName="My household" />
       </div>
     </AppShell>
   )

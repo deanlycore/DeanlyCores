@@ -40,7 +40,7 @@ export default async function PreviewBills() {
           rows={rows}
           currency="USD"
           today={today}
-          householdName="DeanFamily"
+          householdName="My household"
           budgetCents={365000}
           paydayDates={["2026-10-10", "2026-10-25"]}
         />

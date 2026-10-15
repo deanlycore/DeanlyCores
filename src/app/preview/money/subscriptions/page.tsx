@@ -28,7 +28,7 @@ export default async function PreviewSubscriptions() {
       <div className="grid gap-4">
         <AppearanceControl appearance={appearance} />
         {money ? <SectionSegments label="Money" segments={railChildren(money)} tone="life" /> : null}
-        <SubscriptionsBoard rows={rows} currency="USD" today="2026-10-02" householdName="DeanFamily" />
+        <SubscriptionsBoard rows={rows} currency="USD" today="2026-10-02" householdName="My household" />
       </div>
     </AppShell>
   )

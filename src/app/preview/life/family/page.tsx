@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic"
 const previewCodes: InviteCodeView[] = [
   {
     id: "preview-code",
-    code: "DEAN-7K2M4P9Q",
+    code: "HOME-7K2M4P9Q",
     createdAt: "2026-10-01T16:00:00.000Z",
     expiresAt: null,
     maxUses: 2,

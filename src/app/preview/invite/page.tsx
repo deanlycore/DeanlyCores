@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic"
 const codes: InviteCodeView[] = [
   {
     id: "preview-code",
-    code: "DEAN-7K2M4P9Q",
+    code: "HOME-7K2M4P9Q",
     createdAt: "2026-10-01T16:00:00.000Z",
     expiresAt: null,
     maxUses: 2,
@@ -39,11 +39,11 @@ export default async function PreviewInvite() {
         </header>
         <section className="deanly-card grid gap-3 p-5">
           <h2 className="font-medium">Household</h2>
-          <HouseholdNameForm name="DeanFamily" />
+          <HouseholdNameForm name="My household" />
           <p className="text-sm text-muted-foreground">People listed here share this household.</p>
           <ul className="grid gap-2">
             <li className="flex items-center justify-between text-sm">
-              <span>Alex Dean</span>
+              <span>Alex</span>
               <span className="text-muted-foreground">Owner</span>
             </li>
           </ul>

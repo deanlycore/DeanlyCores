@@ -11,7 +11,7 @@ export default function PreviewCalendar() {
   if (process.env.NODE_ENV === "production") notFound()
   return (
     <LifePreview>
-      <CalendarBoard rows={previewEvents} today={previewToday} timeZone={previewZone} householdName="DeanFamily" />
+      <CalendarBoard rows={previewEvents} today={previewToday} timeZone={previewZone} householdName="My household" />
     </LifePreview>
   )
 }

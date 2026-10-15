@@ -3,7 +3,7 @@ export const INVALID_CODE_MESSAGE = "That code isn’t valid anymore. Ask for a 
 export const ALREADY_IN_HOME_MESSAGE =
   "You’re already in a home. Leave it in Settings before starting another."
 
-const CODE_PATTERN = /^DEAN-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{8}$/
+const CODE_PATTERN = /^(DEAN|HOME)-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{8}$/
 
 export type InviteCodeRecord = {
   id: string
@@ -25,7 +25,7 @@ export type InviteCodeView = {
   uses: number
 }
 
-/** Uppercase and drop spaces. Hyphens stay so DEAN- codes still match. */
+/** Uppercase and drop spaces. Hyphens stay so HOME- and issued DEAN- codes still match. */
 export function normalizeInviteCode(value: string) {
   return value.toUpperCase().replace(/\s+/g, "")
 }

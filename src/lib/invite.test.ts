@@ -33,6 +33,10 @@ const holdSql = readFileSync(
   join(dirname(fileURLToPath(import.meta.url)), "../../supabase/migrations/20261002221109_invite_account_mint_holds.sql"),
   "utf8",
 )
+const prefixSql = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), "../../supabase/migrations/20261015040000_invite_code_home_prefix.sql"),
+  "utf8",
+)
 const inviteAction = readFileSync(
   join(dirname(fileURLToPath(import.meta.url)), "actions/invite.ts"),
   "utf8",
@@ -56,10 +60,13 @@ function row(overrides: Partial<InviteCodeRecord> = {}): InviteCodeRecord {
 
 test("codes normalize by dropping spaces and uppercasing", () => {
   assert.equal(normalizeInviteCode(" dean-7k2m 4p9q "), "DEAN-7K2M4P9Q")
+  assert.equal(normalizeInviteCode(" home-7k2m 4p9q "), "HOME-7K2M4P9Q")
   assert.equal(validInviteCodeShape("dean-7k2m4p9q"), true)
+  assert.equal(validInviteCodeShape("home-7k2m4p9q"), true)
   assert.equal(validInviteCodeShape("DEAN-7K2M"), false)
   assert.equal(validInviteCodeShape("JOIN-7K2M4P9Q"), false)
   assert.equal(validInviteCodeShape("DEAN-7K2M4P9O"), false)
+  assert.equal(validInviteCodeShape("HOME-7K2M4P9O"), false)
 })
 
 test("active codes exclude revoked, expired, used-up, and other purposes", () => {
@@ -136,6 +143,13 @@ test("definer execute revoke matches the live signatures and leaves RLS and peek
   assert.doesNotMatch(revokeSql, /can_access_row\(uuid, public\.visibility, uuid\) from public, anon, authenticated/)
   assert.doesNotMatch(revokeSql, /is_household_member\(uuid\) from public, anon, authenticated/)
   assert.doesNotMatch(revokeSql, /(?:revoke|grant)[^;]*peek_household_invite_code/)
+})
+
+test("new codes use HOME- and issued DEAN- codes still match", () => {
+  assert.match(prefixSql, /return 'HOME-' \|\| body/)
+  assert.match(prefixSql, /\^\(DEAN\|HOME\)-/)
+  assert.equal(/return 'DEAN-'/.test(prefixSql), false)
+  assert.equal(/DeanFamily|Andrey|Arabella/.test(prefixSql), false)
 })
 
 test("one invite code cannot mint a login without taking a remaining hold", () => {
