@@ -23,6 +23,7 @@ import {
   FAMILY_COLORS,
   FAMILY_COPY,
   HOUSEHOLD_PERMISSIONS,
+  compareFamilyProfiles,
   familyAvatarTint,
   familyDetail,
   familyInitials,
@@ -81,6 +82,7 @@ export function FamilyBoard({
   members,
   viewerRole = null,
   viewerId = null,
+  ownerCount = 0,
   error = false,
   mode = "live",
   initialSheet = null,
@@ -90,6 +92,7 @@ export function FamilyBoard({
   members: FamilyProfile[]
   viewerRole?: HouseholdPermission | null
   viewerId?: string | null
+  ownerCount?: number
   error?: boolean
   mode?: "live" | "preview"
   initialSheet?: "add" | "edit" | "remove" | null
@@ -109,7 +112,7 @@ export function FamilyBoard({
   const [edits, setEdits] = useState<Record<string, FamilyProfile>>({})
   const base = mode === "preview" ? previewRows : members
   const rows = base.map((row) => edits[row.id] ?? row).filter((row) => !hiddenIds.includes(row.id))
-  const visible = visibleProfiles(rows)
+  const visible = visibleProfiles(rows).slice().sort(compareFamilyProfiles)
   const [sheet, setSheet] = useState<SheetMode | null>(() => {
     if (initialSheet === "add") return { kind: "add" }
     if (initialSheet === "edit" && seeded) return { kind: "edit", id: seeded.id }
@@ -135,6 +138,12 @@ export function FamilyBoard({
   const canRemoveTarget = (target: FamilyProfile | null) =>
     Boolean(viewerRole === "owner" && target && target.userId !== viewerId)
   const canRemove = canRemoveTarget(editing)
+  const targetIsLastOwner = Boolean(ownerCount === 1 && editing?.permission === "owner")
+  const accessNote = !editing?.userId || writingPermission
+    ? null
+    : targetIsLastOwner
+      ? FAMILY_COPY.accessLastOwner
+      : FAMILY_COPY.accessOwn
 
   function openAdd() {
     setForm(blankForm())
@@ -337,31 +346,32 @@ export function FamilyBoard({
                 <legend id="family-permission" className="text-sm font-medium">
                   {FAMILY_COPY.permissionLabel}
                 </legend>
-                <div role="radiogroup" aria-labelledby="family-permission" className="grid gap-2">
+                <div role="radiogroup" aria-labelledby="family-permission" className="grid gap-3">
                   {HOUSEHOLD_PERMISSIONS.map((permission) => {
                     const selected = form.permission === permission.id
                     return (
-                      <label key={permission.id} className="flex items-center gap-2 text-sm">
-                        <input
-                          type="radio"
-                          name="family-permission"
-                          value={permission.id}
-                          checked={selected}
-                          disabled={!writingPermission}
-                          onChange={() => {
-                            setForm((current) => ({ ...current, permission: permission.id }))
-                            if (fieldError.permission) setFieldError((current) => ({ ...current, permission: undefined }))
-                          }}
-                          className="size-4 accent-primary"
-                        />
-                        {permission.label}
+                      <label key={permission.id} className="grid gap-0.5 text-sm">
+                        <span className="flex items-center gap-2">
+                          <input
+                            type="radio"
+                            name="family-permission"
+                            value={permission.id}
+                            checked={selected}
+                            disabled={!writingPermission}
+                            onChange={() => {
+                              setForm((current) => ({ ...current, permission: permission.id }))
+                              if (fieldError.permission) setFieldError((current) => ({ ...current, permission: undefined }))
+                            }}
+                            className="size-4 accent-primary"
+                          />
+                          {permission.label}
+                        </span>
+                        <span className="pl-6 text-muted-foreground">{permission.help}</span>
                       </label>
                     )
                   })}
                 </div>
-                {writingPermission ? null : (
-                  <p className="text-sm text-muted-foreground">{FAMILY_COPY.permissionHint}</p>
-                )}
+                {accessNote ? <p className="text-sm text-muted-foreground">{accessNote}</p> : null}
                 {fieldError.permission ? <p className="text-sm text-danger">{fieldError.permission}</p> : null}
               </fieldset>
             ) : null}

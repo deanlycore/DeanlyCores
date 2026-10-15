@@ -1,19 +1,15 @@
 import { InviteCodesCard } from "@/components/settings/invite-codes-card"
 import { HouseholdNameForm } from "@/components/settings/settings-forms"
-import { accountPermissionLabel } from "@/lib/family/profile"
 import type { InviteCodeView } from "@/lib/invite"
-import type { MemberView } from "@/lib/data/session"
 
 export function HouseholdPanel({
   name,
   canRename,
-  members,
   inviteCodes = [],
   inviteCodesReady = true,
 }: {
   name: string
   canRename: boolean
-  members: MemberView[]
   inviteCodes?: InviteCodeView[]
   inviteCodesReady?: boolean
 }) {
@@ -27,14 +23,6 @@ export function HouseholdPanel({
           <p className="text-sm font-medium">{name}</p>
         )}
         <p className="text-sm text-muted-foreground">People listed here share this household.</p>
-        <ul className="grid gap-2">
-          {members.map((member) => (
-            <li key={member.userId} className="flex items-center justify-between text-sm">
-              <span>{member.displayName}</span>
-              <span className="text-muted-foreground">{accountPermissionLabel(member.role)}</span>
-            </li>
-          ))}
-        </ul>
       </div>
       {canRename ? <InviteCodesCard codes={inviteCodes} ready={inviteCodesReady} /> : null}
     </section>

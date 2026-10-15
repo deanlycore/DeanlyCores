@@ -109,12 +109,21 @@ export async function saveFamilyProfile(formData: FormData): Promise<FamilyActio
   }
 
   const result = id
-    ? await ctx.supabase.from("family_profiles").update(payload).eq("id", id).select("id")
+    ? await ctx.supabase.rpc("save_family_profile", {
+        p_id: id,
+        p_name: payload.name,
+        p_role: payload.role,
+        p_birthday: payload.birthday,
+        p_color: payload.color,
+        p_notes: payload.notes,
+        p_archive: false,
+      })
     : await ctx.supabase.from("family_profiles").insert(payload).select("id")
 
   const failed = calm(result.error, "Couldn’t save that.")
   if (failed) return failed
-  if (!result.data?.length) return { ok: false, message: "You don’t have access to change that." }
+  const saved = Array.isArray(result.data) ? result.data.length > 0 : Boolean(result.data)
+  if (!saved) return { ok: false, message: "You don’t have access to change that." }
 
   revalidatePath("/life/family")
   return { ok: true }
@@ -136,16 +145,19 @@ export async function archiveFamilyProfile(id: string): Promise<FamilyActionResu
     return { ok: false, message: "A household login stays on Family." }
   }
 
-  const { error, data } = await ctx.supabase
-    .from("family_profiles")
-    .update({ archived_at: new Date().toISOString() })
-    .eq("id", profileId)
-    .is("archived_at", null)
-    .select("id")
+  const { error, data } = await ctx.supabase.rpc("save_family_profile", {
+    p_id: profileId,
+    p_name: null,
+    p_role: null,
+    p_birthday: null,
+    p_color: null,
+    p_notes: null,
+    p_archive: true,
+  })
 
   const failed = calm(error, "Couldn’t remove that member.")
   if (failed) return failed
-  if (!data?.length) return { ok: false, message: "You don’t have access to change that." }
+  if (!data) return { ok: false, message: "You don’t have access to change that." }
 
   revalidatePath("/life/family")
   return { ok: true }

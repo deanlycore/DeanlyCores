@@ -35,12 +35,12 @@ export default async function Page() {
       members={family.members}
       viewerRole={family.viewerRole}
       viewerId={family.viewerId}
+      ownerCount={family.ownerCount}
       error={family.error}
       beforeList={
         <HouseholdPanel
           name={session.householdName ?? "My household"}
           canRename={session.role === "owner"}
-          members={session.members}
           inviteCodes={inviteCodes}
           inviteCodesReady={inviteCodesReady}
         />

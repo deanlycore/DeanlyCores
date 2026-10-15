@@ -23,8 +23,10 @@ export const FAMILY_COPY = {
   birthdayLabel: "Birthday",
   colorLabel: "Color",
   notesLabel: "Notes",
-  permissionLabel: "Permissions",
-  permissionHint: "Only an owner can change someone else’s permissions.",
+  permissionLabel: "Access",
+  accessOwn: "Only another owner can change this",
+  accessLastOwner: "A household needs at least one owner.",
+  hasLogin: "Has login",
   save: "Save",
   cancel: "Cancel",
   remove: "Remove member",
@@ -36,10 +38,10 @@ export const FAMILY_COPY = {
 
 export type HouseholdPermission = "owner" | "adult" | "view_only"
 
-export const HOUSEHOLD_PERMISSIONS: { id: HouseholdPermission; label: string }[] = [
-  { id: "owner", label: "Owner" },
-  { id: "adult", label: "Adult" },
-  { id: "view_only", label: "View only" },
+export const HOUSEHOLD_PERMISSIONS: { id: HouseholdPermission; label: string; help: string }[] = [
+  { id: "owner", label: "Owner", help: "Full control of this household." },
+  { id: "adult", label: "Adult", help: "Can add and edit shared items and kids." },
+  { id: "view_only", label: "View-only", help: "Can see shared items. Can’t make changes." },
 ]
 
 export type FamilyProfile = {
@@ -86,14 +88,28 @@ export function accountPermissionLabel(permission: HouseholdPermission | null | 
   return HOUSEHOLD_PERMISSIONS.find((entry) => entry.id === permission)?.label ?? null
 }
 
-/** Login permission, then the relationship label, on one line. */
+/** Relationship, then Has login, on the same quiet line as a kid row. */
 export function familyDetail(member: {
   role: string | null
   userId: string | null
-  permission: HouseholdPermission | null
+  permission?: HouseholdPermission | null
 }) {
-  const permission = member.userId ? accountPermissionLabel(member.permission) : null
-  return [permission, member.role].filter((part) => part).join(" · ")
+  return [member.role, member.userId ? FAMILY_COPY.hasLogin : null].filter((part) => part).join(" · ")
+}
+
+/** Owners first, other logins next, kids last. Name breaks a tie. */
+export function compareFamilyProfiles<T extends { name: string; userId: string | null; permission: HouseholdPermission | null }>(
+  a: T,
+  b: T,
+) {
+  const rank = (member: T) => {
+    if (member.userId && member.permission === "owner") return 0
+    if (member.userId) return 1
+    return 2
+  }
+  const byRank = rank(a) - rank(b)
+  if (byRank !== 0) return byRank
+  return a.name.localeCompare(b.name)
 }
 
 export function familySwatch(color: FamilyColor) {

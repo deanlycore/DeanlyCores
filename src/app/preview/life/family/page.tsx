@@ -141,6 +141,7 @@ export default async function PreviewFamily({
         members={view === "empty" ? [] : previewFamily}
         viewerRole={viewerRole}
         viewerId={viewerRole === "owner" ? "alex" : viewerRole === "view_only" ? "quinn" : "sam"}
+        ownerCount={previewFamily.filter((member) => member.permission === "owner" && member.archivedAt == null).length}
         mode="preview"
         initialSheet={initialSheet}
         initialEditId={who ?? (initialSheet === "edit" ? "sam" : null)}
@@ -148,7 +149,6 @@ export default async function PreviewFamily({
           <HouseholdPanel
             name="My household"
             canRename={viewerRole === "owner"}
-            members={previewLogins}
             inviteCodes={viewerRole === "owner" ? previewCodes : []}
           />
         }

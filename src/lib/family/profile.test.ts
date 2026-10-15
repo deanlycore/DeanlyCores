@@ -7,8 +7,10 @@ import { fileURLToPath } from "node:url"
 import {
   FAMILY_COLORS,
   FAMILY_COPY,
+  HOUSEHOLD_PERMISSIONS,
   accountPermissionLabel,
   assigneeLabel,
+  compareFamilyProfiles,
   familyDetail,
   formatBirthday,
   parseFamilyForm,
@@ -130,14 +132,26 @@ test("family_profiles migration locks reads to members and writes to the househo
   assert.match(assign, /households\.id = active[\s\S]*households\.owner_id = auth\.uid\(\)/)
 })
 
-test("a login shows Owner, Adult, or View only beside a relationship label", () => {
+test("one list puts owners first and kids last, with Has login instead of a badge", () => {
   assert.equal(accountPermissionLabel("owner"), "Owner")
   assert.equal(accountPermissionLabel("adult"), "Adult")
-  assert.equal(accountPermissionLabel("view_only"), "View only")
+  assert.equal(accountPermissionLabel("view_only"), "View-only")
   assert.equal(accountPermissionLabel(null), null)
-  assert.equal(familyDetail({ role: null, userId: "owner", permission: "owner" }), "Owner")
-  assert.equal(familyDetail({ role: "Partner", userId: "adult", permission: "adult" }), "Adult · Partner")
+  assert.equal(familyDetail({ role: null, userId: "owner", permission: "owner" }), "Has login")
+  assert.equal(familyDetail({ role: "Partner", userId: "adult", permission: "adult" }), "Partner · Has login")
   assert.equal(familyDetail({ role: "Son", userId: null, permission: null }), "Son")
+  const ordered = [
+    { name: "Riley", userId: null, permission: null },
+    { name: "Sam", userId: "sam", permission: "adult" as const },
+    { name: "Alex", userId: "alex", permission: "owner" as const },
+    { name: "Quinn", userId: "quinn", permission: "view_only" as const },
+  ].sort(compareFamilyProfiles)
+  assert.deepEqual(ordered.map((row) => row.name), ["Alex", "Quinn", "Sam", "Riley"])
+  assert.match(FAMILY_COPY.accessOwn, /Only another owner can change this/)
+  assert.match(FAMILY_COPY.accessLastOwner, /A household needs at least one owner\./)
+  assert.match(JSON.stringify(HOUSEHOLD_PERMISSIONS), /Full control of this household\./)
+  assert.match(JSON.stringify(HOUSEHOLD_PERMISSIONS), /Can add and edit shared items and kids\./)
+  assert.match(JSON.stringify(HOUSEHOLD_PERMISSIONS), /Can see shared items\. Can’t make changes\./)
 })
 
 test("household logins are linked onto Family without a broad security definer", () => {
@@ -194,7 +208,21 @@ test("any owner can edit a household, and view only cannot write shared rows", (
   assert.equal(/households\.owner_id/.test(rolePolicy), false)
   assert.match(rolePolicy, /is_household_owner\(household_id\)/)
   assert.match(board, /HOUSEHOLD_PERMISSIONS/)
-  assert.match(readFileSync(join(src, "lib/family/profile.ts"), "utf8"), /View only/)
+  assert.match(readFileSync(join(src, "lib/family/profile.ts"), "utf8"), /View-only/)
+  assert.match(readFileSync(join(src, "lib/family/profile.ts"), "utf8"), /Can see shared items/)
+})
+
+test("role changes lock owner rows and invite role comes from the code", () => {
+  const locks = readFileSync(join(workspace, "supabase/migrations/20261015030200_household_access_locks.sql"), "utf8")
+  assert.match(locks, /for update/)
+  assert.match(locks, /A household needs at least one owner\./)
+  assert.match(locks, /auth\.uid\(\) is distinct from old\.user_id/)
+  assert.match(locks, /grant update \(name, color\) on table public\.family_profiles to authenticated/)
+  assert.match(locks, /invite\.granted_role/)
+  assert.match(locks, /join_household/)
+  assert.equal(/p_role/.test(locks.slice(locks.indexOf("insert into public.household_members"))), false)
+  assert.equal(/DeanFamily|Andrey|Arabella/.test(locks), false)
+  assert.equal(/grant\s+[^;]*service_role/i.test(locks), false)
 })
 
 test("family and household copy is not pinned to one household", () => {

@@ -1,6 +1,7 @@
 import { requireHousehold } from "@/lib/data/context"
 import { getSessionView } from "@/lib/data/session"
 import {
+  compareFamilyProfiles,
   isFamilyColor,
   normalizeHouseholdPermission,
   visibleProfiles,
@@ -16,10 +17,11 @@ export async function loadFamily(): Promise<{
   members: FamilyProfile[]
   viewerRole: HouseholdPermission | null
   viewerId: string | null
+  ownerCount: number
   error: boolean
 }> {
   const [ctx, session] = await Promise.all([requireHousehold(), getSessionView()])
-  if (!ctx) return { members: [], viewerRole: null, viewerId: null, error: false }
+  if (!ctx) return { members: [], viewerRole: null, viewerId: null, ownerCount: 0, error: false }
 
   const viewerRole = session.role
 
@@ -42,7 +44,7 @@ export async function loadFamily(): Promise<{
     : withLogin
 
   if (listed.error) {
-    return { members: [], viewerRole, viewerId: ctx.userId, error: true }
+    return { members: [], viewerRole, viewerId: ctx.userId, ownerCount: 0, error: true }
   }
 
   const memberships = await ctx.supabase
@@ -51,8 +53,10 @@ export async function loadFamily(): Promise<{
     .eq("household_id", ctx.householdId)
 
   if (memberships.error) {
-    return { members: [], viewerRole, viewerId: ctx.userId, error: true }
+    return { members: [], viewerRole, viewerId: ctx.userId, ownerCount: 0, error: true }
   }
+
+  const ownerCount = (memberships.data ?? []).filter((row) => row.role === "owner").length
 
   const roleByUser = new Map(
     (memberships.data ?? []).flatMap((row) => {
@@ -81,5 +85,11 @@ export async function loadFamily(): Promise<{
     }),
   )
 
-  return { members, viewerRole, viewerId: ctx.userId, error: false }
+  return {
+    members: members.slice().sort(compareFamilyProfiles),
+    viewerRole,
+    viewerId: ctx.userId,
+    ownerCount,
+    error: false,
+  }
 }
