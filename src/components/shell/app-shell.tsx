@@ -43,6 +43,14 @@ const mobileTabs = [
   { href: "/more", label: "More", icon: MoreHorizontal },
 ]
 
+/** Preview shells reuse these tabs. Production stays on the real Money scan. */
+function mobileHref(href: string, pathname: string) {
+  if (!pathname.startsWith("/preview")) return href
+  if (href === "/home" || href === "/money" || href === "/notes") return `/preview${href}`
+  if (href === "/life/calendar") return "/preview/life/calendar"
+  return href
+}
+
 function railCollapsed() {
   return window.localStorage.getItem("deanly-rail") === "collapsed"
 }
@@ -177,7 +185,7 @@ export function AppShell({ session, children }: { session: SessionView; children
             return (
               <Link
                 key={item.href}
-                href={item.href}
+                href={mobileHref(item.href, pathname)}
                 className={`flex min-h-11 flex-col items-center justify-center gap-0.5 text-[11px] ${active ? "text-brand-deep" : "text-muted-foreground"}`}
               >
                 <Icon className="size-5" />
