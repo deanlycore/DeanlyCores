@@ -24,8 +24,72 @@ import {
   spendTileValue,
   type OverviewPanel,
 } from "@/lib/money/overview"
+import { applyVisibility } from "@/lib/money/board"
 import { buildMoneySnapshot, type SnapshotBill } from "@/lib/money/snapshot"
+import type { Visibility } from "@/lib/visibility"
 import { cn } from "cn"
+import type { MoneyVisibility } from "@/components/money/money-chrome"
+
+type Visible<T> = T & { visibility: Visibility }
+
+export type MoneyOverviewSources = {
+  bills: Visible<SnapshotBill>[]
+  payments: FlowPayment[]
+  income: Visible<FlowIncome>[]
+  goals: Visible<FlowGoal>[]
+  subscriptions: Visible<FlowSubscription>[]
+  cards: Visible<FlowCard>[]
+  people: Visible<FlowPerson>[]
+}
+
+const emptyOverviewSources: MoneyOverviewSources = {
+  bills: [],
+  payments: [],
+  income: [],
+  goals: [],
+  subscriptions: [],
+  cards: [],
+  people: [],
+}
+
+export function scopedOverviewSources(
+  sources: Partial<MoneyOverviewSources> | undefined,
+  own: Partial<MoneyOverviewSources> = {},
+): MoneyOverviewSources {
+  const merged = { ...emptyOverviewSources, ...sources }
+  for (const key of Object.keys(own) as (keyof MoneyOverviewSources)[]) {
+    const value = own[key]
+    if (value) merged[key] = value as never
+  }
+  return merged
+}
+
+/** Same Overview card on every Money section. The open toggle filters the rows. */
+export function ScopedMoneyOverview({
+  filter,
+  today,
+  currency,
+  sources,
+}: {
+  filter: MoneyVisibility
+  today: string
+  currency: string
+  sources: MoneyOverviewSources
+}) {
+  return (
+    <MoneyOverview
+      today={today}
+      currency={currency}
+      bills={applyVisibility(sources.bills, filter)}
+      payments={sources.payments}
+      income={applyVisibility(sources.income, filter)}
+      goals={applyVisibility(sources.goals, filter)}
+      subscriptions={applyVisibility(sources.subscriptions, filter)}
+      cards={applyVisibility(sources.cards, filter)}
+      people={applyVisibility(sources.people, filter)}
+    />
+  )
+}
 
 const surface = "min-w-0 rounded-[12px] border border-border bg-surface shadow-soft"
 
