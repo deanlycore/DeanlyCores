@@ -15,7 +15,7 @@ import {
   type FlowPerson,
   type FlowSubscription,
 } from "@/lib/money/flow"
-import type { MoneyInsight } from "@/lib/money/insights"
+import { buildMoneyInsights } from "@/lib/money/insights"
 import {
   OVERVIEW_COPY,
   aheadTileValue,
@@ -46,7 +46,6 @@ export function MoneyOverview({
   subscriptions,
   cards,
   people,
-  insights,
 }: {
   today: string
   currency: string
@@ -57,7 +56,6 @@ export function MoneyOverview({
   subscriptions: FlowSubscription[]
   cards: FlowCard[]
   people: FlowPerson[]
-  insights: MoneyInsight[]
 }) {
   const [panel, setPanel] = useState<OverviewPanel | null>(null)
   const [days, setDays] = useState<FlowDays>(30)
@@ -83,11 +81,22 @@ export function MoneyOverview({
     cards,
     people,
   })
+  const insights = buildMoneyInsights({
+    today,
+    currency,
+    bills,
+    payments,
+    income,
+    goals,
+    subscriptions,
+    cards,
+    people,
+  })
   const attention = attentionTileValue(snapshot.attention)
   const values: Record<OverviewPanel, { text: string; urgent: boolean }> = {
     spend: { text: spendTileValue(snapshot.hasIncome, snapshot.availableCents, currency), urgent: false },
     attention,
-    ahead: { text: aheadTileValue(flow.events, today, currency), urgent: false },
+    ahead: { text: aheadTileValue(bills, payments, today, currency), urgent: false },
     insights: { text: insightsTileValue(insights.length), urgent: false },
   }
 

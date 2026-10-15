@@ -1,19 +1,16 @@
 import { notFound } from "next/navigation"
 
-import { MoneyOverview } from "@/components/money/money-overview"
 import { MoneyScan } from "@/components/money/money-scan"
 import { AppShell } from "@/components/shell/app-shell"
-import { SectionSegments } from "@/components/shell/section-segments"
 import type { BillRow, ExpenseRow, GoalRow, MoneyCardRow, MoneyPaymentRow, MoneyPersonRow, SubscriptionRow } from "@/lib/data/home"
 import { moneyScanSection } from "@/lib/money/board"
-import { buildMoneyInsights } from "@/lib/money/insights"
 import { primaryNav, railChildren } from "@/lib/navigation"
 
 import { previewSession } from "../shell-session"
 
 export const dynamic = "force-dynamic"
 
-const today = "2026-10-02"
+const today = "2026-10-14"
 
 const bills: BillRow[] = [
   { id: "rent", name: "Rent", amount_cents: 150000, due_on: "2026-11-01", paid_at: null, visibility: "shared", category: "Housing" },
@@ -72,62 +69,29 @@ export default async function PreviewMoney({
   const selected = moneyScanSection(params.section)
   const sample = Array.isArray(params.sample) ? params.sample[0] : params.sample
   const blank = sample === "empty"
-  const shownBills = blank
-    ? []
-    : sample === "overdue"
-      ? bills.map((bill) => (bill.id === "electric" ? { ...bill, due_on: "2026-09-28" } : bill))
-      : bills
+  const shownBills = blank ? [] : bills
   const shownIncome = blank || sample === "no-income" ? [] : income
   const shownGoals = blank ? [] : goals
   const shownSubscriptions = blank ? [] : subscriptions
   const shownCards = blank ? [] : cards
   const shownPeople = blank ? [] : people
   const shownPayments = blank ? [] : payments
-  const insights = buildMoneyInsights({
-    today,
-    currency: "USD",
-    bills: shownBills,
-    payments: shownPayments,
-    income: shownIncome,
-    goals: shownGoals,
-    subscriptions: shownSubscriptions,
-    cards: shownCards,
-    people: shownPeople,
-  })
   const money = primaryNav.find((item) => item.href === "/money")
   return (
     <AppShell session={previewSession}>
-      <div>
-        <div className="mb-4 md:mb-5">
-          <MoneyOverview
-            today={today}
-            currency="USD"
-            bills={shownBills}
-            payments={shownPayments}
-            income={shownIncome}
-            goals={shownGoals}
-            subscriptions={shownSubscriptions}
-            cards={shownCards}
-            people={shownPeople}
-            insights={insights}
-          />
-        </div>
-        <div className="grid gap-5">
-          {money ? <SectionSegments label="Money" segments={railChildren(money)} tone="life" section={selected} /> : null}
-          <MoneyScan
-            section={selected}
-            today={today}
-            currency="USD"
-            bills={shownBills}
-            income={shownIncome}
-            goals={shownGoals}
-            subscriptions={shownSubscriptions}
-            cards={shownCards}
-            people={shownPeople}
-            payments={shownPayments}
-          />
-        </div>
-      </div>
+      <MoneyScan
+        section={selected}
+        segments={money ? railChildren(money) : []}
+        today={today}
+        currency="USD"
+        bills={shownBills}
+        payments={shownPayments}
+        income={shownIncome}
+        goals={shownGoals}
+        subscriptions={shownSubscriptions}
+        cards={shownCards}
+        people={shownPeople}
+      />
     </AppShell>
   )
 }

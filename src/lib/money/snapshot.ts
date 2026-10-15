@@ -83,8 +83,10 @@ export type MoneySnapshotModel = {
 }
 
 export function snapshotMoney(cents: number, currency: string, subtract: boolean) {
-  const money = formatMoney(Math.abs(cents), currency)
-  return subtract ? `−${money}` : money
+  const amount = Math.abs(cents === 0 ? 0 : cents)
+  const money = formatMoney(amount, currency)
+  if (!subtract || amount === 0) return money
+  return `−${money}`
 }
 
 export function snapshotAvailable(cents: number, currency: string) {

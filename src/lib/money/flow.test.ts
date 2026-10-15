@@ -318,14 +318,14 @@ test("the low point under the buffer is a flag, and the snapshot formula stays t
 })
 
 test("looking ahead stays inside the overview, above the pills, and does not grow the six sections", () => {
-  const layout = readFileSync(join(root, "../../app/(app)/money/layout.tsx"), "utf8")
+  const scan = readFileSync(join(root, "../../components/money/money-scan.tsx"), "utf8")
   const flow = readFileSync(join(root, "../../components/money/money-flow.tsx"), "utf8")
   const overview = readFileSync(join(root, "../../components/money/money-overview.tsx"), "utf8")
   const nav = readFileSync(join(root, "../navigation.ts"), "utf8")
   const board = readFileSync(join(root, "board.ts"), "utf8")
-  assert.ok(layout.indexOf("MoneyOverview") < layout.indexOf("SectionSegments"))
+  assert.ok(scan.indexOf("<MoneyOverview") < scan.indexOf("<SectionSegments"))
   assert.match(overview, /panel === "ahead" \? <MoneyFlowPanel/)
-  assert.match(layout, /mb-4 md:mb-5/)
+  assert.match(scan, /mb-4 md:mb-5/)
   assert.match(board, /MONEY_SCAN_SECTIONS = \["bills", "income", "savings", "subscriptions", "cards", "people"\]/)
   assert.doesNotMatch(nav, /cash flow|Looking ahead/)
   assert.match(flow, /FLOW_COPY\.empty/)

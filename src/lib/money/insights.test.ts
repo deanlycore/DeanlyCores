@@ -241,7 +241,8 @@ test("the card keeps three lines when later lines also apply", () => {
   assert.equal(lines.length, 3)
 })
 
-test("insights stay inside the overview and on rows the layout already loads", () => {
+test("insights stay inside the overview and on rows the page already loads", () => {
+  const page = readFileSync(join(root, "../../app/(app)/money/page.tsx"), "utf8")
   const layout = readFileSync(join(root, "../../app/(app)/money/layout.tsx"), "utf8")
   const preview = readFileSync(join(root, "../../app/preview/money/page.tsx"), "utf8")
   const view = readFileSync(join(root, "../../components/money/money-insights.tsx"), "utf8")
@@ -249,14 +250,15 @@ test("insights stay inside the overview and on rows the layout already loads", (
   const lib = readFileSync(join(root, "insights.ts"), "utf8")
   const migrations = readFileSync(join(root, "../../../supabase/migrations/20261003190000_money_groups.sql"), "utf8")
 
-  assert.ok(layout.indexOf("MoneyOverview") < layout.indexOf("SectionSegments"))
+  assert.match(overview, /const insights = buildMoneyInsights\(/)
   assert.match(overview, /panel === "insights" \? <MoneyInsightsPanel/)
-  assert.match(layout, /buildMoneyInsights/)
-  assert.match(layout, /insights=\{insights\}/)
-  assert.match(layout, /listBills\(\)/)
-  assert.match(layout, /listMoneyPeople\(\)/)
+  assert.match(overview, /buildMoneyInsights/)
+  assert.match(page, /listBills\(\)/)
+  assert.match(page, /listMoneyPeople\(\)/)
+  assert.doesNotMatch(page, /\.rpc\(|\.from\(|head:\s*true|count:\s*["']exact["']/)
   assert.doesNotMatch(layout, /\.rpc\(|\.from\(|head:\s*true|count:\s*["']exact["']/)
   assert.doesNotMatch(preview, /\.rpc\(|supabase/)
+  assert.match(preview, /2026-10-14/)
   assert.match(view, /text-\[15px\]/)
   assert.match(view, /tabular-nums/)
   assert.match(view, /border-t border-border/)

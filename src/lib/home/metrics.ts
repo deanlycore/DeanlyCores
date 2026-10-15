@@ -118,13 +118,14 @@ export function startOfZonedDay(date: string, timeZone: string) {
 }
 
 export function formatMoney(cents: number, currency = "USD") {
-  const hasCents = cents % 100 !== 0
+  const amount = cents === 0 ? 0 : cents
+  const hasCents = amount % 100 !== 0
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency,
     minimumFractionDigits: hasCents ? 2 : 0,
     maximumFractionDigits: hasCents ? 2 : 0,
-  }).format(cents / 100)
+  }).format(amount / 100)
 }
 
 export function formatShortDate(date: string) {

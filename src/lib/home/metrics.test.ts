@@ -6,6 +6,7 @@ import {
   billsDueThisWeek,
   budgetPulse,
   featuredMeal,
+  formatMoney,
   greetingFor,
   parseCents,
   spentAgainstBudget,
@@ -90,6 +91,13 @@ test("greeting follows the household clock", () => {
 
 test("a New York day starts at 04:00 UTC during daylight time", () => {
   assert.equal(startOfZonedDay("2026-10-01", "America/New_York"), "2026-10-01T04:00:00.000Z")
+})
+
+test("zero money is never negative", () => {
+  assert.equal(formatMoney(0), "$0")
+  assert.equal(formatMoney(-0), "$0")
+  assert.equal(formatMoney(-5000).includes("50"), true)
+  assert.equal(formatMoney(-5000).endsWith("$0"), false)
 })
 
 test("money parsing keeps cents and rejects junk", () => {
