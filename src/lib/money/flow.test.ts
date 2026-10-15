@@ -317,15 +317,16 @@ test("the low point under the buffer is a flag, and the snapshot formula stays t
   assert.equal(FLOW_COPY.belowBuffer, "The low point is under the safety buffer.")
 })
 
-test("looking ahead stays inside the overview, above the pills, and does not grow the six sections", () => {
+test("looking ahead stays inside the overview on the bills page and does not grow the six sections", () => {
   const scan = readFileSync(join(root, "../../components/money/money-scan.tsx"), "utf8")
+  const bills = readFileSync(join(root, "../../components/money/bills-board.tsx"), "utf8")
   const flow = readFileSync(join(root, "../../components/money/money-flow.tsx"), "utf8")
   const overview = readFileSync(join(root, "../../components/money/money-overview.tsx"), "utf8")
   const nav = readFileSync(join(root, "../navigation.ts"), "utf8")
   const board = readFileSync(join(root, "board.ts"), "utf8")
-  assert.ok(scan.indexOf("<MoneyOverview") < scan.indexOf("<SectionSegments"))
+  assert.ok(bills.indexOf("<MoneyOverview") < bills.indexOf("due this week"))
+  assert.doesNotMatch(scan, /MoneyOverview/)
   assert.match(overview, /panel === "ahead" \? <MoneyFlowPanel/)
-  assert.match(scan, /mb-4 md:mb-5/)
   assert.match(board, /MONEY_SCAN_SECTIONS = \["bills", "income", "savings", "subscriptions", "cards", "people"\]/)
   assert.doesNotMatch(nav, /cash flow|Looking ahead/)
   assert.match(flow, /FLOW_COPY\.empty/)

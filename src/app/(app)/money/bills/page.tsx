@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 
 import { BillsBoard } from "@/components/money/bills-board"
 import { getSessionView } from "@/lib/data/session"
-import { listBills, listExpenses, listMoneyPayments, listMonthBudget } from "@/lib/data/lists"
+import { listBills, listExpenses, listGoals, listMoneyCards, listMoneyPayments, listMoneyPeople, listMonthBudget, listSubscriptions } from "@/lib/data/lists"
 import { pageClock } from "@/lib/data/timezone"
 
 export const metadata: Metadata = { title: "Bills" }
@@ -14,12 +14,16 @@ export default async function Page() {
   const paymentsPromise = listMoneyPayments()
   const sessionPromise = getSessionView()
   const clock = await clockPromise
-  const [bills, income, payments, session, budget] = await Promise.all([
+  const [bills, income, payments, session, budget, goals, subscriptions, cards, people] = await Promise.all([
     billsPromise,
     incomePromise,
     paymentsPromise,
     sessionPromise,
     listMonthBudget(clock.today),
+    listGoals(),
+    listSubscriptions(),
+    listMoneyCards(),
+    listMoneyPeople(),
   ])
   return (
     <BillsBoard
@@ -30,6 +34,11 @@ export default async function Page() {
       householdName={session.householdName}
       budgetCents={budget.amountCents}
       paydayDates={income.rows.map((row) => row.spent_on)}
+      income={income.rows}
+      goals={goals.rows}
+      subscriptions={subscriptions.rows}
+      cards={cards.rows}
+      people={people.rows}
       error={bills.error || payments.error}
     />
   )

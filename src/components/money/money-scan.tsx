@@ -7,12 +7,11 @@ import { CardsBoard, PeopleBoard } from "@/components/money/balance-board"
 import { BillsBoard } from "@/components/money/bills-board"
 import { IncomeBoard } from "@/components/money/income-board"
 import { VisibilityFilter, type MoneyVisibility } from "@/components/money/money-chrome"
-import { MoneyOverview } from "@/components/money/money-overview"
 import { SavingsBoard } from "@/components/money/savings-board"
 import { SubscriptionsBoard } from "@/components/money/subscriptions-board"
 import { SectionSegments } from "@/components/shell/section-segments"
 import type { BillRow, ExpenseRow, GoalRow, MoneyCardRow, MoneyPaymentRow, MoneyPersonRow, SubscriptionRow } from "@/lib/data/home"
-import { applyVisibility, type MoneyScanSection } from "@/lib/money/board"
+import type { MoneyScanSection } from "@/lib/money/board"
 
 export function MoneyScan({
   section = "bills",
@@ -52,12 +51,6 @@ export function MoneyScan({
   segments?: { href: string; label: string }[]
 }) {
   const [filter, setFilter] = useState<MoneyVisibility>("all")
-  const shownBills = applyVisibility(bills, filter)
-  const shownIncome = applyVisibility(income, filter)
-  const shownGoals = applyVisibility(goals, filter)
-  const shownSubscriptions = applyVisibility(subscriptions, filter)
-  const shownCards = applyVisibility(cards, filter)
-  const shownPeople = applyVisibility(people, filter)
 
   return (
     <div className="grid gap-4 md:gap-5">
@@ -67,19 +60,6 @@ export function MoneyScan({
           <VisibilityFilter value={filter} onChange={setFilter} phoneTouch />
         </div>
       </header>
-      <div className="mb-4 md:mb-5">
-        <MoneyOverview
-          today={today}
-          currency={currency}
-          bills={shownBills}
-          payments={payments}
-          income={shownIncome}
-          goals={shownGoals}
-          subscriptions={shownSubscriptions}
-          cards={shownCards}
-          people={shownPeople}
-        />
-      </div>
       {segments.length > 0 ? <SectionSegments label="Money" segments={segments} tone="life" section={section} /> : null}
       {section === "bills" ? (
         <BillsBoard scan scanFilter={filter} rows={bills} payments={payments} currency={currency} today={today} error={billsError} />

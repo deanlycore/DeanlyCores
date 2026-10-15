@@ -27,10 +27,11 @@ import {
   useScrollToItemHash,
 } from "@/components/money/money-chrome"
 import { MoneyGroups } from "@/components/money/money-groups"
+import { MoneyOverview } from "@/components/money/money-overview"
 import { LogPaymentDialog, PaymentList, orderedPayments, usePaymentRemoval } from "@/components/money/payment-sheet"
 import { deleteBill, markBillPaid, setBillVisibility } from "@/lib/actions/records"
 import { formatMoney, formatShortDate } from "@/lib/home/metrics"
-import type { BillRow, MoneyPaymentRow } from "@/lib/data/home"
+import type { BillRow, ExpenseRow, GoalRow, MoneyCardRow, MoneyPaymentRow, MoneyPersonRow, SubscriptionRow } from "@/lib/data/home"
 import {
   MONEY_COPY,
   PHONE_MONEY_COPY,
@@ -68,6 +69,11 @@ export function BillsBoard({
   householdName,
   budgetCents = null,
   paydayDates = [],
+  income = [],
+  goals = [],
+  subscriptions = [],
+  cards = [],
+  people = [],
   error,
   scan = false,
   scanFilter,
@@ -79,6 +85,11 @@ export function BillsBoard({
   householdName?: string | null
   budgetCents?: number | null
   paydayDates?: string[]
+  income?: ExpenseRow[]
+  goals?: GoalRow[]
+  subscriptions?: SubscriptionRow[]
+  cards?: MoneyCardRow[]
+  people?: MoneyPersonRow[]
   error?: boolean
   /** Category block on /money. Child route chrome stays when this is omitted. */
   scan?: boolean
@@ -376,6 +387,19 @@ export function BillsBoard({
       }
       filter={filter}
       onFilter={setFilter}
+      overview={
+        <MoneyOverview
+          today={today}
+          currency={currency}
+          bills={applyVisibility(items, filter)}
+          payments={payments}
+          income={applyVisibility(income, filter)}
+          goals={applyVisibility(goals, filter)}
+          subscriptions={applyVisibility(subscriptions, filter)}
+          cards={applyVisibility(cards, filter)}
+          people={applyVisibility(people, filter)}
+        />
+      }
       chips={
         <>
           <MetricChip
