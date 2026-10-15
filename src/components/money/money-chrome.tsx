@@ -74,6 +74,7 @@ export function MoneyFrame({
   filter,
   onFilter,
   chips,
+  overview,
   pulse,
   children,
   phoneTouch = false,
@@ -87,6 +88,8 @@ export function MoneyFrame({
   filter: MoneyVisibility
   onFilter: (next: MoneyVisibility) => void
   chips: React.ReactNode
+  /** Bills landing only. Other money boards leave this unset. */
+  overview?: React.ReactNode
   pulse: React.ReactNode
   children: React.ReactNode
   /** Life phone boards raise the visibility control to a 44px target. Money stays as-is unless phoneTouch is set. */
@@ -126,6 +129,7 @@ export function MoneyFrame({
             {action}
           </div>
         </header>
+        {overview}
         {chips ? (
           <div className={cn("flex flex-wrap gap-2", phoneLayout && "max-md:min-w-0 max-md:flex-nowrap max-md:overflow-x-auto max-md:pb-1")}>{chips}</div>
         ) : null}
