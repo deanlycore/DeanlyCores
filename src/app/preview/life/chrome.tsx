@@ -7,7 +7,7 @@ import { previewSession } from "../shell-session"
 export function LifePreview({ children, session = previewSession }: { children: React.ReactNode; session?: SessionView }) {
   return (
     <AppShell session={session}>
-      <div className="grid gap-5">
+      <div className="grid min-w-0 gap-5">
         <LifeSectionNav />
         {children}
       </div>

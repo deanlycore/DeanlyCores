@@ -104,10 +104,10 @@ export function MoneyFrame({
   detail?: string | null
 }) {
   return (
-    <div className={cn("relative grid gap-5", compact && "max-md:gap-2", phoneLayout && "max-md:min-w-0")}>
-      <div aria-hidden="true" className="deanly-wash pointer-events-none absolute -left-6 -top-8 z-0 h-40 w-72" />
-      <div className={cn("relative z-10 grid gap-5", compact && "max-md:gap-2", phoneLayout && "max-md:min-w-0")}>
-        <header className={cn("flex flex-wrap items-start justify-between gap-4", phoneLayout && "max-md:flex-col max-md:gap-3")}>
+    <div className={cn("relative grid gap-5", compact && "max-md:min-w-0 max-md:grid-cols-1 max-md:gap-2", phoneLayout && "max-md:min-w-0")}>
+      <div aria-hidden="true" className={cn("deanly-wash pointer-events-none absolute -left-6 -top-8 z-0 h-40 w-72", compact && "max-md:-left-4")} />
+      <div className={cn("relative z-10 grid gap-5", compact && "max-md:min-w-0 max-md:grid-cols-1 max-md:gap-2", phoneLayout && "max-md:min-w-0")}>
+        <header className={cn("flex flex-wrap items-start justify-between gap-4", compact && "max-md:min-w-0", phoneLayout && "max-md:flex-col max-md:gap-3")}>
           <div className="min-w-0">
             <h1
               className={cn(
@@ -134,10 +134,10 @@ export function MoneyFrame({
         </header>
         {overview}
         {chips ? (
-          <div className={cn("flex flex-wrap gap-2", phoneLayout && "max-md:min-w-0 max-md:flex-nowrap max-md:overflow-x-auto max-md:pb-1")}>{chips}</div>
+          <div className={cn("flex flex-wrap gap-2", phoneLayout && "max-md:min-w-0 max-md:flex-nowrap max-md:overflow-x-auto max-md:pb-1", compact && "max-md:grid max-md:min-w-0 max-md:grid-cols-3")}>{chips}</div>
         ) : null}
         {pulse}
-        <div className={cn("grid gap-2.5", phoneLayout && "max-md:min-w-0")}>{children}</div>
+        <div className={cn("grid gap-2.5", phoneLayout && "max-md:min-w-0", compact && "max-md:min-w-0 max-md:grid-cols-1")}>{children}</div>
       </div>
     </div>
   )

@@ -10,5 +10,5 @@ export function LifeSectionNav() {
   if (isFamilyPath(pathname)) return null
   const life = primaryNav.find((item) => item.href === "/life")
   if (!life) return null
-  return <SectionSegments label="Life" segments={segmentChildren(life)} tone="life" />
+  return <SectionSegments label="Life" segments={segmentChildren(life)} tone="life" wrap />
 }

@@ -235,8 +235,8 @@ export function ShoppingBoard({
           </>
         }
         pulse={
-          <div className="grid gap-2">
-            <div className="flex gap-2 overflow-x-auto">
+          <div className="grid min-w-0 grid-cols-1 gap-2">
+            <div className="flex min-w-0 flex-wrap gap-2">
               {visibleLists.map((list) => (
                 <button
                   key={list.id}
@@ -277,7 +277,7 @@ export function ShoppingBoard({
                 </button>
               ) : null}
             </div>
-            <div className="flex gap-2">
+            <div className="flex min-w-0 flex-wrap gap-2">
               {(["buy", "home"] as const).map((value) => (
                 <button
                   key={value}
@@ -293,10 +293,10 @@ export function ShoppingBoard({
                 </button>
               ))}
             </div>
-            <div className="flex gap-2">
-              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search" aria-label="Search items" className="h-10 min-w-0 flex-1 rounded-[10px] border border-border bg-surface px-3 text-sm text-ink" />
+            <div className="grid min-w-0 gap-2 md:flex">
+              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search" aria-label="Search items" className="h-10 min-w-0 w-full rounded-[10px] border border-border bg-surface px-3 text-sm text-ink md:w-auto md:flex-1" />
               <form
-                className="flex min-w-0 flex-1 gap-2"
+                className="flex min-w-0 gap-2 md:flex-1"
                 onSubmit={(event) => {
                   event.preventDefault()
                   const body = new FormData()
@@ -324,7 +324,7 @@ export function ShoppingBoard({
                 </button>
               </form>
             </div>
-            <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1">
+            <div className="flex min-w-0 gap-1.5 overflow-x-auto">
               <button type="button" aria-pressed={category === "all"} onClick={() => setCategory("all")} className={cn("inline-flex h-9 shrink-0 items-center rounded-full border px-3 text-[13px]", category === "all" ? "border-border bg-surface-muted text-ink" : "border-border bg-surface text-muted-foreground")}>
                 All
               </button>
