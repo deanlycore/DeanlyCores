@@ -173,7 +173,7 @@ test("phone Tasks and Shopping keep the FAB and clear it below md only", () => {
   const tasks = readFileSync(join(root, "tasks-board.tsx"), "utf8")
   const shopping = readFileSync(join(root, "shopping-board.tsx"), "utf8")
   assert.match(chrome, /export function PhoneFabClearance/)
-  assert.match(chrome, /h-\[calc\(3rem\+env\(safe-area-inset-bottom\)\)\] md:hidden/)
+  assert.match(chrome, /h-\[calc\(4\.5rem\+env\(safe-area-inset-bottom\)\)\] md:hidden/)
   assert.match(chrome, /md:hidden bottom-\[calc\(4\.75rem\+env\(safe-area-inset-bottom\)\)\]/)
   for (const source of [tasks, shopping]) {
     assert.match(source, /<PhoneFabClearance \/>/)

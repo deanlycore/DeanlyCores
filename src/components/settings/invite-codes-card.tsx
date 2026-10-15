@@ -205,7 +205,7 @@ export function InviteCodesCard({ codes, ready = true }: { codes: InviteCodeView
       <div>
         <h2 className="font-medium">Invite codes</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Friends use this to start <span className="font-medium text-ink">their own</span> household — not DeanFamily.
+          Friends use this to start <span className="font-medium text-ink">their own</span> household.
         </p>
       </div>
       {ready ? (
@@ -224,7 +224,7 @@ export function InviteCodesCard({ codes, ready = true }: { codes: InviteCodeView
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Create code</DialogTitle>
-              <DialogDescription>Friends use this to start their own household — not DeanFamily.</DialogDescription>
+              <DialogDescription>Friends use this to start their own household.</DialogDescription>
             </DialogHeader>
             <CreateCodeForm key={formKey} />
           </DialogContent>

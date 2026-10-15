@@ -1,11 +1,12 @@
 import { cache } from "react"
 
+import { normalizeHouseholdPermission, type HouseholdPermission } from "@/lib/family/profile"
 import { isSupabaseConfigured } from "@/lib/supabase/env"
 import { createClient } from "@/lib/supabase/server"
 
 export type MemberView = {
   userId: string
-  role: "owner" | "member"
+  role: HouseholdPermission
   displayName: string
   avatarUrl: string | null
 }
@@ -18,7 +19,7 @@ export type SessionView = {
   avatarUrl: string | null
   householdId: string | null
   householdName: string | null
-  role: "owner" | "member" | null
+  role: HouseholdPermission | null
   members: MemberView[]
 }
 
@@ -65,12 +66,18 @@ export const getSessionView = cache(async (): Promise<SessionView> => {
       ? await supabase.from("profiles").select("id, display_name, avatar_url").in("id", ids)
       : { data: [] }
     const byId = new Map((profiles ?? []).map((row) => [row.id, row]))
-    members = (rows ?? []).map((row) => ({
-      userId: row.user_id,
-      role: row.role === "owner" ? "owner" : "member",
-      displayName: byId.get(row.user_id)?.display_name?.trim() || "Member",
-      avatarUrl: byId.get(row.user_id)?.avatar_url ?? null,
-    }))
+    members = (rows ?? []).flatMap((row) => {
+      const role = normalizeHouseholdPermission(row.role)
+      if (!role) return []
+      return [
+        {
+          userId: row.user_id,
+          role,
+          displayName: byId.get(row.user_id)?.display_name?.trim() || "Member",
+          avatarUrl: byId.get(row.user_id)?.avatar_url ?? null,
+        },
+      ]
+    })
   }
 
   return {
@@ -81,7 +88,7 @@ export const getSessionView = cache(async (): Promise<SessionView> => {
     avatarUrl: profile?.avatar_url ?? null,
     householdId: membership?.household_id ?? null,
     householdName,
-    role: membership?.role === "owner" ? "owner" : membership ? "member" : null,
+    role: normalizeHouseholdPermission(membership?.role),
     members,
   }
 })

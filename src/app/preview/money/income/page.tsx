@@ -27,7 +27,7 @@ export default async function PreviewIncome() {
       <div className="grid gap-4">
         <AppearanceControl appearance={appearance} />
         {money ? <SectionSegments label="Money" segments={railChildren(money)} tone="life" /> : null}
-        <IncomeBoard rows={rows} currency="USD" today="2026-10-02" householdName="DeanFamily" />
+        <IncomeBoard rows={rows} currency="USD" today="2026-10-02" householdName="My household" />
       </div>
     </AppShell>
   )

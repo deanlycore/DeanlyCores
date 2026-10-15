@@ -131,7 +131,7 @@ export function AppShell({ session, children }: { session: SessionView; children
         </div>
       </aside>
 
-      <div className="flex min-h-dvh min-w-0 flex-col">
+      <div className="flex h-dvh min-h-0 min-w-0 flex-col md:h-auto md:min-h-dvh">
         <header className="sticky top-0 z-20 hidden h-14 items-center gap-3 border-b border-border bg-background/80 px-6 backdrop-blur md:flex">
           <button
             type="button"
@@ -148,7 +148,7 @@ export function AppShell({ session, children }: { session: SessionView; children
           </div>
         </header>
 
-        <header className="flex h-14 items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur md:hidden">
+        <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-background px-4 md:hidden">
           <Link href="/home" aria-label="Deanly Tracking home" className="inline-flex items-center gap-2">
             <LoopMark size={28} />
             <span className="whitespace-nowrap font-display text-[15px] font-semibold">Deanly Tracking</span>
@@ -162,13 +162,13 @@ export function AppShell({ session, children }: { session: SessionView; children
           </div>
         </header>
 
-        <main id="main" className="mx-auto w-full max-w-[1120px] flex-1 px-4 py-5 pb-24 md:px-6 md:py-6 md:pb-8">
+        <main id="main" className="mx-auto min-h-0 w-full max-w-[1120px] flex-1 overflow-y-auto px-4 py-5 pb-4 md:overflow-visible md:px-6 md:py-6 md:pb-8">
           {children}
         </main>
 
         <nav
           aria-label="Primary"
-          className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-border bg-sidebar px-1 pt-1 md:hidden"
+          className="grid shrink-0 grid-cols-5 border-t border-border bg-sidebar px-1 pt-1 md:hidden"
           style={{ paddingBottom: "max(0.4rem, env(safe-area-inset-bottom))" }}
         >
           {mobileTabs.map((item) => {

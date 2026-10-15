@@ -23,13 +23,27 @@ export const FAMILY_COPY = {
   birthdayLabel: "Birthday",
   colorLabel: "Color",
   notesLabel: "Notes",
+  permissionLabel: "Access",
+  accessOwn: "Only another owner can change this",
+  accessLastOwner: "A household needs at least one owner.",
+  hasLogin: "Has login",
+  you: "You",
   save: "Save",
   cancel: "Cancel",
   remove: "Remove member",
+  removeLoginBody: "They leave this household. Shared items stay. Private items are removed.",
   saved: "Saved.",
   removeBody: "Their chores and notes stay. Anything assigned to them becomes Unassigned.",
   unassigned: "Unassigned",
 } as const
+
+export type HouseholdPermission = "owner" | "adult" | "view_only"
+
+export const HOUSEHOLD_PERMISSIONS: { id: HouseholdPermission; label: string; help: string }[] = [
+  { id: "owner", label: "Owner", help: "Full control of this household." },
+  { id: "adult", label: "Adult", help: "Can add and edit shared items and kids." },
+  { id: "view_only", label: "View-only", help: "Can see shared items. Can’t make changes." },
+]
 
 export type FamilyProfile = {
   id: string
@@ -40,9 +54,11 @@ export type FamilyProfile = {
   notes: string | null
   createdAt: string
   archivedAt: string | null
+  userId: string | null
+  permission: HouseholdPermission | null
 }
 
-export type FamilyField = "name" | "role" | "birthday" | "notes" | "color"
+export type FamilyField = "name" | "role" | "birthday" | "notes" | "color" | "permission"
 
 export type FamilyInput = {
   name: string
@@ -56,6 +72,48 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 
 export function isFamilyColor(value: string | null | undefined): value is FamilyColor {
   return FAMILY_COLORS.some((color) => color.id === value)
+}
+
+export function isHouseholdPermission(value: string | null | undefined): value is HouseholdPermission {
+  return value === "owner" || value === "adult" || value === "view_only"
+}
+
+/** Older rows used member for the adult permission. */
+export function normalizeHouseholdPermission(value: string | null | undefined): HouseholdPermission | null {
+  if (value === "member") return "adult"
+  return isHouseholdPermission(value) ? value : null
+}
+
+/** Owner, Adult, or View only for a login. Empty for a person without an account. */
+export function accountPermissionLabel(permission: HouseholdPermission | null | undefined) {
+  return HOUSEHOLD_PERMISSIONS.find((entry) => entry.id === permission)?.label ?? null
+}
+
+/** Access, then Has login, for an account. A kid keeps the relationship on that line. */
+export function familyDetail(member: {
+  role: string | null
+  userId: string | null
+  permission?: HouseholdPermission | null
+}) {
+  if (member.userId) {
+    return [accountPermissionLabel(member.permission), FAMILY_COPY.hasLogin].filter((part) => part).join(" · ")
+  }
+  return member.role ?? ""
+}
+
+/** Owners first, other logins next, kids last. Name breaks a tie. */
+export function compareFamilyProfiles<T extends { name: string; userId: string | null; permission: HouseholdPermission | null }>(
+  a: T,
+  b: T,
+) {
+  const rank = (member: T) => {
+    if (member.userId && member.permission === "owner") return 0
+    if (member.userId) return 1
+    return 2
+  }
+  const byRank = rank(a) - rank(b)
+  if (byRank !== 0) return byRank
+  return a.name.localeCompare(b.name)
 }
 
 export function familySwatch(color: FamilyColor) {
