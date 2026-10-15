@@ -255,7 +255,7 @@ export function FamilyBoard({
         ) : null}
       </header>
 
-      {beforeList}
+      {beforeList ? <div className="order-3 max-md:mt-32">{beforeList}</div> : null}
 
       {error ? <WidgetError /> : null}
 
@@ -273,7 +273,7 @@ export function FamilyBoard({
       ) : null}
 
       {visible.length > 0 ? (
-        <ul className="grid gap-2.5 md:grid-cols-2">
+        <ul className="order-2 grid gap-2.5 md:grid-cols-2">
           {visible.map((member) => {
             const birthday = formatBirthday(member.birthday)
             const detail = familyDetail(member)
@@ -292,10 +292,10 @@ export function FamilyBoard({
                     {familyInitials(member.name)}
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate font-display text-[16px] font-semibold leading-5 text-ink">
-                      {member.name}
+                    <span className="flex min-w-0 items-baseline gap-1.5">
+                      <span className="truncate font-display text-[16px] font-semibold leading-5 text-ink">{member.name}</span>
                       {member.userId && member.userId === viewerId ? (
-                        <span className="ml-1.5 font-sans text-[14px] font-normal text-muted-foreground">{FAMILY_COPY.you}</span>
+                        <span className="shrink-0 font-sans text-[14px] font-normal leading-5 text-muted-foreground">{FAMILY_COPY.you}</span>
                       ) : null}
                     </span>
                     {detail ? (
@@ -309,16 +309,17 @@ export function FamilyBoard({
           })}
         </ul>
       ) : null}
-      <div aria-hidden="true" className="h-[calc(8.5rem+env(safe-area-inset-bottom))] md:hidden" />
+      <div aria-hidden="true" className="h-6 max-md:order-4 md:hidden" />
 
       <Sheet open={sheet !== null} onOpenChange={(open) => { if (!open) closeSheet() }}>
         <SheetContent
           side={side}
           overlayClassName="z-[80] bg-ink/45 backdrop-blur-none"
           className={cn(
-            "z-[80] gap-0 overflow-y-auto bg-background opacity-100",
-            side === "right" && "w-[420px]! max-w-[420px]! sm:max-w-[420px]!",
-            side === "bottom" && "max-h-[92dvh] rounded-t-2xl border-border",
+            "z-[80] gap-0 bg-background opacity-100",
+            side === "right" && "w-[420px]! max-w-[420px]! overflow-y-auto sm:max-w-[420px]!",
+            side === "bottom" &&
+              "bottom-[calc(3.5rem+env(safe-area-inset-bottom))]! max-h-[min(92dvh,calc(100dvh-3.5rem-env(safe-area-inset-bottom)))] overflow-hidden rounded-t-2xl border-border",
           )}
           style={{ backgroundColor: "var(--background)", opacity: 1 }}
         >
@@ -329,7 +330,8 @@ export function FamilyBoard({
               {editingLogin ? "Name, access, and color." : "Name, role, birthday, color, and notes."}
             </SheetDescription>
           </SheetHeader>
-          <form onSubmit={onSave} className="grid gap-4 px-4 pb-5">
+          <form onSubmit={onSave} className={cn("flex flex-col", side === "bottom" && "min-h-0 flex-1")}>
+            <div className={cn("grid gap-4 px-4", side === "bottom" ? "min-h-0 flex-1 overflow-y-auto pb-4" : "pb-1")}>
             <div className="grid gap-1.5">
               <Label htmlFor="family-name">{FAMILY_COPY.nameLabel}</Label>
               <Input
@@ -456,36 +458,40 @@ export function FamilyBoard({
                 {fieldError.notes ? <p className="text-sm text-danger">{fieldError.notes}</p> : null}
               </div>
             ) : null}
+            </div>
             <div
               className={cn(
-                "sticky bottom-0 z-10 -mx-4 mt-1 flex items-center justify-end gap-2 border-t border-border bg-background px-4 pt-3",
-                side === "bottom" ? "pb-[calc(6.75rem+env(safe-area-inset-bottom))]" : "pb-4",
+                "flex shrink-0 items-center justify-between gap-3 border-t border-border bg-background px-4 pt-3",
+                side === "bottom" ? "pb-[max(0.75rem,env(safe-area-inset-bottom))]" : "pb-4",
               )}
             >
-              <Button type="button" variant="outline" className="h-10 rounded-button max-md:min-h-11" onClick={closeSheet}>
-                {FAMILY_COPY.cancel}
-              </Button>
-              {writingName ? (
-                <Button type="submit" disabled={pending} className="h-10 rounded-button text-primary-foreground max-md:min-h-11">
-                  {pending ? "Saving…" : FAMILY_COPY.save}
+              <div>
+                {canRemove && editing ? (
+                  <button type="button" className="text-sm font-medium text-danger" onClick={() => setConfirming(editing)}>
+                    {FAMILY_COPY.remove}
+                  </button>
+                ) : null}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button type="button" variant="outline" className="h-10 rounded-button max-md:min-h-11" onClick={closeSheet}>
+                  {FAMILY_COPY.cancel}
                 </Button>
-              ) : null}
+                {writingName ? (
+                  <Button type="submit" disabled={pending} className="h-10 rounded-button text-primary-foreground max-md:min-h-11">
+                    {pending ? "Saving…" : FAMILY_COPY.save}
+                  </Button>
+                ) : null}
+              </div>
             </div>
-            {canRemove && editing ? (
-              <button
-                type="button"
-                className="justify-self-start text-sm font-medium text-danger"
-                onClick={() => setConfirming(editing)}
-              >
-                {FAMILY_COPY.remove}
-              </button>
-            ) : null}
           </form>
         </SheetContent>
       </Sheet>
 
       <Dialog open={confirming !== null} onOpenChange={(open) => { if (!open && !removing) setConfirming(null) }}>
-        <DialogContent className="sm:max-w-[440px]">
+        <DialogContent
+          overlayClassName="z-[90] bg-ink/45 backdrop-blur-none"
+          className="z-[90] bg-popover sm:max-w-[440px]"
+        >
           <DialogHeader>
             <DialogTitle className="font-display text-lg">{confirming ? removeTitle(confirming.name) : FAMILY_COPY.remove}</DialogTitle>
             <DialogDescription className="text-sm text-muted-foreground">
