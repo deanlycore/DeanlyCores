@@ -6,7 +6,6 @@ import { useSyncExternalStore } from "react"
 import { toast } from "sonner"
 
 import { archiveFamilyProfile, removeHouseholdMember, saveFamilyProfile } from "@/lib/actions/family"
-import { PhoneFabClearance } from "@/components/life/life-chrome"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -132,6 +131,8 @@ export function FamilyBoard({
   const adding = sheet?.kind === "add"
   const editingSelf = Boolean(editing?.userId && editing.userId === viewerId)
   const editingKid = Boolean(editing && editing.userId == null)
+  const showKidFields = adding || editingKid
+  const editingLogin = Boolean(editing?.userId)
   const writingName = adding ? canAdd : viewerRole === "owner" || editingSelf || (editingKid && viewerRole === "adult")
   const writingDetails = adding ? canAdd : viewerRole === "owner" || (editingKid && viewerRole === "adult")
   const writingPermission = Boolean(viewerRole === "owner" && editing?.userId && !editingSelf)
@@ -291,7 +292,12 @@ export function FamilyBoard({
                     {familyInitials(member.name)}
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate font-display text-[16px] font-semibold leading-5 text-ink">{member.name}</span>
+                    <span className="block truncate font-display text-[16px] font-semibold leading-5 text-ink">
+                      {member.name}
+                      {member.userId && member.userId === viewerId ? (
+                        <span className="ml-1.5 font-sans text-[14px] font-normal text-muted-foreground">{FAMILY_COPY.you}</span>
+                      ) : null}
+                    </span>
                     {detail ? (
                       <span className="mt-0.5 block truncate font-sans text-[14px] text-muted-foreground">{detail}</span>
                     ) : null}
@@ -303,21 +309,25 @@ export function FamilyBoard({
           })}
         </ul>
       ) : null}
-      <PhoneFabClearance />
+      <div aria-hidden="true" className="h-[calc(8.5rem+env(safe-area-inset-bottom))] md:hidden" />
 
       <Sheet open={sheet !== null} onOpenChange={(open) => { if (!open) closeSheet() }}>
         <SheetContent
           side={side}
+          overlayClassName="z-[80] bg-ink/45 backdrop-blur-none"
           className={cn(
-            "gap-0 overflow-y-auto",
+            "z-[80] gap-0 overflow-y-auto bg-background opacity-100",
             side === "right" && "w-[420px]! max-w-[420px]! sm:max-w-[420px]!",
-            side === "bottom" && "max-h-[92dvh] rounded-t-2xl pb-[max(1rem,env(safe-area-inset-bottom))]",
+            side === "bottom" && "max-h-[92dvh] rounded-t-2xl border-border",
           )}
+          style={{ backgroundColor: "var(--background)", opacity: 1 }}
         >
           {side === "bottom" ? <div aria-hidden="true" className="mx-auto mt-3 h-1 w-10 rounded-full bg-border" /> : null}
           <SheetHeader className="pr-10">
             <SheetTitle className="font-display text-lg">{sheet?.kind === "edit" ? FAMILY_COPY.editTitle : FAMILY_COPY.addTitle}</SheetTitle>
-            <SheetDescription className="sr-only">Name, permissions, role, birthday, color, and notes.</SheetDescription>
+            <SheetDescription className="sr-only">
+              {editingLogin ? "Name, access, and color." : "Name, role, birthday, color, and notes."}
+            </SheetDescription>
           </SheetHeader>
           <form onSubmit={onSave} className="grid gap-4 px-4 pb-5">
             <div className="grid gap-1.5">
@@ -341,7 +351,7 @@ export function FamilyBoard({
                 </p>
               ) : null}
             </div>
-            {editing?.userId ? (
+            {editingLogin ? (
               <fieldset className="grid gap-2" disabled={!writingPermission}>
                 <legend id="family-permission" className="text-sm font-medium">
                   {FAMILY_COPY.permissionLabel}
@@ -375,33 +385,37 @@ export function FamilyBoard({
                 {fieldError.permission ? <p className="text-sm text-danger">{fieldError.permission}</p> : null}
               </fieldset>
             ) : null}
-            <div className="grid gap-1.5">
-              <Label htmlFor="family-role">{FAMILY_COPY.roleLabel}</Label>
-              <Input
-                id="family-role"
-                value={form.role}
-                disabled={!writingDetails}
-                placeholder={FAMILY_COPY.rolePlaceholder}
-                autoComplete="off"
-                aria-invalid={Boolean(fieldError.role)}
-                onChange={(event) => setForm((current) => ({ ...current, role: event.target.value }))}
-                className="h-11 rounded-button bg-surface px-3"
-              />
-              {fieldError.role ? <p className="text-sm text-danger">{fieldError.role}</p> : null}
-            </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="family-birthday">{FAMILY_COPY.birthdayLabel}</Label>
-              <Input
-                id="family-birthday"
-                type="date"
-                value={form.birthday}
-                disabled={!writingDetails}
-                aria-invalid={Boolean(fieldError.birthday)}
-                onChange={(event) => setForm((current) => ({ ...current, birthday: event.target.value }))}
-                className="h-11 rounded-button bg-surface px-3"
-              />
-              {fieldError.birthday ? <p className="text-sm text-danger">{fieldError.birthday}</p> : null}
-            </div>
+            {showKidFields ? (
+              <div className="grid gap-1.5">
+                <Label htmlFor="family-role">{FAMILY_COPY.roleLabel}</Label>
+                <Input
+                  id="family-role"
+                  value={form.role}
+                  disabled={!writingDetails}
+                  placeholder={FAMILY_COPY.rolePlaceholder}
+                  autoComplete="off"
+                  aria-invalid={Boolean(fieldError.role)}
+                  onChange={(event) => setForm((current) => ({ ...current, role: event.target.value }))}
+                  className="h-11 rounded-button bg-surface px-3"
+                />
+                {fieldError.role ? <p className="text-sm text-danger">{fieldError.role}</p> : null}
+              </div>
+            ) : null}
+            {showKidFields ? (
+              <div className="grid gap-1.5">
+                <Label htmlFor="family-birthday">{FAMILY_COPY.birthdayLabel}</Label>
+                <Input
+                  id="family-birthday"
+                  type="date"
+                  value={form.birthday}
+                  disabled={!writingDetails}
+                  aria-invalid={Boolean(fieldError.birthday)}
+                  onChange={(event) => setForm((current) => ({ ...current, birthday: event.target.value }))}
+                  className="h-11 rounded-button bg-surface px-3"
+                />
+                {fieldError.birthday ? <p className="text-sm text-danger">{fieldError.birthday}</p> : null}
+              </div>
+            ) : null}
             <fieldset className="grid gap-2">
               <legend className="text-sm font-medium">{FAMILY_COPY.colorLabel}</legend>
               <div role="radiogroup" aria-label={FAMILY_COPY.colorLabel} className="flex flex-wrap gap-2">
@@ -427,20 +441,27 @@ export function FamilyBoard({
               </div>
               {fieldError.color ? <p className="text-sm text-danger">{fieldError.color}</p> : null}
             </fieldset>
-            <div className="grid gap-1.5">
-              <Label htmlFor="family-notes">{FAMILY_COPY.notesLabel}</Label>
-              <textarea
-                id="family-notes"
-                rows={3}
-                value={form.notes}
-                disabled={!writingDetails}
-                aria-invalid={Boolean(fieldError.notes)}
-                onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))}
-                className="rounded-button border border-input bg-surface px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-70"
-              />
-              {fieldError.notes ? <p className="text-sm text-danger">{fieldError.notes}</p> : null}
-            </div>
-            <div className="flex items-center justify-end gap-2">
+            {showKidFields ? (
+              <div className="grid gap-1.5">
+                <Label htmlFor="family-notes">{FAMILY_COPY.notesLabel}</Label>
+                <textarea
+                  id="family-notes"
+                  rows={3}
+                  value={form.notes}
+                  disabled={!writingDetails}
+                  aria-invalid={Boolean(fieldError.notes)}
+                  onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))}
+                  className="rounded-button border border-input bg-surface px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-70"
+                />
+                {fieldError.notes ? <p className="text-sm text-danger">{fieldError.notes}</p> : null}
+              </div>
+            ) : null}
+            <div
+              className={cn(
+                "sticky bottom-0 z-10 -mx-4 mt-1 flex items-center justify-end gap-2 border-t border-border bg-background px-4 pt-3",
+                side === "bottom" ? "pb-[calc(6.75rem+env(safe-area-inset-bottom))]" : "pb-4",
+              )}
+            >
               <Button type="button" variant="outline" className="h-10 rounded-button max-md:min-h-11" onClick={closeSheet}>
                 {FAMILY_COPY.cancel}
               </Button>

@@ -89,7 +89,8 @@ test("family copy stays household-wide and the phone entry is More", () => {
   assert.equal(FAMILY_COPY.emptyOwner, "Add your family.")
   assert.equal(FAMILY_COPY.emptyMember, "No family members yet.")
   assert.equal(FAMILY_COPY.removeBody, "Their chores and notes stay. Anything assigned to them becomes Unassigned.")
-  assert.match(board, /PhoneFabClearance/)
+  assert.match(board, /h-\[calc\(8\.5rem\+env\(safe-area-inset-bottom\)\)\] md:hidden/)
+  assert.match(board, /FAMILY_COPY\.you/)
   assert.equal(/LifeFab/.test(board), false)
   assert.match(board, /FAMILY_COPY\.removeBody/)
   assert.match(more, /href: "\/life\/family"/)
@@ -137,9 +138,11 @@ test("one list puts owners first and kids last, with Has login instead of a badg
   assert.equal(accountPermissionLabel("adult"), "Adult")
   assert.equal(accountPermissionLabel("view_only"), "View-only")
   assert.equal(accountPermissionLabel(null), null)
-  assert.equal(familyDetail({ role: null, userId: "owner", permission: "owner" }), "Has login")
-  assert.equal(familyDetail({ role: "Partner", userId: "adult", permission: "adult" }), "Partner · Has login")
+  assert.equal(familyDetail({ role: null, userId: "owner", permission: "owner" }), "Owner · Has login")
+  assert.equal(familyDetail({ role: "Partner", userId: "adult", permission: "adult" }), "Adult · Has login")
+  assert.equal(familyDetail({ role: null, userId: "quinn", permission: "view_only" }), "View-only · Has login")
   assert.equal(familyDetail({ role: "Son", userId: null, permission: null }), "Son")
+  assert.equal(FAMILY_COPY.you, "You")
   const ordered = [
     { name: "Riley", userId: null, permission: null },
     { name: "Sam", userId: "sam", permission: "adult" as const },

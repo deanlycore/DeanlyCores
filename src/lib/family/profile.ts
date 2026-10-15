@@ -27,6 +27,7 @@ export const FAMILY_COPY = {
   accessOwn: "Only another owner can change this",
   accessLastOwner: "A household needs at least one owner.",
   hasLogin: "Has login",
+  you: "You",
   save: "Save",
   cancel: "Cancel",
   remove: "Remove member",
@@ -88,13 +89,16 @@ export function accountPermissionLabel(permission: HouseholdPermission | null | 
   return HOUSEHOLD_PERMISSIONS.find((entry) => entry.id === permission)?.label ?? null
 }
 
-/** Relationship, then Has login, on the same quiet line as a kid row. */
+/** Access, then Has login, for an account. A kid keeps the relationship on that line. */
 export function familyDetail(member: {
   role: string | null
   userId: string | null
   permission?: HouseholdPermission | null
 }) {
-  return [member.role, member.userId ? FAMILY_COPY.hasLogin : null].filter((part) => part).join(" · ")
+  if (member.userId) {
+    return [accountPermissionLabel(member.permission), FAMILY_COPY.hasLogin].filter((part) => part).join(" · ")
+  }
+  return member.role ?? ""
 }
 
 /** Owners first, other logins next, kids last. Name breaks a tie. */
