@@ -1,6 +1,4 @@
-import { MoneyFlow } from "@/components/money/money-flow"
-import { MoneyInsights } from "@/components/money/money-insights"
-import { MoneySnapshot } from "@/components/money/money-snapshot"
+import { MoneyOverview } from "@/components/money/money-overview"
 import { SectionSegments } from "@/components/shell/section-segments"
 import { listBills, listExpenses, listGoals, listMoneyCards, listMoneyPayments, listMoneyPeople, listSubscriptions } from "@/lib/data/lists"
 import { pageClock } from "@/lib/data/timezone"
@@ -33,17 +31,8 @@ export default async function MoneyLayout({ children }: { children: React.ReactN
 
   return (
     <div>
-      <div className="mb-4 md:mb-5 grid gap-4 md:gap-5">
-        <MoneySnapshot
-          today={clock.today}
-          currency={bills.currency}
-          bills={bills.rows}
-          payments={payments.rows}
-          income={income.rows}
-          goals={goals.rows}
-          subscriptions={subscriptions.rows}
-        />
-        <MoneyFlow
+      <div className="mb-4 md:mb-5">
+        <MoneyOverview
           today={clock.today}
           currency={bills.currency}
           bills={bills.rows}
@@ -53,8 +42,8 @@ export default async function MoneyLayout({ children }: { children: React.ReactN
           subscriptions={subscriptions.rows}
           cards={cards.rows}
           people={people.rows}
+          insights={insights}
         />
-        <MoneyInsights lines={insights} />
       </div>
       <div className="grid gap-5">
         {money ? <SectionSegments label="Money" segments={railChildren(money)} tone="life" /> : null}

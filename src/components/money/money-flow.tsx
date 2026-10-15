@@ -1,27 +1,7 @@
-"use client"
-
-import { useState } from "react"
-import { ChevronDown } from "lucide-react"
-
 import { formatShortDate } from "@/lib/home/metrics"
-import {
-  FLOW_COPY,
-  FLOW_WINDOWS,
-  buildCashFlow,
-  flowWindowCopy,
-  type FlowCard,
-  type FlowDays,
-  type FlowGoal,
-  type FlowIncome,
-  type FlowPayment,
-  type FlowPerson,
-  type FlowSubscription,
-} from "@/lib/money/flow"
-import { SNAPSHOT_COPY, snapshotAvailable, snapshotMoney, type SnapshotBill } from "@/lib/money/snapshot"
-import { useSafetyBuffer } from "@/components/money/money-snapshot"
+import { FLOW_COPY, FLOW_WINDOWS, flowWindowCopy, type CashFlowModel, type FlowDays } from "@/lib/money/flow"
+import { SNAPSHOT_COPY, snapshotAvailable, snapshotMoney } from "@/lib/money/snapshot"
 import { cn } from "cn"
-
-const surface = "min-w-0 rounded-[12px] border border-border bg-surface p-4 shadow-soft"
 
 function Line({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -37,67 +17,21 @@ function moneyOrNone(cents: number, currency: string, subtract: boolean) {
   return snapshotMoney(cents, currency, subtract)
 }
 
-export function MoneyFlow({
-  today,
+export function MoneyFlowPanel({
+  model,
   currency,
-  bills,
-  payments,
-  income,
-  goals,
-  subscriptions,
-  cards,
-  people,
+  days,
+  onDays,
 }: {
-  today: string
+  model: CashFlowModel
   currency: string
-  bills: SnapshotBill[]
-  payments: FlowPayment[]
-  income: FlowIncome[]
-  goals: FlowGoal[]
-  subscriptions: FlowSubscription[]
-  cards: FlowCard[]
-  people: FlowPerson[]
+  days: FlowDays
+  onDays: (days: FlowDays) => void
 }) {
-  const [buffer] = useSafetyBuffer()
-  const [open, setOpen] = useState(false)
-  const [days, setDays] = useState<FlowDays>(30)
-  const model = buildCashFlow({
-    today,
-    days,
-    bufferCents: buffer,
-    bills,
-    payments,
-    income,
-    goals,
-    subscriptions,
-    cards,
-    people,
-  })
-
   return (
-    <section data-money-flow data-open={open ? "true" : "false"} className={surface} aria-labelledby="money-flow-title">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <h2 id="money-flow-title">
-            <button
-              type="button"
-              aria-expanded={open}
-              onClick={() => setOpen((value) => !value)}
-              className="flex w-full items-center gap-2 border-0 bg-transparent p-0 text-left text-[13px] font-medium text-ink max-md:min-h-11"
-            >
-              <span className="min-w-0">{FLOW_COPY.title}</span>
-              <ChevronDown
-                aria-hidden="true"
-                className={cn(
-                  "ml-auto size-4 shrink-0 text-muted-foreground transition-transform duration-150",
-                  !open && "-rotate-90",
-                )}
-              />
-            </button>
-          </h2>
-          {open ? <p className="mt-0.5 text-sm text-muted-foreground">{flowWindowCopy(days)}</p> : null}
-        </div>
-        {open ? (
+    <div data-money-flow>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <p className="min-w-0 flex-1 text-sm text-muted-foreground">{flowWindowCopy(days)}</p>
         <div role="radiogroup" aria-label="How far ahead" className="inline-flex max-w-full rounded-full border border-border bg-surface p-0.5">
           {FLOW_WINDOWS.map((option) => {
             const selected = days === option
@@ -107,7 +41,7 @@ export function MoneyFlow({
                 type="button"
                 role="radio"
                 aria-checked={selected}
-                onClick={() => setDays(option)}
+                onClick={() => onDays(option)}
                 className={cn(
                   "h-8 rounded-full px-3 text-[13px] font-medium",
                   selected ? "bg-brand-soft text-on-brand-soft" : "text-muted-foreground",
@@ -118,10 +52,9 @@ export function MoneyFlow({
             )
           })}
         </div>
-        ) : null}
-      </header>
-      {open && model.empty ? <p className="mt-3 text-[15px] font-medium text-ink">{FLOW_COPY.empty}</p> : null}
-      {open && !model.empty ? (
+      </div>
+      {model.empty ? <p className="mt-3 text-[15px] font-medium text-ink">{FLOW_COPY.empty}</p> : null}
+      {!model.empty ? (
         <>
           <h3 className="mt-4 text-[13px] font-normal text-muted-foreground">{FLOW_COPY.today}</h3>
           <p
@@ -171,6 +104,6 @@ export function MoneyFlow({
           ) : null}
         </>
       ) : null}
-    </section>
+    </div>
   )
 }

@@ -1,9 +1,7 @@
 import { notFound } from "next/navigation"
 
-import { MoneyFlow } from "@/components/money/money-flow"
-import { MoneyInsights } from "@/components/money/money-insights"
+import { MoneyOverview } from "@/components/money/money-overview"
 import { MoneyScan } from "@/components/money/money-scan"
-import { MoneySnapshot } from "@/components/money/money-snapshot"
 import { AppShell } from "@/components/shell/app-shell"
 import { SectionSegments } from "@/components/shell/section-segments"
 import type { BillRow, ExpenseRow, GoalRow, MoneyCardRow, MoneyPaymentRow, MoneyPersonRow, SubscriptionRow } from "@/lib/data/home"
@@ -74,7 +72,11 @@ export default async function PreviewMoney({
   const selected = moneyScanSection(params.section)
   const sample = Array.isArray(params.sample) ? params.sample[0] : params.sample
   const blank = sample === "empty"
-  const shownBills = blank ? [] : bills
+  const shownBills = blank
+    ? []
+    : sample === "overdue"
+      ? bills.map((bill) => (bill.id === "electric" ? { ...bill, due_on: "2026-09-28" } : bill))
+      : bills
   const shownIncome = blank || sample === "no-income" ? [] : income
   const shownGoals = blank ? [] : goals
   const shownSubscriptions = blank ? [] : subscriptions
@@ -96,17 +98,8 @@ export default async function PreviewMoney({
   return (
     <AppShell session={previewSession}>
       <div>
-        <div className="mb-4 md:mb-5 grid gap-4 md:gap-5">
-          <MoneySnapshot
-            today={today}
-            currency="USD"
-            bills={shownBills}
-            payments={shownPayments}
-            income={shownIncome}
-            goals={shownGoals}
-            subscriptions={shownSubscriptions}
-          />
-          <MoneyFlow
+        <div className="mb-4 md:mb-5">
+          <MoneyOverview
             today={today}
             currency="USD"
             bills={shownBills}
@@ -116,8 +109,8 @@ export default async function PreviewMoney({
             subscriptions={shownSubscriptions}
             cards={shownCards}
             people={shownPeople}
+            insights={insights}
           />
-          <MoneyInsights lines={insights} />
         </div>
         <div className="grid gap-5">
           {money ? <SectionSegments label="Money" segments={railChildren(money)} tone="life" section={selected} /> : null}
