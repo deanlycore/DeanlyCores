@@ -7,11 +7,12 @@ import { CardsBoard, PeopleBoard } from "@/components/money/balance-board"
 import { BillsBoard } from "@/components/money/bills-board"
 import { IncomeBoard } from "@/components/money/income-board"
 import { VisibilityFilter, type MoneyVisibility } from "@/components/money/money-chrome"
+import { MoneyOverview } from "@/components/money/money-overview"
 import { SavingsBoard } from "@/components/money/savings-board"
 import { SubscriptionsBoard } from "@/components/money/subscriptions-board"
 import { SectionSegments } from "@/components/shell/section-segments"
 import type { BillRow, ExpenseRow, GoalRow, MoneyCardRow, MoneyPaymentRow, MoneyPersonRow, SubscriptionRow } from "@/lib/data/home"
-import type { MoneyScanSection } from "@/lib/money/board"
+import { applyVisibility, type MoneyScanSection } from "@/lib/money/board"
 
 export function MoneyScan({
   section = "bills",
@@ -60,6 +61,19 @@ export function MoneyScan({
           <VisibilityFilter value={filter} onChange={setFilter} phoneTouch />
         </div>
       </header>
+      {section === "bills" ? (
+        <MoneyOverview
+          today={today}
+          currency={currency}
+          bills={applyVisibility(bills, filter)}
+          payments={payments}
+          income={applyVisibility(income, filter)}
+          goals={applyVisibility(goals, filter)}
+          subscriptions={applyVisibility(subscriptions, filter)}
+          cards={applyVisibility(cards, filter)}
+          people={applyVisibility(people, filter)}
+        />
+      ) : null}
       {segments.length > 0 ? <SectionSegments label="Money" segments={segments} tone="life" section={section} /> : null}
       {section === "bills" ? (
         <BillsBoard scan scanFilter={filter} rows={bills} payments={payments} currency={currency} today={today} error={billsError} />
