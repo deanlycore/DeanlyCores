@@ -5,7 +5,40 @@ import { mergeAmounts } from "@/lib/life/units"
 
 export const LIST_JUST_ME_BLOCKED = "Some items on this list are shared. Make them Just me or remove them first."
 
+export const LIST_UNAVAILABLE = "That list is not available."
+
+export const ITEM_UNAVAILABLE = "That item is not available."
+
 export const STALE_SAVE = "This changed. Reload to see the latest."
+
+type DbError = { code?: string; message?: string; details?: string | null }
+
+export function shoppingDbMessage(error: DbError | null, fallback: string): string {
+  if (!error) return fallback
+  const blob = `${error.message ?? ""} ${error.details ?? ""}`
+  if (/that item is not available/i.test(blob)) return ITEM_UNAVAILABLE
+  if (/that list is not available/i.test(blob)) return LIST_UNAVAILABLE
+  if (/only the person who added this/i.test(blob)) {
+    return "Only the person who added this can change who sees it."
+  }
+  if (/household cannot be reassigned/i.test(blob)) return "Household cannot be reassigned."
+  if (/owner cannot be reassigned/i.test(blob)) return "Owner cannot be reassigned."
+  if (/shopping_items_list_fk/i.test(blob)) {
+    if (/shopping_lists/i.test(blob) && /update or delete/i.test(blob)) return LIST_JUST_ME_BLOCKED
+    return LIST_UNAVAILABLE
+  }
+  if (/row-level security|permission denied/i.test(blob)) return "You don’t have access to change that."
+  return fallback
+}
+
+export function calmShoppingMessage(message: string): string {
+  const mapped = shoppingDbMessage({ message }, message)
+  if (mapped !== message) return mapped
+  if (/violates |constraint "|duplicate key|syntax error|SQLSTATE|permission denied for|row-level security/i.test(message)) {
+    return "Couldn’t save that."
+  }
+  return message
+}
 
 export const SHOPPING_CATEGORIES = [
   { id: "produce", label: "Produce" },

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache"
 
 import { requireHousehold } from "@/lib/data/context"
 import { firstName } from "@/lib/home/metrics"
-import { LIST_JUST_ME_BLOCKED, STALE_SAVE, shoppingCategory, type ShoppingCategory } from "@/lib/life/shopping"
+import { STALE_SAVE, shoppingCategory, shoppingDbMessage, type ShoppingCategory } from "@/lib/life/shopping"
 import { normalizeTypedAmount } from "@/lib/life/units"
 import { defaultVisibilityFor, type Visibility } from "@/lib/visibility"
 
@@ -64,6 +64,14 @@ function schemaMissing(error: { message: string } | null) {
   return Boolean(error && /does not exist|schema cache/i.test(error.message))
 }
 
+function failed(
+  error: { code?: string; message: string; details?: string | null } | null,
+  fallback: string,
+): { ok: false; message: string } | null {
+  if (!error) return null
+  return { ok: false, message: shoppingDbMessage(error, fallback) }
+}
+
 async function listForVisibility(
   ctx: NonNullable<Awaited<ReturnType<typeof requireHousehold>>>,
   listId: string,
@@ -99,6 +107,21 @@ async function listForVisibility(
   return { id: created.data?.id ?? null, missing: false }
 }
 
+async function loadStamp(
+  ctx: NonNullable<Awaited<ReturnType<typeof requireHousehold>>>,
+  id: string | null,
+  updatedAt: string | null,
+): Promise<null | { ok: false; message: string; conflict?: boolean } | { ok: true; id: string; updatedAt: string }> {
+  if (!id) return null
+  if (!updatedAt) return { ok: false, message: STALE_SAVE, conflict: true }
+  const current = await ctx.supabase.from("shopping_items").select("id").eq("id", id).eq("updated_at", updatedAt).maybeSingle()
+  if (current.error && schemaMissing(current.error)) return { ok: true, id, updatedAt }
+  const blocked = failed(current.error, "Couldn’t save that item.")
+  if (blocked) return blocked
+  if (!current.data) return { ok: false, message: STALE_SAVE, conflict: true }
+  return { ok: true, id, updatedAt }
+}
+
 export async function saveShoppingItem(formData: FormData): Promise<ShoppingActionResult> {
   const ready = await gate()
   if (!ready.ctx) return ready
@@ -106,16 +129,26 @@ export async function saveShoppingItem(formData: FormData): Promise<ShoppingActi
   if (!name) return { ok: false, message: "Add an item." }
   const price = centsOf(formData.get("price"))
   if (Number.isNaN(price)) return { ok: false, message: "Use a price of zero or more." }
+  const id = textOf(formData.get("id"), 80)
+  const updatedAt = textOf(formData.get("updated_at"), 80)
+  const stamp = await loadStamp(ready.ctx, id, updatedAt)
+  if (stamp && !stamp.ok) return stamp
   const visibility = visibilityOf(formData.get("visibility"), defaultVisibilityFor("shopping", ready.ctx.lastVisibility))
   const requestedList = textOf(formData.get("list_id"), 80) ?? ""
-  const id = textOf(formData.get("id"), 80)
   const list = await listForVisibility(ready.ctx, requestedList, visibility)
   if (list.missing) {
-    if (id) {
-      const saved = await ready.ctx.supabase.from("shopping_items").update({ name, visibility }).eq("id", id).select("id")
-      if (saved.error || !saved.data?.length) return { ok: false, message: "Couldn’t save that item." }
+    if (stamp?.ok) {
+      const saved = await ready.ctx.supabase
+        .from("shopping_items")
+        .update({ name, visibility })
+        .eq("id", stamp.id)
+        .eq("updated_at", stamp.updatedAt)
+        .select("id")
+      const blocked = failed(saved.error, "Couldn’t save that item.")
+      if (blocked) return blocked
+      if (!saved.data?.length) return { ok: false, message: STALE_SAVE, conflict: true }
       refresh()
-      return { ok: true, id }
+      return { ok: true, id: stamp.id }
     }
     const legacy = await ready.ctx.supabase
       .from("shopping_items")
@@ -127,7 +160,8 @@ export async function saveShoppingItem(formData: FormData): Promise<ShoppingActi
       })
       .select("id")
       .single()
-    if (legacy.error || !legacy.data) return { ok: false, message: "Couldn’t add that item." }
+    const blocked = failed(legacy.error, "Couldn’t add that item.")
+    if (blocked || !legacy.data) return blocked ?? { ok: false, message: "Couldn’t add that item." }
     refresh()
     return { ok: true, id: legacy.data.id }
   }
@@ -142,7 +176,7 @@ export async function saveShoppingItem(formData: FormData): Promise<ShoppingActi
     list_id: list.id,
     user_edited: true,
   }
-  if (!id) {
+  if (!stamp?.ok) {
     const created = await ready.ctx.supabase
       .from("shopping_items")
       .insert({
@@ -153,18 +187,22 @@ export async function saveShoppingItem(formData: FormData): Promise<ShoppingActi
       })
       .select("id")
       .single()
-    if (created.error || !created.data) return { ok: false, message: "Couldn’t add that item." }
+    const blocked = failed(created.error, "Couldn’t add that item.")
+    if (blocked || !created.data) return blocked ?? { ok: false, message: "Couldn’t add that item." }
     refresh()
     return { ok: true, id: created.data.id }
   }
-  const expected = textOf(formData.get("updated_at"), 80)
-  let update = ready.ctx.supabase.from("shopping_items").update(fields).eq("id", id)
-  if (expected) update = update.eq("updated_at", expected)
-  const saved = await update.select("id")
-  if (saved.error) return { ok: false, message: "Couldn’t save that item." }
+  const saved = await ready.ctx.supabase
+    .from("shopping_items")
+    .update(fields)
+    .eq("id", stamp.id)
+    .eq("updated_at", stamp.updatedAt)
+    .select("id")
+  const blocked = failed(saved.error, "Couldn’t save that item.")
+  if (blocked) return blocked
   if (stale(saved.error, saved.data?.length ?? 0)) return { ok: false, message: STALE_SAVE, conflict: true }
   refresh()
-  return { ok: true, id }
+  return { ok: true, id: stamp.id }
 }
 
 export async function quickAddShoppingItem(formData: FormData): Promise<ShoppingActionResult> {
@@ -181,7 +219,8 @@ export async function setShoppingItemChecked(id: string, checked: boolean, updat
     .eq("id", id)
     .eq("updated_at", updatedAt)
     .select("id, name, visibility")
-  if (saved.error) return { ok: false, message: "Couldn’t update that item." }
+  const blocked = failed(saved.error, "Couldn’t update that item.")
+  if (blocked) return blocked
   if (!saved.data?.length) return { ok: false, message: STALE_SAVE, conflict: true }
   if (checked) {
     await ready.ctx.supabase.from("activity_events").insert({
@@ -206,7 +245,8 @@ export async function markShoppingAtHome(id: string): Promise<ShoppingActionResu
     .select("id, name, manual_amount_raw, manual_unit_raw, manual_qty, manual_unit, auto_qty, auto_unit, category, notes, visibility, household_id")
     .eq("id", id)
     .maybeSingle()
-  if (item.error || !item.data) return { ok: false, message: "Couldn’t update that item." }
+  const missing = failed(item.error, "Couldn’t update that item.")
+  if (missing || !item.data) return missing ?? { ok: false, message: "Couldn’t update that item." }
   const saved = await ready.ctx.supabase
     .from("pantry_items")
     .insert({
@@ -226,7 +266,8 @@ export async function markShoppingAtHome(id: string): Promise<ShoppingActionResu
     })
     .select("id")
     .single()
-  if (saved.error || !saved.data) return { ok: false, message: "Couldn’t mark that at home." }
+  const blocked = failed(saved.error, "Couldn’t mark that at home.")
+  if (blocked || !saved.data) return blocked ?? { ok: false, message: "Couldn’t mark that at home." }
   refresh()
   return { ok: true, id: saved.data.id }
 }
@@ -240,12 +281,8 @@ export async function setShoppingListVisibility(id: string, visibility: Visibili
     .eq("id", id)
     .eq("updated_at", updatedAt)
     .select("id")
-  if (saved.error) {
-    if (saved.error.code === "23503" || /shopping_items_list_fk/i.test(saved.error.message)) {
-      return { ok: false, message: LIST_JUST_ME_BLOCKED }
-    }
-    return { ok: false, message: "Couldn’t update that list." }
-  }
+  const blocked = failed(saved.error, "Couldn’t update that list.")
+  if (blocked) return blocked
   if (!saved.data?.length) return { ok: false, message: STALE_SAVE, conflict: true }
   refresh()
   return { ok: true, id }
@@ -262,7 +299,8 @@ export async function updateShoppingList(id: string, name: string, updatedAt: st
     .eq("id", id)
     .eq("updated_at", updatedAt)
     .select("id")
-  if (saved.error) return { ok: false, message: "Couldn’t save that list." }
+  const blocked = failed(saved.error, "Couldn’t save that list.")
+  if (blocked) return blocked
   if (!saved.data?.length) return { ok: false, message: STALE_SAVE, conflict: true }
   refresh()
   return { ok: true, id }
@@ -284,7 +322,8 @@ export async function createShoppingList(name: string, visibility: Visibility): 
     })
     .select("id")
     .single()
-  if (saved.error || !saved.data) return { ok: false, message: "Couldn’t add that list." }
+  const blocked = failed(saved.error, "Couldn’t add that list.")
+  if (blocked || !saved.data) return blocked ?? { ok: false, message: "Couldn’t add that list." }
   refresh()
   return { ok: true, id: saved.data.id }
 }
@@ -313,7 +352,8 @@ export async function moveShoppingItem(id: string, visibility: Visibility, updat
       })
       .select("id")
       .single()
-    if (created.error || !created.data) return { ok: false, message: "Couldn’t update that item." }
+    const blocked = failed(created.error, "Couldn’t update that item.")
+    if (blocked || !created.data) return blocked ?? { ok: false, message: "Couldn’t update that item." }
     listId = created.data.id
   }
   const saved = await ready.ctx.supabase
@@ -322,7 +362,8 @@ export async function moveShoppingItem(id: string, visibility: Visibility, updat
     .eq("id", id)
     .eq("updated_at", updatedAt)
     .select("id")
-  if (saved.error) return { ok: false, message: "Couldn’t update that item." }
+  const blocked = failed(saved.error, "Couldn’t update that item.")
+  if (blocked) return blocked
   if (!saved.data?.length) return { ok: false, message: STALE_SAVE, conflict: true }
   refresh()
   return { ok: true, id }

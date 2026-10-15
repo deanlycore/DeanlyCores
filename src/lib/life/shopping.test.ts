@@ -11,10 +11,14 @@ import {
   normalizeIngredientName,
 } from "./normalize.ts"
 import {
+  ITEM_UNAVAILABLE,
   LIST_JUST_ME_BLOCKED,
+  LIST_UNAVAILABLE,
   SHOPPING_CATEGORIES,
+  calmShoppingMessage,
   displayAmount,
   groupShopping,
+  shoppingDbMessage,
   shoppingTiles,
 } from "./shopping.ts"
 import { mergeAmounts } from "./units.ts"
@@ -23,6 +27,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "../../..")
 const sql = readFileSync(join(root, "supabase/migrations/20261015200000_shopping_upgrade.sql"), "utf8")
 const board = readFileSync(join(root, "src/components/life/shopping-board.tsx"), "utf8")
 const actions = readFileSync(join(root, "src/lib/actions/shopping.ts"), "utf8")
+const records = readFileSync(join(root, "src/lib/actions/records.ts"), "utf8")
 
 test("normalization strips quantity and prep words, then singularizes", () => {
   assert.equal(normalizeIngredientName("Tomatoes"), "tomato")
@@ -103,8 +108,12 @@ test("checked items leave the category groups for Bought", () => {
 
 test("list visibility stays Shared when shared items still reference it", () => {
   assert.equal(LIST_JUST_ME_BLOCKED, "Some items on this list are shared. Make them Just me or remove them first.")
+  assert.equal(LIST_UNAVAILABLE, "That list is not available.")
+  assert.equal(ITEM_UNAVAILABLE, "That item is not available.")
   assert.match(board, /LIST_JUST_ME_BLOCKED/)
   assert.match(board, /text-muted-foreground">\{note\}/)
+  assert.match(board, /reportShoppingError\(result\.message, setListNote\)/)
+  assert.doesNotMatch(board, /toast\(result\.message\)/)
   assert.doesNotMatch(board, /VisibilityPill/)
   assert.doesNotMatch(board, /All categories/)
   assert.match(board, /For \{item\.for_meal\}/)
@@ -115,6 +124,40 @@ test("list visibility stays Shared when shared items still reference it", () => 
   assert.equal(check.includes("markShoppingAtHome"), false)
   assert.match(actions, /eq\("updated_at", updatedAt\)/)
   assert.match(actions, /STALE_SAVE/)
+  assert.match(records, /shoppingDbMessage/)
+})
+
+test("database rejections use the list and item sentences", () => {
+  const parentUpdate = `update or delete on table "shopping_lists" violates foreign key constraint "shopping_items_list_fk" on table "shopping_items"`
+  assert.equal(shoppingDbMessage({ code: "23503", message: parentUpdate }, "Couldn’t update that list."), LIST_JUST_ME_BLOCKED)
+  assert.equal(
+    shoppingDbMessage(
+      { code: "23503", message: `insert or update on table "shopping_items" violates foreign key constraint "shopping_items_list_fk"` },
+      "Couldn’t save that item.",
+    ),
+    LIST_UNAVAILABLE,
+  )
+  assert.equal(shoppingDbMessage({ message: "That list is not available." }, "Couldn’t save that item."), LIST_UNAVAILABLE)
+  assert.equal(shoppingDbMessage({ message: "That item is not available." }, "Couldn’t mark that at home."), ITEM_UNAVAILABLE)
+  assert.equal(
+    shoppingDbMessage({ message: `duplicate key value violates unique constraint "shopping_lists_shared_name_uidx"` }, "Couldn’t add that list."),
+    "Couldn’t add that list.",
+  )
+  assert.equal(calmShoppingMessage(parentUpdate), LIST_JUST_ME_BLOCKED)
+  assert.equal(calmShoppingMessage("Add an item."), "Add an item.")
+  assert.equal(calmShoppingMessage(`new row violates check constraint "shopping_items_price_ok"`), "Couldn’t save that.")
+})
+
+test("an existing item save requires updated_at before any write", () => {
+  const save = actions.slice(actions.indexOf("export async function saveShoppingItem"), actions.indexOf("export async function quickAddShoppingItem"))
+  const stamp = save.indexOf("await loadStamp")
+  const lookup = save.indexOf("listForVisibility")
+  assert.ok(stamp > 0 && stamp < lookup)
+  assert.match(actions, /if \(!updatedAt\) return \{ ok: false, message: STALE_SAVE, conflict: true \}/)
+  assert.match(save, /if \(stamp && !stamp\.ok\) return stamp/)
+  assert.match(save, /\.eq\("updated_at", stamp\.updatedAt\)/)
+  assert.equal(save.includes("if (expected)"), false)
+  assert.equal(save.includes("if (updatedAt) update"), false)
 })
 
 test("shopping migration keeps parent checks, authenticated catalog reads, and a revoked purge", () => {

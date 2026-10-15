@@ -23,8 +23,11 @@ import type { ShoppingRow } from "@/lib/data/home"
 import { formatMoney } from "@/lib/home/metrics"
 import { filterLife, LIFE_COPY, lifeSubtitle } from "@/lib/life/board"
 import {
+  ITEM_UNAVAILABLE,
   LIST_JUST_ME_BLOCKED,
+  LIST_UNAVAILABLE,
   SHOPPING_CATEGORIES,
+  calmShoppingMessage,
   displayAmount,
   filterShoppingItems,
   groupShopping,
@@ -38,6 +41,15 @@ import {
 import type { Visibility } from "@/lib/visibility"
 import { cn } from "cn"
 import { ChevronDown } from "lucide-react"
+
+function reportShoppingError(message: string, onNote?: (note: string) => void) {
+  const calm = calmShoppingMessage(message)
+  if (onNote && (calm === LIST_JUST_ME_BLOCKED || calm === LIST_UNAVAILABLE || calm === ITEM_UNAVAILABLE)) {
+    onNote(calm)
+    return
+  }
+  toast(calm)
+}
 
 export function ShoppingBoard({
   rows,
@@ -107,7 +119,7 @@ export function ShoppingBoard({
       ? await setShoppingItemChecked(item.id, checked, item.updated_at)
       : await setShoppingChecked(item.id, checked)
     if (!result.ok) {
-      toast(result.message)
+      reportShoppingError(result.message)
       if ("conflict" in result && result.conflict) router.refresh()
       return
     }
@@ -122,8 +134,7 @@ export function ShoppingBoard({
     if (visibility === active.visibility) return
     const result = await setShoppingListVisibility(active.id, visibility, active.updated_at)
     if (!result.ok) {
-      if (result.message === LIST_JUST_ME_BLOCKED) setListNote(LIST_JUST_ME_BLOCKED)
-      else toast(result.message)
+      reportShoppingError(result.message, setListNote)
       return
     }
     router.refresh()
@@ -222,7 +233,7 @@ export function ShoppingBoard({
                   body.set("list_id", active?.id ?? "")
                   body.set("visibility", active?.visibility ?? "shared")
                   void quickAddShoppingItem(body).then((result) => {
-                    if (!result.ok) toast(result.message)
+                    if (!result.ok) reportShoppingError(result.message)
                     else {
                       setQuick("")
                       router.refresh()
@@ -280,7 +291,7 @@ export function ShoppingBoard({
                     return
                   }
                   void markShoppingAtHome(offer.id).then((result) => {
-                    if (!result.ok) toast(result.message)
+                    if (!result.ok) reportShoppingError(result.message)
                     else router.refresh()
                     setOffer(null)
                   })
@@ -329,7 +340,7 @@ export function ShoppingBoard({
                   onVisibility={(visibility) => {
                     if (!item.updated_at) return
                     void moveShoppingItem(item.id, visibility, item.updated_at).then((result) => {
-                      if (!result.ok) toast(result.message)
+                      if (!result.ok) reportShoppingError(result.message)
                       else router.refresh()
                     })
                   }}
@@ -356,7 +367,7 @@ export function ShoppingBoard({
                   onVisibility={(visibility) => {
                     if (!item.updated_at) return
                     void moveShoppingItem(item.id, visibility, item.updated_at).then((result) => {
-                      if (!result.ok) toast(result.message)
+                      if (!result.ok) reportShoppingError(result.message)
                       else router.refresh()
                     })
                   }}
@@ -402,7 +413,7 @@ export function ShoppingBoard({
           onSave={() => {
             if (listPanel === "edit" && active) {
               void updateShoppingList(active.id, listName, active.updated_at).then((result) => {
-                if (!result.ok) toast(result.message)
+                if (!result.ok) reportShoppingError(result.message, setListNote)
                 else {
                   setListPanel(null)
                   router.refresh()
@@ -411,7 +422,7 @@ export function ShoppingBoard({
               return
             }
             void createShoppingList(listName, newVisibility).then((result) => {
-              if (!result.ok) toast(result.message)
+              if (!result.ok) reportShoppingError(result.message, setListNote)
               else {
                 setListName("")
                 setListPanel(null)
@@ -433,7 +444,7 @@ export function ShoppingBoard({
             const result = await deleteShoppingItem(removing.id)
             setPendingRemove(false)
             if (!result.ok) {
-              toast(result.message)
+              reportShoppingError(result.message)
               return
             }
             setRemoving(null)
@@ -636,7 +647,7 @@ function ItemSheet({
           action={async (formData) => {
             const result = await saveShoppingItem(formData)
             if (!result.ok) {
-              toast(result.message)
+              reportShoppingError(result.message)
               return
             }
             onSaved()
@@ -644,7 +655,7 @@ function ItemSheet({
         >
           <input type="hidden" name="list_id" value={item?.list_id ?? listId} />
           {item ? <input type="hidden" name="id" value={item.id} /> : null}
-          {item?.updated_at ? <input type="hidden" name="updated_at" value={item.updated_at} /> : null}
+          {item ? <input type="hidden" name="updated_at" value={item.updated_at ?? ""} /> : null}
           <label className="grid gap-1 text-sm text-ink">
             Item
             <input name="name" required defaultValue={item?.name ?? ""} className="h-11 rounded-[10px] border border-border bg-surface px-3" />

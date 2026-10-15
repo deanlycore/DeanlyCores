@@ -15,6 +15,7 @@ import {
   subscriptionCadence,
   type PaymentParent,
 } from "@/lib/money/board"
+import { shoppingDbMessage } from "@/lib/life/shopping"
 import { defaultVisibilityFor, type Visibility } from "@/lib/visibility"
 import { createClient } from "@/lib/supabase/server"
 
@@ -80,19 +81,13 @@ function categoryFor(
   return categoryToStore(section, name, formData.get("category"), formData.get("category_mode"))
 }
 
-function calm(error: { message: string } | null, fallback: string): ActionResult | null {
+function calm(error: { code?: string; message: string; details?: string | null } | null, fallback: string): ActionResult | null {
   if (!error) return null
   const message = error.message.toLowerCase()
   if (message.includes("duplicate") || message.includes("budgets_shared") || message.includes("budgets_private")) {
     return { ok: false, message: "That budget is already set for this month." }
   }
-  if (message.includes("only the person who added this")) {
-    return { ok: false, message: "Only the person who added this can change who sees it." }
-  }
-  if (message.includes("row-level") || message.includes("permission")) {
-    return { ok: false, message: "You don’t have access to change that." }
-  }
-  return { ok: false, message: fallback }
+  return { ok: false, message: shoppingDbMessage(error, fallback) }
 }
 
 function refresh() {
