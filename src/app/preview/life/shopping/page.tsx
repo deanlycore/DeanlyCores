@@ -23,6 +23,7 @@ export default async function PreviewShopping({
         today={previewToday}
         currency="USD"
         homePrompt={params.prompt === "1"}
+        promptName={params.prompt === "1" ? "Tomatoes" : undefined}
         staleItemId={params.stale === "1" ? "tomatoes" : null}
       />
     </LifePreview>

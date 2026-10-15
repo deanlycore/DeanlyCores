@@ -23,9 +23,12 @@ import {
   STALE_USE_THEIRS,
   calmShoppingMessage,
   displayAmount,
+  displayUnit,
+  formatQty,
   groupShopping,
   shoppingDbMessage,
   shoppingTiles,
+  unpricedLabel,
 } from "./shopping.ts"
 import { mergeAmounts } from "./units.ts"
 
@@ -77,6 +80,14 @@ test("amounts merge inside one unit group and never across groups", () => {
     "1 cup + 500 g",
   )
   assert.equal(displayAmount({ manual_amount_raw: "1/2", manual_unit_raw: "cup", manual_qty: 0.5, manual_unit: "cup" }), "1/2 cup")
+  assert.equal(displayAmount({ manual_amount_raw: "1", manual_unit_raw: "l", manual_qty: 1, manual_unit: "l" }), "1 L")
+  assert.equal(displayAmount({ manual_amount_raw: "1", manual_unit_raw: "litre", manual_qty: 1, manual_unit: "l" }), "1 L")
+  assert.equal(displayAmount({ manual_qty: 1, manual_unit: "l", auto_qty: 500, auto_unit: "ml" }), "1.5 L")
+  assert.equal(displayAmount({ manual_amount_raw: "250", manual_unit_raw: "ML", manual_qty: 250, manual_unit: "ml" }), "250 ml")
+  assert.equal(formatQty(1, "l"), "1 L")
+  assert.equal(formatQty(250, "ml"), "250 ml")
+  assert.equal(displayUnit("litres"), "L")
+  assert.equal(displayUnit("milliliters"), "ml")
 })
 
 test("estimated total counts only priced items that are still to buy", () => {
@@ -90,7 +101,13 @@ test("estimated total counts only priced items that are still to buy", () => {
   assert.equal(tiles.needToBuy, 2)
   assert.equal(tiles.progressBought, 1)
   assert.equal(tiles.progressTotal, 3)
+  assert.equal(tiles.unpricedCount, 1)
+  assert.equal(unpricedLabel(0), null)
+  assert.equal(unpricedLabel(1), "1 item has no price")
+  assert.equal(unpricedLabel(3), "3 items have no price")
   assert.match(board, /shoppingTiles\(visible\)/)
+  assert.match(board, /of \$\{tiles\.progressTotal\} bought/)
+  assert.match(board, /unpricedLabel\(tiles\.unpricedCount\)/)
 })
 
 test("checked items leave the category groups for Bought", () => {
@@ -124,7 +141,7 @@ test("list visibility stays Shared when shared items still reference it", () => 
   assert.doesNotMatch(board, /VisibilityPill/)
   assert.doesNotMatch(board, /All categories/)
   assert.match(board, /For \{item\.for_meal\}/)
-  assert.match(board, /Bought\. Mark as at home\?/)
+  assert.match(board, /bought\. Mark as at home\?/)
   assert.match(board, /w-\[420px\]/)
   assert.match(board, /Mark as at home\?/)
   const check = board.slice(board.indexOf("async function checkItem"), board.indexOf("async function changeListVisibility"))
@@ -169,12 +186,15 @@ test("phone shopping scrolls only the category chips and stacks quick add", () =
   assert.equal(pulse.match(/overflow-x-auto/g)?.length, 1)
   assert.match(pulse, /flex min-w-0 gap-1\.5 overflow-x-auto/)
   assert.doesNotMatch(pulse, /-mx-1|overflow-x-auto px-1/)
-  assert.match(pulse, /grid min-w-0 gap-2 md:flex/)
+  assert.match(pulse, /grid min-w-0 grid-cols-\[minmax\(0,1fr\)_auto\] items-center gap-2 md:flex/)
   assert.match(pulse, /placeholder="Search"[\s\S]*placeholder="Quick add"/)
+  assert.match(pulse, /md:order-last/)
+  const chips = pulse.slice(pulse.indexOf("flex min-w-0 gap-1.5 overflow-x-auto"))
+  assert.doesNotMatch(chips, />\s*Sort\s*</)
   assert.match(pulse, /flex min-w-0 flex-wrap gap-2/)
   assert.doesNotMatch(pulse, /flex gap-2 overflow-x-auto/)
   const prompt = board.slice(board.indexOf("{offer || homePrompt ? ("), board.indexOf('{tab === "home"'))
-  assert.match(prompt, /Bought\. Mark as at home\?/)
+  assert.match(prompt, /bought\. Mark as at home\?/)
   assert.match(prompt, /flex flex-wrap items-center justify-between gap-2/)
   assert.match(board, />\s*Bought\s*</)
   const chrome = readFileSync(join(root, "src/components/money/money-chrome.tsx"), "utf8")

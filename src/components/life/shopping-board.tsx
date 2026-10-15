@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
@@ -39,6 +39,7 @@ import {
   shoppingCategory,
   shoppingCategoryLabel,
   shoppingTiles,
+  unpricedLabel,
   type PantryRow,
   type ShoppingListRow,
   type ShoppingSort,
@@ -87,6 +88,7 @@ export function ShoppingBoard({
   currency = "USD",
   error,
   homePrompt = false,
+  promptName,
   staleItemId = null,
 }: {
   rows: ShoppingRow[]
@@ -96,6 +98,7 @@ export function ShoppingBoard({
   currency?: string
   error?: boolean
   homePrompt?: boolean
+  promptName?: string
   staleItemId?: string | null
 }) {
   const router = useRouter()
@@ -135,7 +138,7 @@ export function ShoppingBoard({
   const visible = filterLife(onList, filter)
   const shown = filterShoppingItems(visible, { query, category, sort })
   const tiles = shoppingTiles(visible)
-  const grouped = useMemo(() => groupShopping(shown), [shown])
+  const grouped = groupShopping(shown)
   const homeRows = filterLife(pantry, filter).filter((item) => {
     const needle = query.trim().toLowerCase()
     if (category !== "all" && shoppingCategory(item.category) !== category) return false
@@ -229,9 +232,9 @@ export function ShoppingBoard({
         }
         chips={
           <>
-            <Tile label="Progress" value={tiles.progressTotal === 0 ? "—" : `${tiles.progressBought} of ${tiles.progressTotal}`} />
+            <Tile label="Progress" value={tiles.progressTotal === 0 ? "—" : `${tiles.progressBought} of ${tiles.progressTotal} bought`} />
             <Tile label="Need to buy" value={String(tiles.needToBuy)} />
-            <Tile label="Estimated total" value={tiles.pricedCount === 0 ? "—" : formatMoney(tiles.estimatedCents, currency)} />
+            <Tile label="Estimated total" value={tiles.pricedCount === 0 ? "—" : formatMoney(tiles.estimatedCents, currency)} detail={unpricedLabel(tiles.unpricedCount)} />
           </>
         }
         pulse={
@@ -293,10 +296,21 @@ export function ShoppingBoard({
                 </button>
               ))}
             </div>
-            <div className="grid min-w-0 gap-2 md:flex">
-              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search" aria-label="Search items" className="h-10 min-w-0 w-full rounded-[10px] border border-border bg-surface px-3 text-sm text-ink md:w-auto md:flex-1" />
+            <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 md:flex">
+              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search" aria-label="Search items" className="col-start-1 h-10 min-w-0 w-full rounded-[10px] border border-border bg-surface px-3 text-sm text-ink md:w-auto md:flex-1" />
+              <button
+                type="button"
+                aria-label={`Sort by ${sort}`}
+                onClick={() => {
+                  const order: ShoppingSort[] = ["category", "name", "price", "recent"]
+                  setSort(order[(order.indexOf(sort) + 1) % order.length] ?? "category")
+                }}
+                className="col-start-2 inline-flex h-9 shrink-0 items-center rounded-full border border-border bg-surface px-3 text-[13px] text-muted-foreground md:order-last"
+              >
+                Sort
+              </button>
               <form
-                className="flex min-w-0 gap-2 md:flex-1"
+                className="col-span-2 flex min-w-0 gap-2 md:col-span-1 md:flex-1"
                 onSubmit={(event) => {
                   event.preventDefault()
                   const body = new FormData()
@@ -333,17 +347,6 @@ export function ShoppingBoard({
                   {entry.label}
                 </button>
               ))}
-              <button
-                type="button"
-                aria-label={`Sort by ${sort}`}
-                onClick={() => {
-                  const order: ShoppingSort[] = ["category", "name", "price", "recent"]
-                  setSort(order[(order.indexOf(sort) + 1) % order.length] ?? "category")
-                }}
-                className="inline-flex h-9 shrink-0 items-center rounded-full border border-border bg-surface px-3 text-[13px] text-muted-foreground"
-              >
-                Sort
-              </button>
             </div>
           </div>
         }
@@ -351,7 +354,7 @@ export function ShoppingBoard({
         {error ? <WidgetError /> : null}
         {offer || homePrompt ? (
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-[12px] border border-border bg-surface px-3 py-3">
-            <p className="text-sm text-ink">Bought. Mark as at home?</p>
+            <p className="text-sm text-ink">{`${offer?.name ?? promptName ?? "Item"} bought. Mark as at home?`}</p>
             <div className="flex gap-2">
               <button
                 type="button"
@@ -551,11 +554,12 @@ export function ShoppingBoard({
   )
 }
 
-function Tile({ label, value }: { label: string; value: string }) {
+function Tile({ label, value, detail }: { label: string; value: string; detail?: string | null }) {
   return (
     <div className="min-w-28 flex-1 rounded-[12px] border border-border bg-surface px-3 py-2 shadow-soft max-md:min-w-0 max-md:px-2 max-md:py-1.5">
       <p className="text-[12px] text-muted-foreground">{label}</p>
       <p className="text-[15px] font-medium text-ink">{value}</p>
+      {detail ? <p className="text-[12px] text-muted-foreground">{detail}</p> : null}
     </div>
   )
 }

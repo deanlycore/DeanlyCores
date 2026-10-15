@@ -11,7 +11,7 @@ const UNITS: UnitDef[] = [
   { canonical: "g", group: "mass", toBase: 1, aliases: ["g", "gram", "grams"] },
   { canonical: "kg", group: "mass", toBase: 1000, aliases: ["kg", "kilogram", "kilograms"] },
   { canonical: "ml", group: "volume", toBase: 1, aliases: ["ml", "milliliter", "milliliters"] },
-  { canonical: "l", group: "volume", toBase: 1000, aliases: ["l", "liter", "liters"] },
+  { canonical: "l", group: "volume", toBase: 1000, aliases: ["l", "liter", "liters", "litre", "litres"] },
   { canonical: "cup", group: "volume", toBase: 240, aliases: ["cup", "cups"] },
   { canonical: "each", group: "count", toBase: 1, aliases: ["each", "ct"] },
   { canonical: "pack", group: "package", toBase: 1, aliases: ["pack", "package", "pkg"] },

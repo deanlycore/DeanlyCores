@@ -114,7 +114,13 @@ export function shoppingTiles(items: ShoppingRow[]) {
     needToBuy: open.length,
     estimatedCents: priced.reduce((sum, item) => sum + (item.price_cents ?? 0), 0),
     pricedCount: priced.length,
+    unpricedCount: open.filter((item) => item.price_cents == null).length,
   }
+}
+
+export function unpricedLabel(count: number) {
+  if (count < 1) return null
+  return count === 1 ? "1 item has no price" : `${count} items have no price`
 }
 
 export function filterShoppingItems(
@@ -155,10 +161,18 @@ export function groupShopping(items: ShoppingRow[]) {
   return { groups, bought }
 }
 
+export function displayUnit(unit: string) {
+  const key = unit.trim().toLowerCase()
+  if (key === "l" || key === "liter" || key === "liters" || key === "litre" || key === "litres") return "L"
+  if (key === "ml" || key === "milliliter" || key === "milliliters" || key === "millilitre" || key === "millilitres") return "ml"
+  return unit.trim()
+}
+
 export function formatQty(qty: number | null | undefined, unit: string | null | undefined) {
-  if (qty == null) return unit?.trim() || ""
+  const shown = unit?.trim() ? displayUnit(unit) : ""
+  if (qty == null) return shown
   const amount = Number.isInteger(qty) ? String(qty) : String(qty)
-  return unit?.trim() ? `${amount} ${unit.trim()}` : amount
+  return shown ? `${amount} ${shown}` : amount
 }
 
 export function lineAmounts(items: AmountFields[]) {
@@ -174,7 +188,7 @@ export function lineAmounts(items: AmountFields[]) {
 function typedAmount(amount: string | null | undefined, unit: string | null | undefined) {
   const left = amount?.trim() ?? ""
   const right = unit?.trim() ?? ""
-  if (left && right) return `${left} ${right}`
+  if (left && right) return `${left} ${displayUnit(right)}`
   return left || right
 }
 
