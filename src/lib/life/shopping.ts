@@ -31,8 +31,10 @@ export function shoppingDbMessage(error: DbError | null, fallback: string): stri
   }
   if (/household cannot be reassigned/i.test(blob)) return "Household cannot be reassigned."
   if (/owner cannot be reassigned/i.test(blob)) return "Owner cannot be reassigned."
+  const parentList = /shopping_lists/i.test(blob) && /update or delete/i.test(blob)
+  if (error.code === "23503" && parentList) return LIST_JUST_ME_BLOCKED
   if (/shopping_items_list_fk/i.test(blob)) {
-    if (/shopping_lists/i.test(blob) && /update or delete/i.test(blob)) return LIST_JUST_ME_BLOCKED
+    if (parentList) return LIST_JUST_ME_BLOCKED
     return LIST_UNAVAILABLE
   }
   if (/row-level security|permission denied/i.test(blob)) return "You don’t have access to change that."

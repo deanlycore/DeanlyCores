@@ -10,6 +10,7 @@ import {
   isStapleIngredient,
   normalizeIngredientName,
 } from "./normalize.ts"
+import { saveShoppingItemWith, type ShoppingWriter } from "./shopping-save.ts"
 import {
   ITEM_UNAVAILABLE,
   KEEP_MINE_ATTEMPTS,
@@ -18,6 +19,7 @@ import {
   SHOPPING_CATEGORIES,
   STALE_CHANGED,
   STALE_KEEP_MINE,
+  STALE_SAVE,
   STALE_USE_THEIRS,
   calmShoppingMessage,
   displayAmount,
@@ -31,6 +33,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "../../..")
 const sql = readFileSync(join(root, "supabase/migrations/20261015200000_shopping_upgrade.sql"), "utf8")
 const board = readFileSync(join(root, "src/components/life/shopping-board.tsx"), "utf8")
 const actions = readFileSync(join(root, "src/lib/actions/shopping.ts"), "utf8")
+const saveImpl = readFileSync(join(root, "src/lib/life/shopping-save.ts"), "utf8")
 const records = readFileSync(join(root, "src/lib/actions/records.ts"), "utf8")
 
 test("normalization strips quantity and prep words, then singularizes", () => {
@@ -136,6 +139,14 @@ test("database rejections use the list and item sentences", () => {
   assert.equal(shoppingDbMessage({ code: "23503", message: parentUpdate }, "Couldn’t update that list."), LIST_JUST_ME_BLOCKED)
   assert.equal(
     shoppingDbMessage(
+      { code: "23503", message: 'update or delete on table "shopping_lists" violates foreign key constraint "shopping_lists_visibility_fkey"' },
+      "Couldn’t update that list.",
+    ),
+    LIST_JUST_ME_BLOCKED,
+  )
+  assert.equal(shoppingDbMessage({ message: parentUpdate }, "Couldn’t update that list."), LIST_JUST_ME_BLOCKED)
+  assert.equal(
+    shoppingDbMessage(
       { code: "23503", message: `insert or update on table "shopping_items" violates foreign key constraint "shopping_items_list_fk"` },
       "Couldn’t save that item.",
     ),
@@ -198,26 +209,114 @@ test("a stale row offers Use theirs or Keep mine, and Keep mine retries with the
   assert.match(keep, /if \(result\.conflict\) return/)
   assert.equal(keep.slice(keep.indexOf("{")).includes("keepMine"), false)
   assert.match(board, /function useTheirs\(\) \{\n    setConflict\(null\)\n    router\.refresh\(\)/)
-  const fresh = actions.slice(actions.indexOf("async function writeFresh"), actions.indexOf("function finishFresh"))
+  const fresh = saveImpl.slice(saveImpl.indexOf("export async function writeFresh"), saveImpl.indexOf("export function finishFresh"))
   assert.match(fresh, /attempt < KEEP_MINE_ATTEMPTS/)
   assert.doesNotMatch(fresh, /while\s*\(/)
   const readStamp = fresh.indexOf('select("updated_at")')
   const writeStamp = fresh.indexOf('.eq("updated_at", stamp)')
   assert.ok(readStamp > 0 && readStamp < writeStamp)
-  assert.match(actions, /keep_mine/)
+  assert.match(saveImpl, /keep_mine/)
 })
 
 test("an existing item save requires updated_at before any write", () => {
-  const save = actions.slice(actions.indexOf("export async function saveShoppingItem"), actions.indexOf("export async function quickAddShoppingItem"))
+  const save = saveImpl.slice(saveImpl.indexOf("export async function saveShoppingItemWith"), saveImpl.length)
   const stamp = save.indexOf("await loadStamp")
   const lookup = save.indexOf("listForVisibility")
   assert.ok(stamp > 0 && stamp < lookup)
-  assert.match(actions, /if \(!updatedAt\) return \{ ok: false, message: STALE_SAVE, conflict: true \}/)
+  assert.match(saveImpl, /if \(!updatedAt\) return \{ ok: false, message: STALE_SAVE, conflict: true \}/)
   assert.match(save, /if \(stamp && !stamp\.ok\) return stamp/)
   assert.match(save, /\.eq\("updated_at", stamp\.updatedAt\)/)
   assert.equal(save.includes("if (expected)"), false)
   assert.equal(save.includes("if (updatedAt) update"), false)
+  assert.doesNotMatch(saveImpl.slice(saveImpl.indexOf("async function loadStamp"), saveImpl.indexOf("async function keepEditedShoppingItem")), /schemaMissing/)
 })
+
+test("a save without updated_at is rejected and does not write", async () => {
+  const writes: string[] = []
+  const ctx = writer({
+    from() {
+      writes.push("query")
+      return chain({ data: { id: "item-1" }, error: null }, writes)
+    },
+  })
+  const form = new FormData()
+  form.set("id", "item-1")
+  form.set("name", "Milk")
+  const missing = await saveShoppingItemWith(ctx, form, () => writes.push("refresh"))
+  assert.deepEqual(missing, { ok: false, message: STALE_SAVE, conflict: true })
+  assert.deepEqual(writes, [])
+
+  const blank = new FormData()
+  blank.set("id", "item-1")
+  blank.set("name", "Milk")
+  blank.set("updated_at", "   ")
+  const blankResult = await saveShoppingItemWith(ctx, blank, () => writes.push("refresh"))
+  assert.equal(blankResult.ok, false)
+  if (!blankResult.ok) assert.equal(blankResult.conflict, true)
+  assert.deepEqual(writes, [])
+
+  for (const message of [
+    'column "updated_at" does not exist',
+    'relation "shopping_items" does not exist',
+    "Could not find the table in the schema cache",
+  ]) {
+    const calls: string[] = []
+    const broken = await saveShoppingItemWith(
+      writer({
+        from() {
+          return chain({ data: null, error: { message, code: "42703" } }, calls)
+        },
+      }),
+      stampedForm(),
+      () => calls.push("refresh"),
+    )
+    assert.equal(broken.ok, false)
+    if (!broken.ok) assert.equal(broken.conflict, undefined)
+    assert.equal(broken.ok ? "" : broken.message, "Couldn’t save that item.")
+    assert.deepEqual(calls, [])
+  }
+})
+
+function stampedForm() {
+  const form = new FormData()
+  form.set("id", "item-1")
+  form.set("name", "Milk")
+  form.set("updated_at", "2026-10-02T12:00:00.000Z")
+  return form
+}
+
+function writer(supabase: ShoppingWriter["supabase"]): ShoppingWriter {
+  return { supabase, householdId: "house-1", userId: "user-1", lastVisibility: "shared" }
+}
+
+function chain(
+  result: { data: { id: string } | null; error: { message: string; code?: string } | null },
+  writes: string[],
+) {
+  const api = {
+    select() {
+      return api
+    },
+    eq() {
+      return api
+    },
+    insert() {
+      writes.push("insert")
+      return api
+    },
+    update() {
+      writes.push("update")
+      return api
+    },
+    maybeSingle() {
+      return Promise.resolve(result)
+    },
+    single() {
+      return Promise.resolve(result)
+    },
+  }
+  return api
+}
 
 test("shopping migration keeps parent checks, authenticated catalog reads, and a revoked purge", () => {
   assert.match(sql, /raise exception 'That list is not available\.'/)
