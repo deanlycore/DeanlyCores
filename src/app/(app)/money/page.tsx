@@ -1,7 +1,6 @@
 import type { Metadata } from "next"
 
 import { MoneyScan } from "@/components/money/money-scan"
-import { SectionSegments } from "@/components/shell/section-segments"
 import { listBills, listExpenses, listGoals, listMoneyCards, listMoneyPayments, listMoneyPeople, listSubscriptions } from "@/lib/data/lists"
 import { pageClock } from "@/lib/data/timezone"
 import { moneyScanSection } from "@/lib/money/board"
@@ -27,26 +26,24 @@ export default async function Page({
     listMoneyPayments(),
   ])
   return (
-    <>
-      {money ? <SectionSegments label="Money" segments={railChildren(money)} tone="life" section={selected} /> : null}
-      <MoneyScan
-        section={selected}
-        today={clock.today}
-        currency={bills.currency}
-        bills={bills.rows}
-        billsError={bills.error || payments.error}
-        income={income.rows}
-        incomeError={income.error}
-        goals={goals.rows}
-        goalsError={goals.error}
-        subscriptions={subscriptions.rows}
-        subscriptionsError={subscriptions.error}
-        cards={cards.rows}
-        people={people.rows}
-        payments={payments.rows}
-        cardsError={cards.error || payments.error}
-        peopleError={people.error || payments.error}
-      />
-    </>
+    <MoneyScan
+      section={selected}
+      segments={money ? railChildren(money) : []}
+      today={clock.today}
+      currency={bills.currency}
+      bills={bills.rows}
+      billsError={bills.error || payments.error}
+      income={income.rows}
+      incomeError={income.error}
+      goals={goals.rows}
+      goalsError={goals.error}
+      subscriptions={subscriptions.rows}
+      subscriptionsError={subscriptions.error}
+      cards={cards.rows}
+      people={people.rows}
+      payments={payments.rows}
+      cardsError={cards.error || payments.error}
+      peopleError={people.error || payments.error}
+    />
   )
 }

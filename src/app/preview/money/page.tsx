@@ -1,21 +1,16 @@
 import { notFound } from "next/navigation"
 
-import { MoneyFlow } from "@/components/money/money-flow"
-import { MoneyInsights } from "@/components/money/money-insights"
 import { MoneyScan } from "@/components/money/money-scan"
-import { MoneySnapshot } from "@/components/money/money-snapshot"
 import { AppShell } from "@/components/shell/app-shell"
-import { SectionSegments } from "@/components/shell/section-segments"
 import type { BillRow, ExpenseRow, GoalRow, MoneyCardRow, MoneyPaymentRow, MoneyPersonRow, SubscriptionRow } from "@/lib/data/home"
 import { moneyScanSection } from "@/lib/money/board"
-import { buildMoneyInsights } from "@/lib/money/insights"
 import { primaryNav, railChildren } from "@/lib/navigation"
 
 import { previewSession } from "../shell-session"
 
 export const dynamic = "force-dynamic"
 
-const today = "2026-10-02"
+const today = "2026-10-14"
 
 const bills: BillRow[] = [
   { id: "rent", name: "Rent", amount_cents: 150000, due_on: "2026-11-01", paid_at: null, visibility: "shared", category: "Housing" },
@@ -81,60 +76,22 @@ export default async function PreviewMoney({
   const shownCards = blank ? [] : cards
   const shownPeople = blank ? [] : people
   const shownPayments = blank ? [] : payments
-  const insights = buildMoneyInsights({
-    today,
-    currency: "USD",
-    bills: shownBills,
-    payments: shownPayments,
-    income: shownIncome,
-    goals: shownGoals,
-    subscriptions: shownSubscriptions,
-    cards: shownCards,
-    people: shownPeople,
-  })
   const money = primaryNav.find((item) => item.href === "/money")
   return (
     <AppShell session={previewSession}>
-      <div>
-        <div className="mb-4 md:mb-5 grid gap-4 md:gap-5">
-          <MoneySnapshot
-            today={today}
-            currency="USD"
-            bills={shownBills}
-            payments={shownPayments}
-            income={shownIncome}
-            goals={shownGoals}
-            subscriptions={shownSubscriptions}
-          />
-          <MoneyFlow
-            today={today}
-            currency="USD"
-            bills={shownBills}
-            payments={shownPayments}
-            income={shownIncome}
-            goals={shownGoals}
-            subscriptions={shownSubscriptions}
-            cards={shownCards}
-            people={shownPeople}
-          />
-          <MoneyInsights lines={insights} />
-        </div>
-        <div className="grid gap-5">
-          {money ? <SectionSegments label="Money" segments={railChildren(money)} tone="life" section={selected} /> : null}
-          <MoneyScan
-            section={selected}
-            today={today}
-            currency="USD"
-            bills={shownBills}
-            income={shownIncome}
-            goals={shownGoals}
-            subscriptions={shownSubscriptions}
-            cards={shownCards}
-            people={shownPeople}
-            payments={shownPayments}
-          />
-        </div>
-      </div>
+      <MoneyScan
+        section={selected}
+        segments={money ? railChildren(money) : []}
+        today={today}
+        currency="USD"
+        bills={shownBills}
+        payments={shownPayments}
+        income={shownIncome}
+        goals={shownGoals}
+        subscriptions={shownSubscriptions}
+        cards={shownCards}
+        people={shownPeople}
+      />
     </AppShell>
   )
 }
