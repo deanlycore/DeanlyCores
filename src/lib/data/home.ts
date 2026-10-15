@@ -62,6 +62,13 @@ export type ShoppingRow = {
   visibility: Visibility
   store?: string | null
   need_soon?: boolean | null
+  list_id?: string | null
+  qty?: number | null
+  unit?: string | null
+  price_cents?: number | null
+  notes?: string | null
+  category?: string | null
+  updated_at?: string
 }
 
 export type ActivityRow = {
