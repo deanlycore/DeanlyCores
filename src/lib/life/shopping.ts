@@ -11,6 +11,14 @@ export const ITEM_UNAVAILABLE = "That item is not available."
 
 export const STALE_SAVE = "This changed. Reload to see the latest."
 
+export const STALE_CHANGED = "Changed by someone else."
+
+export const STALE_USE_THEIRS = "Use theirs"
+
+export const STALE_KEEP_MINE = "Keep mine"
+
+export const KEEP_MINE_ATTEMPTS = 2
+
 type DbError = { code?: string; message?: string; details?: string | null }
 
 export function shoppingDbMessage(error: DbError | null, fallback: string): string {

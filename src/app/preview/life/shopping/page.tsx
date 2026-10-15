@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic"
 export default async function PreviewShopping({
   searchParams,
 }: {
-  searchParams: Promise<{ prompt?: string }>
+  searchParams: Promise<{ prompt?: string; stale?: string }>
 }) {
   if (process.env.NODE_ENV === "production") notFound()
   const params = await searchParams
@@ -23,6 +23,7 @@ export default async function PreviewShopping({
         today={previewToday}
         currency="USD"
         homePrompt={params.prompt === "1"}
+        staleItemId={params.stale === "1" ? "tomatoes" : null}
       />
     </LifePreview>
   )

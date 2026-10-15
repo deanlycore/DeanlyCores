@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache"
 
 import { requireHousehold } from "@/lib/data/context"
 import { firstName } from "@/lib/home/metrics"
-import { STALE_SAVE, shoppingCategory, shoppingDbMessage, type ShoppingCategory } from "@/lib/life/shopping"
+import { KEEP_MINE_ATTEMPTS, STALE_SAVE, shoppingCategory, shoppingDbMessage, type ShoppingCategory } from "@/lib/life/shopping"
 import { normalizeTypedAmount } from "@/lib/life/units"
 import { defaultVisibilityFor, type Visibility } from "@/lib/visibility"
 
@@ -72,6 +72,44 @@ function failed(
   return { ok: false, message: shoppingDbMessage(error, fallback) }
 }
 
+type FreshRow = { id: string; name: string; visibility: Visibility }
+
+async function writeFresh(
+  ctx: NonNullable<Awaited<ReturnType<typeof requireHousehold>>>,
+  id: string,
+  fields: Record<string, unknown>,
+) {
+  let saved: { error: { code?: string; message: string; details?: string | null } | null; data: FreshRow[] | null } = {
+    error: null,
+    data: [],
+  }
+  for (let attempt = 0; attempt < KEEP_MINE_ATTEMPTS; attempt += 1) {
+    const current = await ctx.supabase.from("shopping_items").select("updated_at").eq("id", id).maybeSingle()
+    if (current.error) return { error: current.error, data: null }
+    const stamp = current.data?.updated_at
+    if (!stamp) return { error: null, data: [] }
+    saved = await ctx.supabase
+      .from("shopping_items")
+      .update(fields)
+      .eq("id", id)
+      .eq("updated_at", stamp)
+      .select("id, name, visibility")
+    if (saved.error || saved.data?.length) return saved
+  }
+  return saved
+}
+
+function finishFresh(
+  saved: { error: { code?: string; message: string; details?: string | null } | null; data: { id: string }[] | null },
+  id: string,
+): ShoppingActionResult | null {
+  const blocked = failed(saved.error, "Couldn’t save that item.")
+  if (blocked) return blocked
+  if (!saved.data?.length) return { ok: false, message: STALE_SAVE, conflict: true }
+  refresh()
+  return { ok: true, id }
+}
+
 async function listForVisibility(
   ctx: NonNullable<Awaited<ReturnType<typeof requireHousehold>>>,
   listId: string,
@@ -122,6 +160,33 @@ async function loadStamp(
   return { ok: true, id, updatedAt }
 }
 
+async function keepEditedShoppingItem(
+  ctx: NonNullable<Awaited<ReturnType<typeof requireHousehold>>>,
+  formData: FormData,
+  id: string,
+  name: string,
+  price: number | null,
+): Promise<ShoppingActionResult> {
+  const visibility = visibilityOf(formData.get("visibility"), defaultVisibilityFor("shopping", ctx.lastVisibility))
+  const requestedList = textOf(formData.get("list_id"), 80) ?? ""
+  const list = await listForVisibility(ctx, requestedList, visibility)
+  const fields = list.missing
+    ? { name, visibility }
+    : {
+        name,
+        ...amountFields(formData),
+        price_cents: price,
+        notes: textOf(formData.get("notes"), 500),
+        category: categoryOf(formData.get("category")),
+        visibility,
+        list_id: list.id,
+        user_edited: true,
+      }
+  if (!list.missing && !list.id) return { ok: false, message: "Choose a list." }
+  const saved = await writeFresh(ctx, id, fields)
+  return finishFresh(saved, id) ?? { ok: false, message: "Couldn’t save that item." }
+}
+
 export async function saveShoppingItem(formData: FormData): Promise<ShoppingActionResult> {
   const ready = await gate()
   if (!ready.ctx) return ready
@@ -130,6 +195,7 @@ export async function saveShoppingItem(formData: FormData): Promise<ShoppingActi
   const price = centsOf(formData.get("price"))
   if (Number.isNaN(price)) return { ok: false, message: "Use a price of zero or more." }
   const id = textOf(formData.get("id"), 80)
+  if (id && formData.get("keep_mine") === "1") return keepEditedShoppingItem(ready.ctx, formData, id, name, price)
   const updatedAt = textOf(formData.get("updated_at"), 80)
   const stamp = await loadStamp(ready.ctx, id, updatedAt)
   if (stamp && !stamp.ok) return stamp
@@ -210,6 +276,30 @@ export async function quickAddShoppingItem(formData: FormData): Promise<Shopping
   return saveShoppingItem(formData)
 }
 
+async function finishCheck(
+  ctx: NonNullable<Awaited<ReturnType<typeof requireHousehold>>>,
+  id: string,
+  checked: boolean,
+  saved: { error: { code?: string; message: string; details?: string | null } | null; data: FreshRow[] | null },
+): Promise<ShoppingActionResult> {
+  const blocked = failed(saved.error, "Couldn’t update that item.")
+  if (blocked) return blocked
+  if (!saved.data?.length) return { ok: false, message: STALE_SAVE, conflict: true }
+  if (checked) {
+    await ctx.supabase.from("activity_events").insert({
+      household_id: ctx.householdId,
+      actor_id: ctx.userId,
+      owner_id: ctx.userId,
+      visibility: saved.data[0].visibility,
+      summary: `${firstName(ctx.displayName)} checked off ${saved.data[0].name}`.slice(0, 240),
+      entity_type: "shopping",
+      entity_id: id,
+    })
+  }
+  refresh()
+  return { ok: true, id }
+}
+
 export async function setShoppingItemChecked(id: string, checked: boolean, updatedAt: string): Promise<ShoppingActionResult> {
   const ready = await gate()
   if (!ready.ctx) return ready
@@ -219,22 +309,14 @@ export async function setShoppingItemChecked(id: string, checked: boolean, updat
     .eq("id", id)
     .eq("updated_at", updatedAt)
     .select("id, name, visibility")
-  const blocked = failed(saved.error, "Couldn’t update that item.")
-  if (blocked) return blocked
-  if (!saved.data?.length) return { ok: false, message: STALE_SAVE, conflict: true }
-  if (checked) {
-    await ready.ctx.supabase.from("activity_events").insert({
-      household_id: ready.ctx.householdId,
-      actor_id: ready.ctx.userId,
-      owner_id: ready.ctx.userId,
-      visibility: saved.data[0].visibility,
-      summary: `${firstName(ready.ctx.displayName)} checked off ${saved.data[0].name}`.slice(0, 240),
-      entity_type: "shopping",
-      entity_id: id,
-    })
-  }
-  refresh()
-  return { ok: true, id }
+  return finishCheck(ready.ctx, id, checked, saved)
+}
+
+export async function keepShoppingItemChecked(id: string, checked: boolean): Promise<ShoppingActionResult> {
+  const ready = await gate()
+  if (!ready.ctx) return ready
+  const saved = await writeFresh(ready.ctx, id, { checked_at: checked ? new Date().toISOString() : null })
+  return finishCheck(ready.ctx, id, checked, saved)
 }
 
 export async function markShoppingAtHome(id: string): Promise<ShoppingActionResult> {
@@ -367,4 +449,13 @@ export async function moveShoppingItem(id: string, visibility: Visibility, updat
   if (!saved.data?.length) return { ok: false, message: STALE_SAVE, conflict: true }
   refresh()
   return { ok: true, id }
+}
+
+export async function keepShoppingItemMove(id: string, visibility: Visibility): Promise<ShoppingActionResult> {
+  const ready = await gate()
+  if (!ready.ctx) return ready
+  const list = await listForVisibility(ready.ctx, "", visibility)
+  if (!list.id) return { ok: false, message: "Couldn’t update that item." }
+  const saved = await writeFresh(ready.ctx, id, { visibility, list_id: list.id, user_edited: true })
+  return finishFresh(saved, id) ?? { ok: false, message: "Couldn’t update that item." }
 }

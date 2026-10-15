@@ -12,9 +12,13 @@ import {
 } from "./normalize.ts"
 import {
   ITEM_UNAVAILABLE,
+  KEEP_MINE_ATTEMPTS,
   LIST_JUST_ME_BLOCKED,
   LIST_UNAVAILABLE,
   SHOPPING_CATEGORIES,
+  STALE_CHANGED,
+  STALE_KEEP_MINE,
+  STALE_USE_THEIRS,
   calmShoppingMessage,
   displayAmount,
   groupShopping,
@@ -146,6 +150,34 @@ test("database rejections use the list and item sentences", () => {
   assert.equal(calmShoppingMessage(parentUpdate), LIST_JUST_ME_BLOCKED)
   assert.equal(calmShoppingMessage("Add an item."), "Add an item.")
   assert.equal(calmShoppingMessage(`new row violates check constraint "shopping_items_price_ok"`), "Couldn’t save that.")
+})
+
+test("a stale row offers Use theirs or Keep mine, and Keep mine retries with the fresh stamp", () => {
+  assert.equal(STALE_CHANGED, "Changed by someone else.")
+  assert.equal(STALE_USE_THEIRS, "Use theirs")
+  assert.equal(STALE_KEEP_MINE, "Keep mine")
+  assert.equal(KEEP_MINE_ATTEMPTS, 2)
+  assert.match(board, /\{STALE_CHANGED\}/)
+  assert.match(board, /\{STALE_USE_THEIRS\}/)
+  assert.match(board, /\{STALE_KEEP_MINE\}/)
+  const choice = board.slice(board.indexOf("{conflict ? ("), board.indexOf("{STALE_KEEP_MINE}"))
+  assert.match(choice, /text-muted-foreground/)
+  assert.doesNotMatch(choice, /toast\(/)
+  const check = board.slice(board.indexOf("async function checkItem"), board.indexOf("async function keepMine"))
+  const noted = check.indexOf("noteStale")
+  const refreshed = check.indexOf("router.refresh")
+  assert.ok(noted > 0 && noted < refreshed)
+  const keep = board.slice(board.indexOf("async function keepMine"), board.indexOf("function useTheirs"))
+  assert.match(keep, /if \(result\.conflict\) return/)
+  assert.equal(keep.slice(keep.indexOf("{")).includes("keepMine"), false)
+  assert.match(board, /function useTheirs\(\) \{\n    setConflict\(null\)\n    router\.refresh\(\)/)
+  const fresh = actions.slice(actions.indexOf("async function writeFresh"), actions.indexOf("function finishFresh"))
+  assert.match(fresh, /attempt < KEEP_MINE_ATTEMPTS/)
+  assert.doesNotMatch(fresh, /while\s*\(/)
+  const readStamp = fresh.indexOf('select("updated_at")')
+  const writeStamp = fresh.indexOf('.eq("updated_at", stamp)')
+  assert.ok(readStamp > 0 && readStamp < writeStamp)
+  assert.match(actions, /keep_mine/)
 })
 
 test("an existing item save requires updated_at before any write", () => {

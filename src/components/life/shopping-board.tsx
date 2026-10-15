@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
@@ -11,6 +11,8 @@ import { WidgetError } from "@/components/ui/pills"
 import { deleteShoppingItem, setShoppingChecked } from "@/lib/actions/records"
 import {
   createShoppingList,
+  keepShoppingItemChecked,
+  keepShoppingItemMove,
   markShoppingAtHome,
   moveShoppingItem,
   quickAddShoppingItem,
@@ -27,6 +29,9 @@ import {
   LIST_JUST_ME_BLOCKED,
   LIST_UNAVAILABLE,
   SHOPPING_CATEGORIES,
+  STALE_CHANGED,
+  STALE_KEEP_MINE,
+  STALE_USE_THEIRS,
   calmShoppingMessage,
   displayAmount,
   filterShoppingItems,
@@ -51,6 +56,29 @@ function reportShoppingError(message: string, onNote?: (note: string) => void) {
   toast(calm)
 }
 
+type ItemMine =
+  | { kind: "check"; checked: boolean }
+  | { kind: "move"; visibility: Visibility }
+  | { kind: "edit"; fields: Record<string, string> }
+
+type ItemConflict = { id: string; mine: ItemMine }
+
+function formFields(formData: FormData) {
+  const fields: Record<string, string> = {}
+  for (const [key, value] of formData.entries()) {
+    if (typeof value === "string") fields[key] = value
+  }
+  return fields
+}
+
+function keptForm(id: string, fields: Record<string, string>) {
+  const body = new FormData()
+  for (const [key, value] of Object.entries(fields)) body.set(key, value)
+  body.set("id", id)
+  body.set("keep_mine", "1")
+  return body
+}
+
 export function ShoppingBoard({
   rows,
   lists,
@@ -59,6 +87,7 @@ export function ShoppingBoard({
   currency = "USD",
   error,
   homePrompt = false,
+  staleItemId = null,
 }: {
   rows: ShoppingRow[]
   lists: ShoppingListRow[]
@@ -67,6 +96,7 @@ export function ShoppingBoard({
   currency?: string
   error?: boolean
   homePrompt?: boolean
+  staleItemId?: string | null
 }) {
   const router = useRouter()
   const { filter, setFilter } = useLifeVisibility()
@@ -81,6 +111,10 @@ export function ShoppingBoard({
   const [pendingRemove, setPendingRemove] = useState(false)
   const [offer, setOffer] = useState<ShoppingRow | null>(null)
   const [listNote, setListNote] = useState("")
+  const [conflict, setConflict] = useState<ItemConflict | null>(() =>
+    staleItemId ? { id: staleItemId, mine: { kind: "check", checked: true } } : null,
+  )
+  const keeping = useRef(false)
   const [quick, setQuick] = useState("")
   const [desktop, setDesktop] = useState(false)
   const [listPanel, setListPanel] = useState<null | "new" | "edit">(null)
@@ -114,17 +148,54 @@ export function ShoppingBoard({
     setCategory("all")
   }
 
+  function noteStale(itemId: string, mine: ItemMine, result: { ok: boolean; conflict?: unknown }) {
+    if (result.ok || result.conflict !== true) return false
+    setConflict({ id: itemId, mine })
+    return true
+  }
+
   async function checkItem(item: ShoppingRow, checked: boolean) {
     const result = item.updated_at
       ? await setShoppingItemChecked(item.id, checked, item.updated_at)
       : await setShoppingChecked(item.id, checked)
     if (!result.ok) {
+      if ("conflict" in result && noteStale(item.id, { kind: "check", checked }, result)) return
       reportShoppingError(result.message)
-      if ("conflict" in result && result.conflict) router.refresh()
       return
     }
     if (checked) setOffer(item)
     else if (offer?.id === item.id) setOffer(null)
+    router.refresh()
+  }
+
+  async function keepMine() {
+    if (!conflict || keeping.current) return
+    keeping.current = true
+    const pending = conflict
+    try {
+      const result = pending.mine.kind === "check"
+        ? await keepShoppingItemChecked(pending.id, pending.mine.checked)
+        : pending.mine.kind === "move"
+          ? await keepShoppingItemMove(pending.id, pending.mine.visibility)
+          : await saveShoppingItem(keptForm(pending.id, pending.mine.fields))
+      if (!result.ok) {
+        if (result.conflict) return
+        reportShoppingError(result.message)
+        return
+      }
+      setConflict(null)
+      if (pending.mine.kind === "check" && pending.mine.checked) {
+        const item = rows.find((row) => row.id === pending.id)
+        if (item) setOffer(item)
+      }
+      router.refresh()
+    } finally {
+      keeping.current = false
+    }
+  }
+
+  function useTheirs() {
+    setConflict(null)
     router.refresh()
   }
 
@@ -335,13 +406,19 @@ export function ShoppingBoard({
                   key={item.id}
                   item={item}
                   currency={currency}
+                  conflict={conflict?.id === item.id}
+                  onUseTheirs={useTheirs}
+                  onKeepMine={() => void keepMine()}
                   onCheck={(checked) => void checkItem(item, checked)}
                   onEdit={() => { setAdding(false); setEditing(item) }}
                   onVisibility={(visibility) => {
                     if (!item.updated_at) return
                     void moveShoppingItem(item.id, visibility, item.updated_at).then((result) => {
-                      if (!result.ok) reportShoppingError(result.message)
-                      else router.refresh()
+                      if (!result.ok) {
+                        if (!noteStale(item.id, { kind: "move", visibility }, result)) reportShoppingError(result.message)
+                        return
+                      }
+                      router.refresh()
                     })
                   }}
                   onRemove={() => setRemoving(item)}
@@ -362,13 +439,19 @@ export function ShoppingBoard({
                   key={item.id}
                   item={item}
                   currency={currency}
+                  conflict={conflict?.id === item.id}
+                  onUseTheirs={useTheirs}
+                  onKeepMine={() => void keepMine()}
                   onCheck={(checked) => void checkItem(item, checked)}
                   onEdit={() => { setAdding(false); setEditing(item) }}
                   onVisibility={(visibility) => {
                     if (!item.updated_at) return
                     void moveShoppingItem(item.id, visibility, item.updated_at).then((result) => {
-                      if (!result.ok) reportShoppingError(result.message)
-                      else router.refresh()
+                      if (!result.ok) {
+                        if (!noteStale(item.id, { kind: "move", visibility }, result)) reportShoppingError(result.message)
+                        return
+                      }
+                      router.refresh()
                     })
                   }}
                   onRemove={() => setRemoving(item)}
@@ -383,6 +466,11 @@ export function ShoppingBoard({
           today={today}
           listId={active?.id ?? ""}
           item={editing}
+          onConflict={(id, fields) => {
+            setAdding(false)
+            setEditing(null)
+            setConflict({ id, mine: { kind: "edit", fields } })
+          }}
           onOpenChange={(open) => {
             if (!open) {
               setAdding(false)
@@ -475,17 +563,23 @@ function Tile({ label, value }: { label: string; value: string }) {
 function ItemRow({
   item,
   currency,
+  conflict,
   onCheck,
   onEdit,
   onVisibility,
   onRemove,
+  onUseTheirs,
+  onKeepMine,
 }: {
   item: ShoppingRow
   currency: string
+  conflict: boolean
   onCheck: (checked: boolean) => void
   onEdit: () => void
   onVisibility: (visibility: Visibility) => void
   onRemove: () => void
+  onUseTheirs: () => void
+  onKeepMine: () => void
 }) {
   const checked = Boolean(item.checked_at)
   return (
@@ -502,6 +596,14 @@ function ItemRow({
           <p className="text-[13px] text-muted-foreground">
             {[displayAmount(item), item.price_cents != null ? formatMoney(item.price_cents, currency) : "", item.notes ?? "", item.visibility === "private" ? "Just me" : ""].filter(Boolean).join(" · ")}
           </p>
+          {conflict ? (
+            <p className="mt-1 text-[13px] text-muted-foreground" onClick={(event) => event.stopPropagation()}>
+              {STALE_CHANGED}{" "}
+              <button type="button" className="text-muted-foreground" onClick={onUseTheirs}>{STALE_USE_THEIRS}</button>
+              {" | "}
+              <button type="button" className="text-muted-foreground" onClick={onKeepMine}>{STALE_KEEP_MINE}</button>
+            </p>
+          ) : null}
         </div>
         <div className="ml-auto pt-1" onClick={(event) => event.stopPropagation()}>
           <RowMenu
@@ -623,6 +725,7 @@ function ItemSheet({
   item,
   onOpenChange,
   onSaved,
+  onConflict,
 }: {
   open: boolean
   desktop: boolean
@@ -631,6 +734,7 @@ function ItemSheet({
   item: ShoppingRow | null
   onOpenChange: (open: boolean) => void
   onSaved: () => void
+  onConflict: (id: string, fields: Record<string, string>) => void
 }) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -647,6 +751,10 @@ function ItemSheet({
           action={async (formData) => {
             const result = await saveShoppingItem(formData)
             if (!result.ok) {
+              if (result.conflict && item) {
+                onConflict(item.id, formFields(formData))
+                return
+              }
               reportShoppingError(result.message)
               return
             }
