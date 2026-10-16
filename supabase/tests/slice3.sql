@@ -1120,4 +1120,49 @@ begin
 end $$;
 reset role;
 
+-- Helper writes are members who can write, and only in their household.
+reset role;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '33333333-3333-4333-8333-333333333333', true);
+do $$
+begin
+  begin
+    perform public.recompute_shopping_item_auto('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', '00000000-0000-4000-8000-000000000001');
+    raise exception 'view-only recompute allowed';
+  exception when others then
+    if position('access' in sqlerrm) = 0 then
+      raise exception 'view-only recompute %', sqlerrm;
+    end if;
+  end;
+  begin
+    perform public.keep_or_delete_shopping_item('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', '00000000-0000-4000-8000-000000000001');
+    raise exception 'view-only keep allowed';
+  exception when others then
+    if position('access' in sqlerrm) = 0 then
+      raise exception 'view-only keep %', sqlerrm;
+    end if;
+  end;
+end $$;
+select set_config('request.jwt.claim.sub', '44444444-4444-4444-8444-444444444444', true);
+do $$
+begin
+  begin
+    perform public.recompute_shopping_item_auto('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', '00000000-0000-4000-8000-000000000001');
+    raise exception 'other household recompute allowed';
+  exception when others then
+    if position('access' in sqlerrm) = 0 then
+      raise exception 'other household recompute %', sqlerrm;
+    end if;
+  end;
+  begin
+    perform public.keep_or_delete_shopping_item('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', '00000000-0000-4000-8000-000000000001');
+    raise exception 'other household keep allowed';
+  exception when others then
+    if position('access' in sqlerrm) = 0 then
+      raise exception 'other household keep %', sqlerrm;
+    end if;
+  end;
+end $$;
+reset role;
+
 rollback;

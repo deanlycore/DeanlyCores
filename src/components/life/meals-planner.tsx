@@ -87,6 +87,7 @@ export function MealsPlanner({
   const [notice, setNotice] = useState(initialSheet === "already" ? LIST_ALREADY_HAS_MEAL : "")
   const [pending, setPending] = useState(false)
   const [picker, setPicker] = useState<{ day: string; slot: MealSlot } | null>(null)
+  const [clientRequestId, setClientRequestId] = useState<string | null>(null)
   const [query, setQuery] = useState("")
   const [chip, setChip] = useState<string>("all")
   const [menuId, setMenuId] = useState<string | null>(null)
@@ -120,6 +121,11 @@ export function MealsPlanner({
     }
     setNotice(result.message ?? "List updated.")
     router.refresh()
+  }
+
+  function openAdd(day: string, slot: MealSlot) {
+    setClientRequestId(crypto.randomUUID())
+    setPicker({ day, slot })
   }
 
   function declineUpdate() {
@@ -180,7 +186,7 @@ export function MealsPlanner({
                   menuId={menuId}
                   onMenu={setMenuId}
                   onOpen={setSelectedId}
-                  onAdd={(slot) => setPicker({ day, slot })}
+                  onAdd={(slot) => openAdd(day, slot)}
                   onAskConfirm={() => setConfirm(true)}
                 />
               </div>
@@ -204,7 +210,7 @@ export function MealsPlanner({
                         menuId={menuId}
                         onMenu={setMenuId}
                         onOpen={setSelectedId}
-                        onAdd={(slot) => setPicker({ day, slot })}
+                        onAdd={(slot) => openAdd(day, slot)}
                         onAskConfirm={() => {
                           setSelectedId(visible.find((meal) => meal.meal_on === day)?.id ?? selectedId)
                           setConfirm(true)
@@ -276,7 +282,7 @@ export function MealsPlanner({
           ) : null}
         </DialogContent>
       </Dialog>
-      <Dialog open={Boolean(picker)} onOpenChange={(open) => { if (!open) setPicker(null) }}>
+      <Dialog open={Boolean(picker)} onOpenChange={(open) => { if (!open) { setPicker(null); setClientRequestId(null) } }}>
         <DialogContent className={cn("sm:max-w-[440px]", phoneSheetClass)}>
           <DialogHeader>
             <DialogTitle className="font-display text-lg">Add</DialogTitle>
@@ -291,8 +297,9 @@ export function MealsPlanner({
                 className="min-h-12 rounded-[10px] border border-border px-3 text-left text-sm text-ink"
                 onClick={() => {
                   const slot = picker
+                  const requestId = clientRequestId
                   setPicker(null)
-                  if (!slot || preview) return
+                  if (!slot || preview || !requestId) return
                   void savePlannedMeal({
                     title: recipe.name,
                     mealOn: slot.day,
@@ -300,6 +307,7 @@ export function MealsPlanner({
                     servings: recipe.servings,
                     visibility: recipe.visibility,
                     recipeId: recipe.id,
+                    clientRequestId: requestId,
                   }).then((result) => {
                     if (!result.ok) toast(result.message)
                     else router.refresh()

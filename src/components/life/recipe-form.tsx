@@ -119,22 +119,24 @@ export function RecipeForm({
           <fieldset className="grid min-w-0 gap-2">
             <legend className="text-[13px] text-muted-foreground">Ingredients</legend>
             {lines.map((line, index) => (
-              <div key={index} className="grid min-w-0 grid-cols-2 gap-2 md:grid-cols-[minmax(0,1.4fr)_72px_72px_minmax(0,1fr)_auto]">
-                <input aria-label={`Ingredient ${index + 1}`} value={line.name} onChange={(event) => updateLine(index, { name: event.target.value })} placeholder="Name" className={cn(field, "col-span-2 md:col-span-1")} />
-                <input aria-label={`Quantity ${index + 1}`} value={line.quantity} onChange={(event) => updateLine(index, { quantity: event.target.value })} placeholder="Qty" className={field} />
-                <input aria-label={`Unit ${index + 1}`} value={line.unit} onChange={(event) => updateLine(index, { unit: event.target.value })} placeholder="Unit" className={field} />
-                <select aria-label={`Shopping category ${index + 1}`} value={line.category} onChange={(event) => updateLine(index, { category: event.target.value })} className={cn(field, "col-span-2 md:col-span-1")}>
-                  <option value="">No category</option>
-                  {SHOPPING_CATEGORY_IDS.map((id) => (
-                    <option key={id} value={id}>
-                      {shoppingCategoryLabel(id)}
-                    </option>
-                  ))}
-                </select>
+              <div key={index} className="flex items-start gap-2">
+                <div className="grid min-w-0 flex-1 grid-cols-2 gap-2 md:grid-cols-[minmax(0,1.4fr)_72px_72px_minmax(0,1fr)]">
+                  <input aria-label={`Ingredient ${index + 1}`} value={line.name} onChange={(event) => updateLine(index, { name: event.target.value })} placeholder="Name" className={cn(field, "col-span-2 md:col-span-1")} />
+                  <input aria-label={`Quantity ${index + 1}`} value={line.quantity} onChange={(event) => updateLine(index, { quantity: event.target.value })} placeholder="Qty" className={field} />
+                  <input aria-label={`Unit ${index + 1}`} value={line.unit} onChange={(event) => updateLine(index, { unit: event.target.value })} placeholder="Unit" className={field} />
+                  <select aria-label={`Shopping category ${index + 1}`} value={line.category} onChange={(event) => updateLine(index, { category: event.target.value })} className={cn(field, "col-span-2 md:col-span-1")}>
+                    <option value="">No category</option>
+                    {SHOPPING_CATEGORY_IDS.map((id) => (
+                      <option key={id} value={id}>
+                        {shoppingCategoryLabel(id)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <Button
                   type="button"
                   variant="outline"
-                  className="col-span-full min-h-12 w-fit justify-self-start px-4 text-muted-foreground"
+                  className="min-h-12 shrink-0 px-3 text-muted-foreground"
                   onClick={() => setLines((current) => current.filter((_, lineIndex) => lineIndex !== index))}
                 >
                   Remove

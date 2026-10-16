@@ -16,6 +16,12 @@ declare
   v_to_base numeric;
   v_changed integer := 0;
 begin
+  if auth.uid() is null
+     or public.household_member_role(p_household_id) is null
+     or not public.can_write_household_content(p_household_id) then
+    raise exception 'You don’t have access to change that.';
+  end if;
+
   select count(distinct link.unit_group), sum(link.qty_base), min(link.unit_group)
     into v_groups, v_base, v_group
   from public.meal_shopping_needs as link
@@ -77,6 +83,12 @@ declare
   v_checked timestamptz;
   v_edited boolean;
 begin
+  if auth.uid() is null
+     or public.household_member_role(p_household_id) is null
+     or not public.can_write_household_content(p_household_id) then
+    raise exception 'You don’t have access to change that.';
+  end if;
+
   if exists (
     select 1
     from public.meal_shopping_needs as link
@@ -293,6 +305,7 @@ begin
         select item.id into v_item
         from public.shopping_items as item
         where item.list_id = v_list
+          and item.household_id = p_household_id
           and item.match_key = v_match
           and item.checked_at is null
         limit 1;

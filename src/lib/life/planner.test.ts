@@ -6,9 +6,59 @@ import { fileURLToPath } from "node:url"
 
 import { previewStatus } from "../preview-access.ts"
 import { LINKED_STAYS_SHARED, shoppingDbMessage } from "./shopping.ts"
+import { isClientRequestId, savePlannedMealWith } from "./meals-save.ts"
 import { buildShoppingLines, confirmListChoice, neededEstimate, syncCountsUnchanged, updateListButton } from "./planner.ts"
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "../../..")
+
+test("schema test 12: one client request id saves one meal through the app action", async () => {
+  const meals = new Map<string, string>()
+  const sent: string[] = []
+  const ctx = {
+    householdId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    canWrite: true,
+    supabase: {
+      async rpc(_fn: string, args: { p_household_id: string; p_meal: { client_request_id?: string | null } }) {
+        const requestId = args.p_meal.client_request_id ?? ""
+        sent.push(requestId)
+        const key = `${args.p_household_id}|${requestId}`
+        const existing = meals.get(key)
+        if (existing) return { data: { ok: true, id: existing, replayed: true }, error: null }
+        const id = `meal-${meals.size + 1}`
+        meals.set(key, id)
+        return { data: { ok: true, id, added: 1 }, error: null }
+      },
+    },
+  }
+  const input = {
+    title: "Tacos",
+    mealOn: "2026-10-16",
+    slot: "dinner",
+    servings: 4,
+    visibility: "shared" as const,
+    recipeId: "recipe-1",
+    clientRequestId: "f1f1f1f1-f1f1-41f1-81f1-f1f1f1f1f1f1",
+    lines: [{ name: "Onion" }],
+  }
+  const first = await savePlannedMealWith(ctx, input, () => undefined)
+  const second = await savePlannedMealWith(ctx, input, () => undefined)
+  assert.equal(first.ok, true)
+  assert.equal(second.ok, true)
+  if (first.ok && second.ok) assert.equal(first.id, second.id)
+  assert.equal(meals.size, 1)
+  assert.deepEqual(sent, [input.clientRequestId, input.clientRequestId])
+  const rejected = await savePlannedMealWith(ctx, { ...input, clientRequestId: "not-a-uuid" }, () => undefined)
+  assert.deepEqual(rejected, { ok: false, message: "Couldn’t save that meal." })
+  assert.equal(isClientRequestId("not-a-uuid"), false)
+  assert.equal(meals.size, 1)
+  const planner = readFileSync(join(root, "src/components/life/meals-planner.tsx"), "utf8")
+  assert.match(planner, /setClientRequestId\(crypto\.randomUUID\(\)\)/)
+  assert.match(planner, /clientRequestId: requestId/)
+  assert.doesNotMatch(readFileSync(join(root, "src/lib/actions/meals.ts"), "utf8"), /randomUUID/)
+  const sql = readFileSync(join(root, "supabase/migrations/20261017103000_meal_shopping_functions.sql"), "utf8")
+  assert.match(sql, /auth\.uid\(\) is null/)
+  assert.match(sql, /item\.household_id = p_household_id/)
+})
 
 test("schema test 16: sync shopping updates set only auto_qty, auto_unit, and system_note", () => {
   const sql = readFileSync(join(root, "supabase/migrations/20261017103000_meal_shopping_functions.sql"), "utf8")

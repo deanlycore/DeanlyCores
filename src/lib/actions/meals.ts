@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 
 import { requireHousehold } from "@/lib/data/context"
 import { listPantry, listRecipes, listShopping } from "@/lib/data/lists"
+import { savePlannedMealWith } from "@/lib/life/meals-save"
 import { buildShoppingLines } from "@/lib/life/planner"
 import { LIST_ALREADY_HAS_MEAL, OTHERS_ADDED, recipeDbMessage } from "@/lib/life/recipes"
 import { LINKED_STAYS_SHARED } from "@/lib/life/shopping"
@@ -37,34 +38,12 @@ export async function savePlannedMeal(input: {
   visibility: Visibility
   recipeId?: string | null
   applyToList?: boolean
+  clientRequestId?: string | null
 }): Promise<Result> {
   const ctx = await requireHousehold()
   if (!ctx) return { ok: false, message: "Create your household first." }
-  if (!ctx.canWrite) return { ok: false, message: "You don’t have access to change that." }
   const lines = input.applyToList && input.recipeId ? await linesFor(ctx.householdId, input.recipeId, input.servings) : []
-  const saved = await ctx.supabase.rpc("save_planned_meal", {
-    p_household_id: ctx.householdId,
-    p_meal: {
-      id: input.id ?? null,
-      updated_at: input.updatedAt ?? null,
-      title: input.title,
-      meal_on: input.mealOn,
-      slot: input.slot,
-      servings: input.servings,
-      visibility: input.visibility,
-      recipe_id: input.recipeId ?? null,
-      client_request_id: input.id ? null : crypto.randomUUID(),
-    },
-    p_lines: lines,
-    p_apply_to_list: Boolean(input.applyToList),
-  })
-  const error = failed(saved.error, "Couldn’t save that meal.")
-  if (error) return error
-  const data = saved.data as { ok?: boolean; id?: string; conflict?: boolean; added?: number; updated?: number; removed?: number } | null
-  if (data?.conflict) return { ok: false, message: "This changed. Reload to see the latest." }
-  if (!data?.ok) return { ok: false, message: "Couldn’t save that meal." }
-  refresh()
-  return { ok: true, id: data.id }
+  return savePlannedMealWith(ctx, { ...input, lines }, refresh)
 }
 
 export async function removePlannedMeal(id: string, updatedAt: string): Promise<Result> {

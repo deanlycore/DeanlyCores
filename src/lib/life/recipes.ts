@@ -110,7 +110,8 @@ export function servingsLabel(servings: number) {
 
 export function ingredientLine(item: { name: string; quantity: string | null; unit: string | null }) {
   const quantity = item.quantity?.trim() ?? ""
-  const unit = item.unit?.trim() ? displayUnit(item.unit) : ""
+  const raw = item.unit?.trim() ?? ""
+  const unit = raw && raw.toLowerCase() !== "each" ? displayUnit(raw) : ""
   return [quantity, unit, item.name.trim()].filter(Boolean).join(" ")
 }
 
