@@ -9,9 +9,9 @@ import { RecipeForm } from "@/components/life/recipe-form"
 import { useLifeVisibility } from "@/components/life/life-chrome"
 import { ConfirmRemove, EmptyState, FilterEmpty, MetricChip, MoneyAddButton, MoneyCard, MoneyFrame } from "@/components/money/money-chrome"
 import { VisibilityPill, WidgetError } from "@/components/ui/pills"
-import { copyCatalogRecipe, deleteRecipe, saveRecipe } from "@/lib/actions/recipes"
+import { copyCatalogRecipe, deleteRecipe, loadRecipe, saveRecipe } from "@/lib/actions/recipes"
 import { filterLife, LIFE_COPY, lifeSubtitle } from "@/lib/life/board"
-import { ingredientLine, servingsLabel, type RecipeRow, type StarterRecipe } from "@/lib/life/recipes"
+import { ingredientLine, RECIPE_STALE, servingsLabel, type RecipeRow, type StarterRecipe } from "@/lib/life/recipes"
 import { calmShoppingMessage } from "@/lib/life/shopping"
 
 export function RecipesBoard({
@@ -21,6 +21,7 @@ export function RecipesBoard({
   canWrite = true,
   preview = false,
   hrefBase = "/life/recipes",
+  staleOpen = false,
 }: {
   rows: RecipeRow[]
   starters: StarterRecipe[]
@@ -28,6 +29,7 @@ export function RecipesBoard({
   canWrite?: boolean
   preview?: boolean
   hrefBase?: string
+  staleOpen?: boolean
 }) {
   const router = useRouter()
   const { filter, setFilter } = useLifeVisibility()
@@ -35,7 +37,8 @@ export function RecipesBoard({
   const [catalog, setCatalog] = useState(starters)
   const [query, setQuery] = useState("")
   const [adding, setAdding] = useState(false)
-  const [editing, setEditing] = useState<RecipeRow | null>(null)
+  const [editing, setEditing] = useState<RecipeRow | null>(() => (staleOpen ? rows[0] ?? null : null))
+  const [formKey, setFormKey] = useState(0)
   const [removing, setRemoving] = useState<RecipeRow | null>(null)
   const [pendingRemove, setPendingRemove] = useState(false)
   const visible = filterLife(library, filter).filter((recipe) => matches(recipe, query))
@@ -43,6 +46,9 @@ export function RecipesBoard({
 
   async function submit(formData: FormData) {
     if (preview) {
+      if (staleOpen && formData.get("id") && formData.get("keep_mine") !== "1") {
+        return { ok: false as const, message: RECIPE_STALE, conflict: true as const }
+      }
       const name = String(formData.get("name") ?? "Recipe")
       const id = String(formData.get("id") ?? `local-${library.length + 1}`)
       const next: RecipeRow = {
@@ -100,6 +106,11 @@ export function RecipesBoard({
       return
     }
     router.refresh()
+  }
+
+  function replaceEditing(next: RecipeRow) {
+    setEditing(next)
+    setFormKey((key) => key + 1)
   }
 
   return (
@@ -198,7 +209,27 @@ export function RecipesBoard({
         <RecipeForm key={adding ? "add" : "idle"} open={adding} recipe={null} onOpenChange={setAdding} onSubmit={submit} />
       ) : null}
       {editing ? (
-        <RecipeForm key={editing.id} open onOpenChange={(open) => { if (!open) setEditing(null) }} recipe={editing} onSubmit={submit} />
+        <RecipeForm
+          key={`${editing.id}-${formKey}`}
+          open
+          recipe={editing}
+          showConflict={staleOpen && formKey === 0}
+          onOpenChange={(open) => {
+            if (!open) setEditing(null)
+          }}
+          onUseTheirs={() => {
+            const current = editing
+            if (preview) {
+              const next = library.find((recipe) => recipe.id === current.id) ?? current
+              replaceEditing(next)
+              return
+            }
+            void loadRecipe(current.id).then((next) => {
+              if (next) replaceEditing(next)
+            })
+          }}
+          onSubmit={submit}
+        />
       ) : null}
       <ConfirmRemove
         sheetOnPhone

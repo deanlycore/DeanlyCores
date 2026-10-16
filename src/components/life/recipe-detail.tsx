@@ -9,7 +9,7 @@ import { RecipeForm } from "@/components/life/recipe-form"
 import { ConfirmRemove, MoneyAddButton, MoneyCard } from "@/components/money/money-chrome"
 import { Button } from "@/components/ui/button"
 import { VisibilityPill, WidgetError } from "@/components/ui/pills"
-import { addRecipeToShopping, deleteRecipe, saveRecipe } from "@/lib/actions/recipes"
+import { addRecipeToShopping, deleteRecipe, loadRecipe, saveRecipe } from "@/lib/actions/recipes"
 import { ingredientCategoryLabel, ingredientLine, planIngredients, planLabel, servingsLabel, type RecipeRow } from "@/lib/life/recipes"
 import { calmShoppingMessage } from "@/lib/life/shopping"
 
@@ -34,6 +34,8 @@ export function RecipeDetail({
 }) {
   const router = useRouter()
   const [editing, setEditing] = useState(false)
+  const [loaded, setLoaded] = useState<RecipeRow | null>(null)
+  const [formKey, setFormKey] = useState(0)
   const [removing, setRemoving] = useState(false)
   const [pendingRemove, setPendingRemove] = useState(false)
   const [review, setReview] = useState(reviewOpen)
@@ -48,6 +50,7 @@ export function RecipeDetail({
     )
   }
   if (!recipe) return null
+  const shown = loaded ?? recipe
   const planned = planIngredients(recipe.ingredients, shopping, pantry)
   const toAdd = planned.filter((item) => item.plan === "add")
 
@@ -147,9 +150,21 @@ export function RecipeDetail({
       ) : null}
       {editing ? (
         <RecipeForm
+          key={`${shown.id}-${shown.updated_at}-${formKey}`}
           open
-          recipe={recipe}
+          recipe={shown}
           onOpenChange={setEditing}
+          onUseTheirs={() => {
+            if (preview) {
+              setLoaded(recipe)
+              setFormKey((key) => key + 1)
+              return
+            }
+            void loadRecipe(shown.id).then((next) => {
+              if (next) setLoaded(next)
+              setFormKey((key) => key + 1)
+            })
+          }}
           onSubmit={async (formData) => {
             if (preview) return { ok: true }
             const result = await saveRecipe(formData)

@@ -6,6 +6,12 @@ export const RECIPE_UNAVAILABLE = "That recipe is not available."
 
 export const RECIPE_VIEW_ONLY = "You don’t have access to change that."
 
+export const RECIPE_STALE = "This recipe changed. Reload to see the latest."
+
+export const RECIPE_REFERENCE = "That didn’t save. Reload the recipe and try again."
+
+const CATALOG_RECIPE_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
 export const SHOPPING_CATEGORY_IDS = [
   "produce",
   "meat",
@@ -61,7 +67,8 @@ export type PlannedIngredient = RecipeIngredient & { plan: IngredientPlan }
 type DbError = { code?: string; message?: string; details?: string | null } | null
 
 export function recipeDbMessage(error: DbError, fallback: string) {
-  const blob = `${error?.message ?? ""} ${error?.details ?? ""}`
+  const blob = `${error?.code ?? ""} ${error?.message ?? ""} ${error?.details ?? ""}`
+  if (error?.code === "23503" || /23503|foreign key constraint/i.test(blob)) return RECIPE_REFERENCE
   if (/that recipe is not available/i.test(blob)) return RECIPE_UNAVAILABLE
   return shoppingDbMessage(error, fallback)
 }
@@ -130,6 +137,7 @@ export type RecipeDraft = {
   notes: string | null
   visibility: Visibility
   catalogRecipeId: string | null
+  updatedAt: string | null
   ingredients: { name: string; quantity: string | null; unit: string | null; category: ShoppingCategory | null }[]
 }
 
@@ -152,7 +160,7 @@ export function parseRecipeForm(formData: FormData): { ok: true; draft: RecipeDr
     .map((step) => step.trim())
     .filter(Boolean)
     .slice(0, 30)
-  if (steps.some((step) => step.length > 400)) return { ok: false, message: "Keep each step under 400 characters." }
+  if (steps.some((step) => step.length > 2000)) return { ok: false, message: "Keep each step under 2000 characters." }
   let raw: unknown
   try {
     raw = JSON.parse(String(formData.get("ingredients") ?? "[]"))
@@ -177,6 +185,8 @@ export function parseRecipeForm(formData: FormData): { ok: true; draft: RecipeDr
       category: optionalShoppingCategory(String(row.category ?? "")),
     })
   }
+  const catalogRecipeId = textOf(formData.get("catalog_recipe_id"), 80)
+  if (catalogRecipeId && !CATALOG_RECIPE_ID.test(catalogRecipeId)) return { ok: false, message: RECIPE_UNAVAILABLE }
   return {
     ok: true,
     draft: {
@@ -187,7 +197,8 @@ export function parseRecipeForm(formData: FormData): { ok: true; draft: RecipeDr
       steps,
       notes,
       visibility,
-      catalogRecipeId: textOf(formData.get("catalog_recipe_id"), 80),
+      catalogRecipeId,
+      updatedAt: textOf(formData.get("updated_at"), 80),
       ingredients,
     },
   }

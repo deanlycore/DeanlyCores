@@ -3,7 +3,9 @@
 import { revalidatePath } from "next/cache"
 
 import { requireHousehold } from "@/lib/data/context"
+import { getRecipe } from "@/lib/data/lists"
 import { addRecipeToShoppingWith, copyCatalogRecipeWith, deleteRecipeWith, saveRecipeWith, type RecipeActionResult } from "@/lib/life/recipes-save"
+import type { RecipeRow } from "@/lib/life/recipes"
 import type { Visibility } from "@/lib/visibility"
 
 async function gate() {
@@ -16,6 +18,13 @@ function refresh() {
   revalidatePath("/life/recipes", "layout")
   revalidatePath("/life/shopping")
   revalidatePath("/home")
+}
+
+export async function loadRecipe(id: string): Promise<RecipeRow | null> {
+  const ready = await gate()
+  if (!ready.ctx || !id.trim()) return null
+  const loaded = await getRecipe(id)
+  return loaded.recipe
 }
 
 export async function saveRecipe(formData: FormData): Promise<RecipeActionResult> {

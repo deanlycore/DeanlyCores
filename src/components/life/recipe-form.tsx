@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 
 import { phoneSheetClass } from "@/components/money/money-chrome"
+import { StaleChoice } from "@/components/life/stale-choice"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { SHOPPING_CATEGORY_IDS, type RecipeRow } from "@/lib/life/recipes"
@@ -12,6 +13,8 @@ import { cn } from "cn"
 const field = "h-10 min-w-0 w-full rounded-[10px] border border-border bg-surface px-3 text-sm text-ink"
 
 type Line = { name: string; quantity: string; unit: string; category: string }
+
+type SaveResult = { ok: boolean; message?: string; conflict?: boolean }
 
 function linesOf(recipe: RecipeRow | null): Line[] {
   if (!recipe) return [{ name: "", quantity: "", unit: "", category: "" }]
@@ -27,20 +30,54 @@ function linesOf(recipe: RecipeRow | null): Line[] {
 export function RecipeForm({
   open,
   recipe,
+  showConflict = false,
   onOpenChange,
   onSubmit,
+  onUseTheirs,
 }: {
   open: boolean
   recipe: RecipeRow | null
+  showConflict?: boolean
   onOpenChange: (open: boolean) => void
-  onSubmit: (formData: FormData) => Promise<{ ok: boolean; message?: string }>
+  onSubmit: (formData: FormData) => Promise<SaveResult>
+  onUseTheirs?: () => void
 }) {
+  const formRef = useRef<HTMLFormElement>(null)
   const [lines, setLines] = useState<Line[]>(() => linesOf(recipe))
   const [pending, setPending] = useState(false)
   const [note, setNote] = useState("")
+  const [conflict, setConflict] = useState(showConflict)
 
   function updateLine(index: number, patch: Partial<Line>) {
     setLines((current) => current.map((line, lineIndex) => (lineIndex === index ? { ...line, ...patch } : line)))
+  }
+
+  function finish(formData: FormData) {
+    formData.set("ingredients", JSON.stringify(lines))
+    if (recipe) formData.set("id", recipe.id)
+    setPending(true)
+    void onSubmit(formData).then((result) => {
+      setPending(false)
+      if (!result.ok) {
+        if (result.conflict) {
+          setConflict(true)
+          return
+        }
+        setNote(result.message ?? "Couldn’t save that recipe.")
+        return
+      }
+      setNote("")
+      setConflict(false)
+      onOpenChange(false)
+    })
+  }
+
+  function keepMine() {
+    const form = formRef.current
+    if (!form || pending) return
+    const formData = new FormData(form)
+    formData.set("keep_mine", "1")
+    finish(formData)
   }
 
   return (
@@ -51,24 +88,15 @@ export function RecipeForm({
           <DialogTitle className="font-display text-lg">{recipe ? "Edit recipe" : "Add recipe"}</DialogTitle>
         </DialogHeader>
         <form
+          ref={formRef}
           className="grid max-h-[70dvh] min-w-0 gap-3 overflow-y-auto pr-1"
           onSubmit={(event) => {
             event.preventDefault()
-            const formData = new FormData(event.currentTarget)
-            formData.set("ingredients", JSON.stringify(lines))
-            if (recipe) formData.set("id", recipe.id)
-            setPending(true)
-            void onSubmit(formData).then((result) => {
-              setPending(false)
-              if (!result.ok) {
-                setNote(result.message ?? "Couldn’t save that recipe.")
-                return
-              }
-              setNote("")
-              onOpenChange(false)
-            })
+            finish(new FormData(event.currentTarget))
           }}
         >
+          {conflict ? <StaleChoice onUseTheirs={() => onUseTheirs?.()} onKeepMine={keepMine} /> : null}
+          <input type="hidden" name="updated_at" defaultValue={recipe?.updated_at ?? ""} />
           <label className="grid min-w-0 gap-1 text-[13px] text-muted-foreground">
             Name
             <input name="name" required defaultValue={recipe?.name ?? ""} className={field} />

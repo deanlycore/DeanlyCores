@@ -216,12 +216,14 @@ test("a stale row offers Use theirs or Keep mine, and Keep mine retries with the
   assert.equal(STALE_USE_THEIRS, "Use theirs")
   assert.equal(STALE_KEEP_MINE, "Keep mine")
   assert.equal(KEEP_MINE_ATTEMPTS, 2)
-  assert.match(board, /\{STALE_CHANGED\}/)
-  assert.match(board, /\{STALE_USE_THEIRS\}/)
-  assert.match(board, /\{STALE_KEEP_MINE\}/)
-  const choice = board.slice(board.indexOf("{conflict ? ("), board.indexOf("{STALE_KEEP_MINE}"))
+  const choice = readFileSync(join(root, "src/components/life/stale-choice.tsx"), "utf8")
+  assert.match(choice, /\{STALE_CHANGED\}/)
+  assert.match(choice, /\{STALE_USE_THEIRS\}/)
+  assert.match(choice, /\{STALE_KEEP_MINE\}/)
   assert.match(choice, /text-muted-foreground/)
   assert.doesNotMatch(choice, /toast\(/)
+  assert.doesNotMatch(choice, /text-danger/)
+  assert.match(board, /<StaleChoice/)
   const check = board.slice(board.indexOf("async function checkItem"), board.indexOf("async function keepMine"))
   const noted = check.indexOf("noteStale")
   const refreshed = check.indexOf("router.refresh")
@@ -237,6 +239,60 @@ test("a stale row offers Use theirs or Keep mine, and Keep mine retries with the
   const writeStamp = fresh.indexOf('.eq("updated_at", stamp)')
   assert.ok(readStamp > 0 && readStamp < writeStamp)
   assert.match(saveImpl, /keep_mine/)
+})
+
+test("an auto add writes the recipe amount and leaves every manual field empty", async () => {
+  let inserted: Record<string, unknown> | null = null
+  const saved = await saveShoppingItemWith(
+    writer({
+      from(table: string) {
+        const api = {
+          select() {
+            return api
+          },
+          eq() {
+            return api
+          },
+          insert(value: Record<string, unknown>) {
+            if (table === "shopping_items") inserted = value
+            return api
+          },
+          update() {
+            return api
+          },
+          maybeSingle() {
+            return Promise.resolve(
+              table === "shopping_lists" ? { data: { id: "list-1", visibility: "shared" }, error: null } : { data: null, error: null },
+            )
+          },
+          single() {
+            return Promise.resolve({ data: { id: "item-1" }, error: null })
+          },
+        }
+        return api
+      },
+    }),
+    (() => {
+      const form = new FormData()
+      form.set("name", "Berries")
+      form.set("source", "auto")
+      form.set("auto_qty", "150")
+      form.set("auto_unit", "g")
+      form.set("category", "produce")
+      form.set("visibility", "shared")
+      return form
+    })(),
+    () => undefined,
+  )
+  assert.equal(saved.ok, true)
+  assert.equal(inserted?.source, "auto")
+  assert.equal(inserted?.user_edited, false)
+  assert.equal(inserted?.auto_qty, 150)
+  assert.equal(inserted?.auto_unit, "g")
+  assert.equal(inserted?.manual_amount_raw, null)
+  assert.equal(inserted?.manual_unit_raw, null)
+  assert.equal(inserted?.manual_qty, null)
+  assert.equal(inserted?.manual_unit, null)
 })
 
 test("an existing item save requires updated_at before any write", () => {

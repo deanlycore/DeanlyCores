@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic"
 export default async function PreviewRecipes({
   searchParams,
 }: {
-  searchParams: Promise<{ empty?: string; error?: string; view?: string }>
+  searchParams: Promise<{ empty?: string; error?: string; view?: string; stale?: string }>
 }) {
   if (process.env.NODE_ENV === "production") notFound()
   const params = await searchParams
@@ -25,6 +25,7 @@ export default async function PreviewRecipes({
         error={failed}
         canWrite={!view}
         preview
+        staleOpen={params.stale === "1" && !empty && !failed && !view}
         hrefBase="/preview/life/recipes"
       />
     </LifePreview>

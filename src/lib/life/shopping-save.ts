@@ -210,16 +210,35 @@ export async function saveShoppingItemWith(
   const requestedList = textOf(formData.get("list_id"), 80) ?? ""
   const list = await listForVisibility(ctx, requestedList, visibility)
   if (!list.id) return { ok: false, message: LIST_UNAVAILABLE }
-  const fields = {
-    name,
-    ...amountFields(formData),
-    price_cents: price,
-    notes: textOf(formData.get("notes"), 500),
-    category: categoryOf(formData.get("category")),
-    visibility,
-    list_id: list.id,
-    user_edited: true,
-  }
+  const fromRecipe = formData.get("source") === "auto"
+  const autoAmount = normalizeTypedAmount(textOf(formData.get("auto_qty"), 40), textOf(formData.get("auto_unit"), 24))
+  const fields = fromRecipe
+    ? {
+        name,
+        manual_amount_raw: null,
+        manual_unit_raw: null,
+        manual_qty: null,
+        manual_unit: null,
+        auto_qty: autoAmount.qty,
+        auto_unit: autoAmount.unit,
+        price_cents: price,
+        notes: textOf(formData.get("notes"), 500),
+        category: categoryOf(formData.get("category")),
+        visibility,
+        list_id: list.id,
+        user_edited: false,
+        source: "auto" as const,
+      }
+    : {
+        name,
+        ...amountFields(formData),
+        price_cents: price,
+        notes: textOf(formData.get("notes"), 500),
+        category: categoryOf(formData.get("category")),
+        visibility,
+        list_id: list.id,
+        user_edited: true,
+      }
   if (!stamp?.ok) {
     const created = await fromTable(ctx, "shopping_items")
       .insert({

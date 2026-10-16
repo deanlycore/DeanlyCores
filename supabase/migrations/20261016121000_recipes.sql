@@ -2,6 +2,27 @@
 -- The catalog is inserted once. Households copy a starter into their own rows.
 -- Nothing here is written for a particular household or person.
 
+create or replace function public.recipe_steps_within_limit(steps jsonb)
+returns boolean
+language sql
+immutable
+security invoker
+set search_path to 'public'
+as $$
+  select case
+    when jsonb_typeof(steps) is distinct from 'array' then false
+    when jsonb_array_length(steps) > 30 then false
+    else not exists (
+      select 1
+      from jsonb_array_elements_text(steps) as step(value)
+      where char_length(step.value) > 2000
+    )
+  end;
+$$;
+
+revoke all on function public.recipe_steps_within_limit(jsonb) from public, anon;
+grant execute on function public.recipe_steps_within_limit(jsonb) to authenticated;
+
 create table public.catalog_recipes (
   id uuid primary key default gen_random_uuid(),
   name text not null check (char_length(btrim(name)) between 1 and 140),
@@ -11,7 +32,7 @@ create table public.catalog_recipes (
   notes text,
   sort_order integer not null,
   constraint catalog_recipes_category_len check (category is null or char_length(btrim(category)) between 1 and 40),
-  constraint catalog_recipes_steps_ok check (jsonb_typeof(steps) = 'array' and jsonb_array_length(steps) <= 30),
+  constraint catalog_recipes_steps_ok check (public.recipe_steps_within_limit(steps)),
   constraint catalog_recipes_notes_len check (notes is null or char_length(notes) <= 2000)
 );
 
@@ -232,7 +253,7 @@ create table public.recipes (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint recipes_category_len check (category is null or char_length(btrim(category)) between 1 and 40),
-  constraint recipes_steps_ok check (jsonb_typeof(steps) = 'array' and jsonb_array_length(steps) <= 30),
+  constraint recipes_steps_ok check (public.recipe_steps_within_limit(steps)),
   constraint recipes_notes_len check (notes is null or char_length(notes) <= 2000)
 );
 
@@ -271,7 +292,8 @@ alter table public.recipe_ingredients
   foreign key (recipe_id, household_id, visibility)
   references public.recipes (id, household_id, visibility)
   on update no action
-  on delete cascade;
+  on delete cascade
+  deferrable initially deferred;
 
 create or replace function public.protect_household_row()
 returns trigger
@@ -482,3 +504,106 @@ comment on function public.protect_household_member_delete() is
   'Trigger only. Removes one login''s private rows when their membership is deleted. Shared rows stay. Vault files stay in storage.';
 
 revoke all on function public.protect_household_member_delete() from public, anon, authenticated, service_role;
+
+-- One transaction: recipe row, visibility, and ingredients.
+-- The parent key is checked at commit, so a visibility change can delete and rewrite ingredients.
+create or replace function public.save_household_recipe(p_recipe jsonb)
+returns jsonb
+language plpgsql
+security invoker
+set search_path to 'public'
+as $$
+declare
+  v_user uuid := auth.uid();
+  v_household uuid;
+  v_id uuid;
+  v_stamp timestamptz;
+  v_visibility public.visibility;
+  v_name text;
+  v_category text;
+  v_servings integer;
+  v_steps jsonb;
+  v_notes text;
+  v_catalog uuid;
+  v_count integer;
+begin
+  if v_user is null then
+    raise exception 'You don’t have access to change that.';
+  end if;
+
+  select hm.household_id
+    into v_household
+  from public.household_members hm
+  where hm.user_id = v_user
+  limit 1;
+
+  if v_household is null or not public.can_write_household_content(v_household) then
+    raise exception 'You don’t have access to change that.';
+  end if;
+
+  v_name := btrim(coalesce(p_recipe->>'name', ''));
+  v_category := nullif(btrim(coalesce(p_recipe->>'category', '')), '');
+  v_servings := (p_recipe->>'servings')::integer;
+  v_steps := coalesce(p_recipe->'steps', '[]'::jsonb);
+  v_notes := nullif(p_recipe->>'notes', '');
+  v_visibility := case
+    when p_recipe->>'visibility' = 'private' then 'private'::public.visibility
+    else 'shared'::public.visibility
+  end;
+  v_id := nullif(p_recipe->>'id', '')::uuid;
+
+  if v_id is null then
+    v_catalog := nullif(p_recipe->>'catalog_recipe_id', '')::uuid;
+    insert into public.recipes (
+      household_id, created_by, visibility, catalog_recipe_id, name, category, servings, steps, notes
+    ) values (
+      v_household, v_user, v_visibility, v_catalog, v_name, v_category, v_servings, v_steps, v_notes
+    )
+    returning id into v_id;
+  else
+    if nullif(p_recipe->>'updated_at', '') is null then
+      return jsonb_build_object('ok', false, 'conflict', true);
+    end if;
+    v_stamp := (p_recipe->>'updated_at')::timestamptz;
+    update public.recipes
+      set name = v_name,
+          category = v_category,
+          servings = v_servings,
+          steps = v_steps,
+          notes = v_notes,
+          visibility = v_visibility
+    where id = v_id
+      and household_id = v_household
+      and updated_at = v_stamp;
+    get diagnostics v_count = row_count;
+    if v_count = 0 then
+      return jsonb_build_object('ok', false, 'conflict', true);
+    end if;
+  end if;
+
+  delete from public.recipe_ingredients
+  where recipe_id = v_id
+    and household_id = v_household;
+
+  insert into public.recipe_ingredients (
+    recipe_id, household_id, created_by, visibility, name, quantity, unit, category, sort_order
+  )
+  select
+    v_id,
+    v_household,
+    v_user,
+    v_visibility,
+    btrim(ingredient.value->>'name'),
+    nullif(btrim(coalesce(ingredient.value->>'quantity', '')), ''),
+    nullif(btrim(coalesce(ingredient.value->>'unit', '')), ''),
+    nullif(btrim(coalesce(ingredient.value->>'category', '')), ''),
+    (ingredient.ordinality - 1)::integer
+  from jsonb_array_elements(coalesce(p_recipe->'ingredients', '[]'::jsonb)) with ordinality as ingredient(value, ordinality)
+  where btrim(coalesce(ingredient.value->>'name', '')) <> '';
+
+  return jsonb_build_object('ok', true, 'id', v_id);
+end;
+$$;
+
+revoke all on function public.save_household_recipe(jsonb) from public, anon;
+grant execute on function public.save_household_recipe(jsonb) to authenticated;

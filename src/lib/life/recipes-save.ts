@@ -1,10 +1,11 @@
 import type { ShoppingCategory } from "@/lib/life/shopping"
 import { saveShoppingItemWith, type ShoppingActionResult, type ShoppingWriter } from "@/lib/life/shopping-save"
+import { normalizeTypedAmount } from "@/lib/life/units"
 import type { Visibility } from "@/lib/visibility"
 
-import { parseRecipeForm, planIngredients, RECIPE_UNAVAILABLE, RECIPE_VIEW_ONLY, recipeDbMessage, recipeSteps, type RecipeIngredient } from "@/lib/life/recipes"
+import { parseRecipeForm, planIngredients, RECIPE_STALE, RECIPE_UNAVAILABLE, RECIPE_VIEW_ONLY, recipeDbMessage, recipeSteps, type RecipeDraft, type RecipeIngredient } from "@/lib/life/recipes"
 
-export type RecipeActionResult = { ok: true; id?: string; added?: string[]; skipped?: string[] } | { ok: false; message: string }
+export type RecipeActionResult = { ok: true; id?: string; added?: string[]; skipped?: string[] } | { ok: false; message: string; conflict?: boolean }
 
 type DbError = { code?: string; message: string; details?: string | null } | null
 
@@ -40,37 +41,24 @@ function failed(error: DbError, fallback: string): RecipeActionResult | null {
   return { ok: false, message: recipeDbMessage(error, fallback) }
 }
 
-function ingredientRows(
-  ctx: RecipeWriter,
-  recipeId: string,
-  visibility: Visibility,
-  ingredients: { name: string; quantity: string | null; unit: string | null; category: ShoppingCategory | null }[],
-) {
-  return ingredients.map((item, index) => ({
-    recipe_id: recipeId,
-    household_id: ctx.householdId,
-    created_by: ctx.userId,
-    visibility,
-    name: item.name,
-    quantity: item.quantity,
-    unit: item.unit,
-    category: item.category,
-    sort_order: index,
-  }))
-}
+type RecipeRpc = (
+  fn: string,
+  args: { p_recipe: Record<string, unknown> },
+) => Promise<{ data: { ok?: boolean; conflict?: boolean; id?: string } | null; error: DbError }>
 
-async function replaceIngredients(
-  ctx: RecipeWriter,
-  recipeId: string,
-  visibility: Visibility,
-  ingredients: { name: string; quantity: string | null; unit: string | null; category: ShoppingCategory | null }[],
-) {
-  const removed = await fromTable(ctx, "recipe_ingredients").delete().eq("recipe_id", recipeId).eq("household_id", ctx.householdId)
-  const removeError = failed(removed.error, "Couldn’t save that recipe.")
-  if (removeError) return removeError
-  if (!ingredients.length) return null
-  const inserted = await fromTable(ctx, "recipe_ingredients").insert(ingredientRows(ctx, recipeId, visibility, ingredients))
-  return failed(inserted.error, "Couldn’t save that recipe.")
+function recipePayload(draft: RecipeDraft, updatedAt: string | null) {
+  return {
+    id: draft.id,
+    updated_at: updatedAt,
+    name: draft.name,
+    category: draft.category,
+    servings: draft.servings,
+    steps: draft.steps,
+    notes: draft.notes,
+    visibility: draft.visibility,
+    catalog_recipe_id: draft.catalogRecipeId,
+    ingredients: draft.ingredients,
+  }
 }
 
 export async function saveRecipeWith(ctx: RecipeWriter, formData: FormData, refresh: () => void): Promise<RecipeActionResult> {
@@ -79,38 +67,25 @@ export async function saveRecipeWith(ctx: RecipeWriter, formData: FormData, refr
   const parsed = parseRecipeForm(formData)
   if (!parsed.ok) return parsed
   const { draft } = parsed
-  const fields = {
-    name: draft.name,
-    category: draft.category,
-    servings: draft.servings,
-    steps: draft.steps,
-    notes: draft.notes,
-    visibility: draft.visibility,
+  let updatedAt = draft.updatedAt
+  if (draft.id && formData.get("keep_mine") === "1") {
+    const current = await fromTable(ctx, "recipes").select("updated_at").eq("id", draft.id).eq("household_id", ctx.householdId).maybeSingle()
+    const readError = failed(current.error, "Couldn’t save that recipe.")
+    if (readError) return readError
+    const fresh = current.data?.updated_at
+    if (!fresh) return { ok: false, message: RECIPE_STALE, conflict: true }
+    updatedAt = String(fresh)
+  } else if (draft.id && !updatedAt) {
+    return { ok: false, message: RECIPE_STALE, conflict: true }
   }
-  if (draft.id) {
-    const saved = await fromTable(ctx, "recipes").update(fields).eq("id", draft.id).eq("household_id", ctx.householdId).select("id")
-    const saveError = failed(saved.error, "Couldn’t save that recipe.")
-    if (saveError) return saveError
-    if (!saved.data?.length) return { ok: false, message: RECIPE_UNAVAILABLE }
-    const ingredients = await replaceIngredients(ctx, draft.id, draft.visibility, draft.ingredients)
-    if (ingredients) return ingredients
-    refresh()
-    return { ok: true, id: draft.id }
-  }
-  const created = await fromTable(ctx, "recipes")
-    .insert({
-      household_id: ctx.householdId,
-      created_by: ctx.userId,
-      catalog_recipe_id: draft.catalogRecipeId,
-      ...fields,
-    })
-    .select("id")
-    .single()
-  const createError = failed(created.error, "Couldn’t save that recipe.")
-  if (createError || !created.data?.id) return createError ?? { ok: false, message: "Couldn’t save that recipe." }
-  const recipeId = String(created.data.id)
-  const ingredients = await replaceIngredients(ctx, recipeId, draft.visibility, draft.ingredients)
-  if (ingredients) return ingredients
+  const rpc = (ctx.supabase as { rpc?: RecipeRpc }).rpc
+  if (!rpc) return { ok: false, message: "Couldn’t save that recipe." }
+  const saved = await rpc("save_household_recipe", { p_recipe: recipePayload(draft, updatedAt) })
+  const saveError = failed(saved.error, "Couldn’t save that recipe.")
+  if (saveError) return saveError
+  if (saved.data?.conflict) return { ok: false, message: RECIPE_STALE, conflict: true }
+  const recipeId = saved.data?.id ? String(saved.data.id) : draft.id
+  if (!saved.data?.ok || !recipeId) return { ok: false, message: "Couldn’t save that recipe." }
   refresh()
   return { ok: true, id: recipeId }
 }
@@ -224,9 +199,11 @@ export async function addRecipeToShoppingWith(
   for (const item of planned) {
     if (item.plan !== "add") continue
     const form = new FormData()
+    const amount = normalizeTypedAmount(item.quantity, item.unit)
     form.set("name", item.name)
-    if (item.quantity) form.set("manual_amount_raw", item.quantity)
-    if (item.unit) form.set("manual_unit_raw", item.unit)
+    form.set("source", "auto")
+    if (amount.qty != null) form.set("auto_qty", String(amount.qty))
+    if (amount.unit) form.set("auto_unit", amount.unit)
     if (item.category) form.set("category", item.category)
     form.set("visibility", visibility)
     const saved = await saveItem(ctx, form, refresh)
