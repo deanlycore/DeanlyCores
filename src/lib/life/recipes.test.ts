@@ -123,61 +123,42 @@ test("a recipe save and a catalog copy stay inside the caller's household", asyn
   assert.equal(store.recipes.filter((row) => row.household_id === "house-b").length, 1)
 })
 
-test("add ingredients to shopping reuses the save path and skips duplicates", async () => {
+test("add ingredients to shopping skips the list and pantry and never sends manual fields", async () => {
   const store = memory()
   store.recipes.push({ id: "recipe-1", household_id: "house-a", created_by: "user-a", visibility: "shared", name: "Tacos" })
   store.ingredients.push(
-    { recipe_id: "recipe-1", household_id: "house-a", name: "Chicken thighs", quantity: "500", unit: "g", category: "meat", sort_order: 0 },
-    { recipe_id: "recipe-1", household_id: "house-a", name: "Tortillas", quantity: "8", unit: "each", category: "bakery", sort_order: 1 },
-    { recipe_id: "recipe-1", household_id: "house-a", name: "Lime", quantity: "1", unit: "each", category: "produce", sort_order: 2 },
+    { id: "line-chicken", recipe_id: "recipe-1", household_id: "house-a", name: "Chicken thighs", quantity: "500", unit: "g", category: "meat", sort_order: 0 },
+    { id: "line-tortilla", recipe_id: "recipe-1", household_id: "house-a", name: "Tortillas", quantity: "8", unit: "each", category: "bakery", sort_order: 1 },
+    { id: "line-lime", recipe_id: "recipe-1", household_id: "house-a", name: "Lime", quantity: "1", unit: "each", category: "produce", sort_order: 2 },
   )
   store.shopping.push({ household_id: "house-a", name: "Tortilla", checked_at: null })
   store.pantry.push({ household_id: "house-a", name: "Lime" })
-  const saved: Record<string, string | null>[] = []
-  const result = await addRecipeToShoppingWith(writer(store.supabase, "house-a", "user-a"), "recipe-1", () => undefined, async (_ctx, formData) => {
-    saved.push(shoppingFields(formData))
-    return { ok: true, id: "item" }
-  })
+  const result = await addRecipeToShoppingWith(writer(store.supabase, "house-a", "user-a"), "recipe-1", () => undefined)
   assert.equal(result.ok, true)
   if (result.ok) {
     assert.deepEqual(result.added, ["Chicken thighs"])
     assert.deepEqual(result.skipped, ["Tortillas", "Lime"])
   }
-  assert.deepEqual(saved, [
-    {
-      name: "Chicken thighs",
-      category: "meat",
-      source: "auto",
-      auto_qty: "500",
-      auto_unit: "g",
-      manual_amount_raw: null,
-      manual_unit_raw: null,
-      manual_qty: null,
-      manual_unit: null,
-      visibility: "shared",
-    },
-  ])
+  const call = (store.bound as { last?: { fn: string; args: { p_lines?: { name: string; match_key: string }[] } } }).last
+  assert.equal(call?.fn, "add_recipe_to_shopping")
+  assert.deepEqual(call?.args.p_lines?.map((line) => line.name), ["Chicken thighs"])
+  assert.equal(JSON.stringify(call?.args.p_lines).includes("manual_"), false)
 })
 
-test("berries keep their recipe spelling and land on auto amount fields", async () => {
+test("berries keep their recipe spelling on the shopping line", async () => {
   const store = memory()
-  store.recipes.push({ id: "recipe-berries", household_id: "house-a", created_by: "user-a", visibility: "shared", name: "Oats" })
-  store.ingredients.push({ recipe_id: "recipe-berries", household_id: "house-a", name: "Berries", quantity: "150", unit: "g", category: "produce", sort_order: 0 })
-  const saved: Record<string, string | null>[] = []
-  const result = await addRecipeToShoppingWith(writer(store.supabase, "house-a", "user-a"), "recipe-berries", () => undefined, async (_ctx, formData) => {
-    saved.push(shoppingFields(formData))
-    return { ok: true, id: "item" }
-  })
+  store.recipes.push({ id: "recipe-berries", household_id: "house-a", created_by: "user-a", visibility: "private", name: "Oats" })
+  store.ingredients.push({ id: "line-berries", recipe_id: "recipe-berries", household_id: "house-a", name: "Berries", quantity: "150", unit: "g", category: "produce", sort_order: 0 })
+  const result = await addRecipeToShoppingWith(writer(store.supabase, "house-a", "user-a"), "recipe-berries", () => undefined)
   assert.equal(result.ok, true)
-  if (result.ok) assert.deepEqual(result.added, ["Berries"])
-  assert.equal(saved[0]?.name, "Berries")
-  assert.equal(saved[0]?.auto_qty, "150")
-  assert.equal(saved[0]?.auto_unit, "g")
-  assert.equal(saved[0]?.source, "auto")
-  assert.equal(saved[0]?.manual_amount_raw, null)
-  assert.equal(saved[0]?.manual_unit_raw, null)
-  assert.equal(saved[0]?.manual_qty, null)
-  assert.equal(saved[0]?.manual_unit, null)
+  if (result.ok) {
+    assert.deepEqual(result.added, ["Berries"])
+    assert.equal(result.message, "Added to your Just me list.")
+  }
+  const call = (store.bound as { last?: { args: { p_lines?: { name: string; qty_base: number; unit_group: string }[] } } }).last
+  assert.equal(call?.args.p_lines?.[0]?.name, "Berries")
+  assert.equal(call?.args.p_lines?.[0]?.qty_base, 150)
+  assert.equal(call?.args.p_lines?.[0]?.unit_group, "mass")
 })
 
 test("an old recipe stamp conflicts and a failed save leaves ingredients", async () => {
@@ -290,21 +271,6 @@ test("a recipe form rejects a missing name and keeps an optional category empty"
 
 const CATALOG_ID = "11111111-1111-4111-8111-111111111111"
 
-function shoppingFields(formData: FormData) {
-  return {
-    name: String(formData.get("name")),
-    category: formData.get("category") ? String(formData.get("category")) : null,
-    source: formData.get("source") ? String(formData.get("source")) : null,
-    auto_qty: formData.get("auto_qty") ? String(formData.get("auto_qty")) : null,
-    auto_unit: formData.get("auto_unit") ? String(formData.get("auto_unit")) : null,
-    manual_amount_raw: formData.get("manual_amount_raw") == null ? null : String(formData.get("manual_amount_raw")),
-    manual_unit_raw: formData.get("manual_unit_raw") == null ? null : String(formData.get("manual_unit_raw")),
-    manual_qty: formData.get("manual_qty") == null ? null : String(formData.get("manual_qty")),
-    manual_unit: formData.get("manual_unit") == null ? null : String(formData.get("manual_unit")),
-    visibility: formData.get("visibility") ? String(formData.get("visibility")) : null,
-  }
-}
-
 function ingredient(name: string) {
   return { id: name, name, quantity: null, unit: null, category: null, sort_order: 0 }
 }
@@ -358,15 +324,22 @@ function memory() {
     catalog_recipes: catalog,
     catalog_recipe_ingredients: catalogIngredients,
   }
-  const supabase: ShoppingWriter["supabase"] & { bound: typeof bound; rpc: (fn: string, args: { p_recipe: Row }) => Promise<{ data: Row | null; error: { code?: string; message: string; details?: string } | null }> } = {
+  const supabase: ShoppingWriter["supabase"] & { bound: typeof bound; rpc: (fn: string, args: { p_household_id?: string; p_recipe?: Row; p_lines?: Row[] }) => Promise<{ data: Row | null; error: { code?: string; message: string; details?: string } | null }> } = {
     bound,
-    async rpc(_fn: string, args: { p_recipe: Row }) {
+    async rpc(fn: string, args: { p_household_id?: string; p_recipe?: Row; p_lines?: Row[] }) {
       bound.calls += 1
-      const draft = args.p_recipe
+      ;(bound as { last?: unknown }).last = { fn, args }
+      if (fn === "add_recipe_to_shopping") {
+        const manual = JSON.stringify(args.p_lines ?? []).match(/manual_/)
+        if (manual) return { data: null, error: { message: "manual field" } }
+        return { data: { ok: true, added: args.p_lines?.length ?? 0, updated: 0, removed: 0 }, error: null }
+      }
+      const draft = args.p_recipe ?? {}
+      const householdId = args.p_household_id ?? bound.householdId
       const nextIngredients = (recipeId: string) =>
         (Array.isArray(draft.ingredients) ? (draft.ingredients as Row[]) : []).map((item, index) => ({
           recipe_id: recipeId,
-          household_id: bound.householdId,
+          household_id: householdId,
           created_by: bound.userId,
           visibility: draft.visibility,
           name: item.name,
@@ -408,7 +381,7 @@ function memory() {
       const id = `recipes-${recipes.length + 1}`
       recipes.push({
         id,
-        household_id: bound.householdId,
+        household_id: householdId,
         created_by: bound.userId,
         updated_at: "stamp-1",
         catalog_recipe_id: draft.catalog_recipe_id ?? null,

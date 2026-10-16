@@ -5,6 +5,8 @@ import { mergeAmounts } from "@/lib/life/units"
 
 export const LIST_JUST_ME_BLOCKED = "Some items on this list are shared. Make them Just me or remove them first."
 
+export const LINKED_STAYS_SHARED = "This item is linked to a planned meal, so it stays Shared."
+
 export const LIST_UNAVAILABLE = "That list is not available."
 
 export const ITEM_UNAVAILABLE = "That item is not available."
@@ -31,6 +33,7 @@ export function shoppingDbMessage(error: DbError | null, fallback: string): stri
   }
   if (/household cannot be reassigned/i.test(blob)) return "Household cannot be reassigned."
   if (/owner cannot be reassigned/i.test(blob)) return "Owner cannot be reassigned."
+  if (/msn_meal_fk|msn_item_fk|linked to a planned meal/i.test(blob)) return LINKED_STAYS_SHARED
   const parentList = /shopping_lists/i.test(blob) && /update or delete/i.test(blob)
   if (error.code === "23503" && parentList) return LIST_JUST_ME_BLOCKED
   if (/shopping_items_list_fk/i.test(blob)) {

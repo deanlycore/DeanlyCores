@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation"
 
+import { previewIsProduction } from "@/lib/preview-access"
+
 import { ShoppingBoard } from "@/components/life/shopping-board"
 
 import { LifePreview } from "../chrome"
@@ -12,7 +14,7 @@ export default async function PreviewShopping({
 }: {
   searchParams: Promise<{ prompt?: string; stale?: string }>
 }) {
-  if (process.env.NODE_ENV === "production") notFound()
+  if (previewIsProduction()) notFound()
   const params = await searchParams
   return (
     <LifePreview>

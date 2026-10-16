@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation"
 
+import { previewIsProduction } from "@/lib/preview-access"
+
 import { FamilyBoard } from "@/components/family/family-board"
 import { HouseholdPanel } from "@/components/family/household-panel"
 import type { MemberView } from "@/lib/data/session"
@@ -128,7 +130,7 @@ export default async function PreviewFamily({
 }: {
   searchParams: Promise<{ view?: string | string[]; role?: string | string[]; who?: string | string[] }>
 }) {
-  if (process.env.NODE_ENV === "production") notFound()
+  if (previewIsProduction()) notFound()
   const params = await searchParams
   const view = Array.isArray(params.view) ? params.view[0] : params.view
   const role = Array.isArray(params.role) ? params.role[0] : params.role

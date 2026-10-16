@@ -12,14 +12,15 @@ import { cn } from "cn"
 
 const field = "h-10 min-w-0 w-full rounded-[10px] border border-border bg-surface px-3 text-sm text-ink"
 
-type Line = { name: string; quantity: string; unit: string; category: string }
+type Line = { id: string; name: string; quantity: string; unit: string; category: string }
 
 type SaveResult = { ok: boolean; message?: string; conflict?: boolean }
 
 function linesOf(recipe: RecipeRow | null): Line[] {
-  if (!recipe) return [{ name: "", quantity: "", unit: "", category: "" }]
-  if (!recipe.ingredients.length) return [{ name: "", quantity: "", unit: "", category: "" }]
+  if (!recipe) return [{ id: "", name: "", quantity: "", unit: "", category: "" }]
+  if (!recipe.ingredients.length) return [{ id: "", name: "", quantity: "", unit: "", category: "" }]
   return recipe.ingredients.map((item) => ({
+    id: item.id,
     name: item.name,
     quantity: item.quantity ?? "",
     unit: item.unit ?? "",
@@ -31,6 +32,7 @@ export function RecipeForm({
   open,
   recipe,
   showConflict = false,
+  initialNote = "",
   onOpenChange,
   onSubmit,
   onUseTheirs,
@@ -38,6 +40,7 @@ export function RecipeForm({
   open: boolean
   recipe: RecipeRow | null
   showConflict?: boolean
+  initialNote?: string
   onOpenChange: (open: boolean) => void
   onSubmit: (formData: FormData) => Promise<SaveResult>
   onUseTheirs?: () => void
@@ -45,7 +48,7 @@ export function RecipeForm({
   const formRef = useRef<HTMLFormElement>(null)
   const [lines, setLines] = useState<Line[]>(() => linesOf(recipe))
   const [pending, setPending] = useState(false)
-  const [note, setNote] = useState("")
+  const [note, setNote] = useState(initialNote)
   const [conflict, setConflict] = useState(showConflict)
 
   function updateLine(index: number, patch: Partial<Line>) {
@@ -126,12 +129,12 @@ export function RecipeForm({
                     </option>
                   ))}
                 </select>
-                <button type="button" className="h-10 text-[13px] text-muted-foreground" onClick={() => setLines((current) => current.filter((_, lineIndex) => lineIndex !== index))}>
+                <button type="button" className="col-span-full h-10 justify-self-start text-left text-[13px] text-muted-foreground" onClick={() => setLines((current) => current.filter((_, lineIndex) => lineIndex !== index))}>
                   Remove
                 </button>
               </div>
             ))}
-            <button type="button" className="justify-self-start text-sm font-medium text-brand-deep" onClick={() => setLines((current) => [...current, { name: "", quantity: "", unit: "", category: "" }])}>
+            <button type="button" className="justify-self-start text-sm font-medium text-brand-deep" onClick={() => setLines((current) => [...current, { id: "", name: "", quantity: "", unit: "", category: "" }])}>
               Add ingredient
             </button>
           </fieldset>

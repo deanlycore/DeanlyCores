@@ -10,7 +10,7 @@ import { ConfirmRemove, MoneyAddButton, MoneyCard } from "@/components/money/mon
 import { Button } from "@/components/ui/button"
 import { VisibilityPill, WidgetError } from "@/components/ui/pills"
 import { addRecipeToShopping, deleteRecipe, loadRecipe, saveRecipe } from "@/lib/actions/recipes"
-import { ingredientCategoryLabel, ingredientLine, planIngredients, planLabel, servingsLabel, type RecipeRow } from "@/lib/life/recipes"
+import { ADDED_JUST_ME, ingredientCategoryLabel, ingredientLine, planIngredients, planLabel, servingsLabel, type RecipeRow } from "@/lib/life/recipes"
 import { calmShoppingMessage } from "@/lib/life/shopping"
 
 export function RecipeDetail({
@@ -21,6 +21,7 @@ export function RecipeDetail({
   canWrite = true,
   preview = false,
   reviewOpen = false,
+  addedNotice = "",
   backHref = "/life/recipes",
 }: {
   recipe: RecipeRow | null
@@ -30,6 +31,7 @@ export function RecipeDetail({
   canWrite?: boolean
   preview?: boolean
   reviewOpen?: boolean
+  addedNotice?: string
   backHref?: string
 }) {
   const router = useRouter()
@@ -40,6 +42,7 @@ export function RecipeDetail({
   const [pendingRemove, setPendingRemove] = useState(false)
   const [review, setReview] = useState(reviewOpen)
   const [added, setAdded] = useState<string[] | null>(null)
+  const [notice, setNotice] = useState(addedNotice)
   const [pendingAdd, setPendingAdd] = useState(false)
   if (error) {
     return (
@@ -93,6 +96,7 @@ export function RecipeDetail({
               </div>
             </MoneyCard>
           ))}
+          {notice ? <p className="text-sm text-ink">{notice}</p> : null}
           {added ? <p className="text-sm text-ink">{added.length ? `Added ${added.join(", ")}.` : "Nothing new to add."}</p> : null}
           {canWrite ? (
             <Button
@@ -102,6 +106,7 @@ export function RecipeDetail({
               onClick={() => {
                 if (preview) {
                   setAdded(toAdd.map((item) => item.name))
+                  if (recipe.visibility === "private") setNotice(ADDED_JUST_ME)
                   return
                 }
                 setPendingAdd(true)
@@ -112,6 +117,7 @@ export function RecipeDetail({
                     return
                   }
                   setAdded(result.added ?? [])
+                  if (result.message) setNotice(result.message)
                   router.refresh()
                 })
               }}

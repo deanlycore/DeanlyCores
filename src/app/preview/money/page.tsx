@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation"
 
+import { previewIsProduction } from "@/lib/preview-access"
+
 import { MoneyScan } from "@/components/money/money-scan"
 import { AppShell } from "@/components/shell/app-shell"
 import type { BillRow, ExpenseRow, GoalRow, MoneyCardRow, MoneyPaymentRow, MoneyPersonRow, SubscriptionRow } from "@/lib/data/home"
@@ -64,7 +66,7 @@ export default async function PreviewMoney({
 }: {
   searchParams: Promise<{ section?: string | string[]; sample?: string | string[] }>
 }) {
-  if (process.env.NODE_ENV === "production") notFound()
+  if (previewIsProduction()) notFound()
   const params = await searchParams
   const selected = moneyScanSection(params.section)
   const sample = Array.isArray(params.sample) ? params.sample[0] : params.sample
