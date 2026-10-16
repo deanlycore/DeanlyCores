@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
@@ -44,6 +44,8 @@ export function RecipeDetail({
   const [added, setAdded] = useState<string[] | null>(null)
   const [notice, setNotice] = useState(addedNotice)
   const [pendingAdd, setPendingAdd] = useState(false)
+  const batchId = useRef<string | null>(null)
+  const adding = useRef(false)
   if (error) {
     return (
       <div className="grid min-w-0 gap-3">
@@ -108,18 +110,24 @@ export function RecipeDetail({
               className="h-11 w-fit rounded-button md:h-10"
               disabled={pendingAdd || toAdd.length === 0}
               onClick={() => {
+                if (pendingAdd || adding.current) return
                 if (preview) {
                   setAdded(toAdd.map((item) => item.name))
                   if (recipe.visibility === "private") setNotice(ADDED_JUST_ME)
                   return
                 }
+                batchId.current ??= crypto.randomUUID()
+                const requestId = batchId.current
+                adding.current = true
                 setPendingAdd(true)
-                void addRecipeToShopping(recipe.id).then((result) => {
+                void addRecipeToShopping(recipe.id, requestId).then((result) => {
+                  adding.current = false
                   setPendingAdd(false)
                   if (!result.ok) {
                     toast(calmShoppingMessage(result.message))
                     return
                   }
+                  batchId.current = null
                   setAdded(result.added ?? [])
                   if (result.message) setNotice(result.message)
                   router.refresh()

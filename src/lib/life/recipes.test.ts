@@ -98,7 +98,7 @@ test("view-only cannot save, delete, copy, or add ingredients", async () => {
     await saveRecipeWith(ctx, form, () => undefined),
     await deleteRecipeWith(ctx, "recipe-1", () => undefined),
     await copyCatalogRecipeWith(ctx, CATALOG_ID, "shared", () => undefined),
-    await addRecipeToShoppingWith(ctx, "recipe-1", () => undefined),
+    await addRecipeToShoppingWith(ctx, "recipe-1", () => undefined, "b8b8b8b8-b8b8-48b8-88b8-b8b8b8b8b8b8"),
   ]) {
     assert.deepEqual(result, { ok: false, message: RECIPE_VIEW_ONLY })
   }
@@ -134,7 +134,7 @@ test("add ingredients to shopping skips the list and pantry and never sends manu
   )
   store.shopping.push({ household_id: "house-a", name: "Tortilla", checked_at: null })
   store.pantry.push({ household_id: "house-a", name: "Lime" })
-  const result = await addRecipeToShoppingWith(writer(store.supabase, "house-a", "user-a"), "recipe-1", () => undefined)
+  const result = await addRecipeToShoppingWith(writer(store.supabase, "house-a", "user-a"), "recipe-1", () => undefined, "b8b8b8b8-b8b8-48b8-88b8-b8b8b8b8b8b8")
   assert.equal(result.ok, true)
   if (result.ok) {
     assert.deepEqual(result.added, ["Chicken thighs"])
@@ -144,6 +144,26 @@ test("add ingredients to shopping skips the list and pantry and never sends manu
   assert.equal(call?.fn, "add_recipe_to_shopping")
   assert.deepEqual(call?.args.p_lines?.map((line) => line.name), ["Chicken thighs"])
   assert.equal(JSON.stringify(call?.args.p_lines).includes("manual_"), false)
+})
+
+test("a repeated shopping batch does not double auto_qty or the links", async () => {
+  const store = memory()
+  store.recipes.push({ id: "recipe-onion", household_id: "house-a", created_by: "user-a", visibility: "shared", name: "Onion bowl", servings: 2 })
+  store.ingredients.push({ id: "line-onion", recipe_id: "recipe-onion", household_id: "house-a", name: "Onion", quantity: "2", unit: "each", category: "produce", sort_order: 0 })
+  const batch = "b8b8b8b8-b8b8-48b8-88b8-b8b8b8b8b8b8"
+  const home = writer(store.supabase, "house-a", "user-a")
+  const first = await addRecipeToShoppingWith(home, "recipe-onion", () => undefined, batch)
+  const second = await addRecipeToShoppingWith(home, "recipe-onion", () => undefined, batch)
+  assert.equal(first.ok, true)
+  assert.equal(second.ok, true)
+  const saved = store.bound.batches.get(batch)
+  assert.equal(saved?.links, 1)
+  assert.equal(saved?.qty, 2)
+  const calls = (store.bound as { last?: { args: { p_add_batch_id?: string } } }).last
+  assert.equal(calls?.args.p_add_batch_id, batch)
+  assert.equal(store.bound.batches.size, 1)
+  assert.doesNotMatch(readFileSync(join(root, "src/lib/life/recipes-save.ts"), "utf8"), /randomUUID/)
+  assert.match(readFileSync(join(root, "src/components/life/recipe-detail.tsx"), "utf8"), /disabled=\{pendingAdd/)
 })
 
 test("just me confirm copy stays future tense until the add succeeds", () => {
@@ -162,7 +182,7 @@ test("berries keep their recipe spelling on the shopping line", async () => {
   const store = memory()
   store.recipes.push({ id: "recipe-berries", household_id: "house-a", created_by: "user-a", visibility: "private", name: "Oats" })
   store.ingredients.push({ id: "line-berries", recipe_id: "recipe-berries", household_id: "house-a", name: "Berries", quantity: "150", unit: "g", category: "produce", sort_order: 0 })
-  const result = await addRecipeToShoppingWith(writer(store.supabase, "house-a", "user-a"), "recipe-berries", () => undefined)
+  const result = await addRecipeToShoppingWith(writer(store.supabase, "house-a", "user-a"), "recipe-berries", () => undefined, "b8b8b8b8-b8b8-48b8-88b8-b8b8b8b8b8b8")
   assert.equal(result.ok, true)
   if (result.ok) {
     assert.deepEqual(result.added, ["Berries"])
@@ -322,7 +342,13 @@ function memory() {
   const ingredients: Row[] = []
   const shopping: Row[] = []
   const pantry: Row[] = []
-  const bound = { householdId: "house-a", userId: "user-a", calls: 0, failNext: null as string | null }
+  const bound = {
+    householdId: "house-a",
+    userId: "user-a",
+    calls: 0,
+    failNext: null as string | null,
+    batches: new Map<string, { links: number; qty: number }>(),
+  }
   const catalog = [
     { id: CATALOG_ID, name: "Pancakes", category: "Breakfast", servings: 4, steps: ["Mix the batter."], notes: null },
   ]
@@ -339,13 +365,19 @@ function memory() {
   }
   const supabase: ShoppingWriter["supabase"] & { bound: typeof bound; rpc: (fn: string, args: { p_household_id?: string; p_recipe?: Row; p_lines?: Row[] }) => Promise<{ data: Row | null; error: { code?: string; message: string; details?: string } | null }> } = {
     bound,
-    async rpc(fn: string, args: { p_household_id?: string; p_recipe?: Row; p_lines?: Row[] }) {
+    async rpc(fn: string, args: { p_household_id?: string; p_recipe?: Row; p_lines?: Row[]; p_add_batch_id?: string }) {
       bound.calls += 1
       ;(bound as { last?: unknown }).last = { fn, args }
       if (fn === "add_recipe_to_shopping") {
         const manual = JSON.stringify(args.p_lines ?? []).match(/manual_/)
         if (manual) return { data: null, error: { message: "manual field" } }
-        return { data: { ok: true, added: args.p_lines?.length ?? 0, updated: 0, removed: 0 }, error: null }
+        const batch = String(args.p_add_batch_id ?? "")
+        if (!bound.batches.has(batch)) {
+          const qty = (args.p_lines ?? []).reduce((sum, line) => sum + Number(line.qty_base ?? 0), 0)
+          bound.batches.set(batch, { links: args.p_lines?.length ?? 0, qty })
+        }
+        const saved = bound.batches.get(batch)
+        return { data: { ok: true, added: 0, updated: 0, removed: 0, links: saved?.links, auto_qty: saved?.qty }, error: null }
       }
       const draft = args.p_recipe ?? {}
       const householdId = args.p_household_id ?? bound.householdId

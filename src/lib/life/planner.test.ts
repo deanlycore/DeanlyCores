@@ -120,7 +120,11 @@ test("schema test 25: update list stays quiet for view-only, free-text meals, an
     LINKED_STAYS_SHARED,
   )
   const planner = readFileSync(join(root, "src/components/life/meals-planner.tsx"), "utf8")
+  assert.match(planner, /from "@\/lib\/life\/planner"/)
   assert.match(planner, /updateListButton\(/)
+  assert.doesNotMatch(planner, /updateListButtonState|Change servings|Move to…|Add to week/)
+  assert.match(planner, /setConfirm\(Boolean\(recipe\.id\)\)/)
+  assert.match(planner, /min-h-12 min-w-12/)
   assert.match(planner, /confirmListChoice\("not-now"/)
   assert.match(planner, /Update list/)
   assert.match(planner, /Not now/)

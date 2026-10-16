@@ -88,12 +88,14 @@ export function MealsPlanner({
   const [pending, setPending] = useState(false)
   const [picker, setPicker] = useState<{ day: string; slot: MealSlot } | null>(null)
   const [clientRequestId, setClientRequestId] = useState<string | null>(null)
+  const [placed, setPlaced] = useState<PlannerMeal[]>([])
   const [query, setQuery] = useState("")
   const [chip, setChip] = useState<string>("all")
   const [menuId, setMenuId] = useState<string | null>(null)
   const week = weekOf(today, offset)
-  const visible = filterLife(meals, filter).filter((meal) => meal.meal_on >= week.start && meal.meal_on <= week.end)
-  const selected = meals.find((meal) => meal.id === selectedId) ?? null
+  const plannedMeals = [...meals, ...placed.filter((meal) => !meals.some((row) => row.id === meal.id))]
+  const visible = filterLife(plannedMeals, filter).filter((meal) => meal.meal_on >= week.start && meal.meal_on <= week.end)
+  const selected = plannedMeals.find((meal) => meal.id === selectedId) ?? null
   const listAction = selected ? updateListButton({ recipeId: selected.recipe_id }, canWrite) : "hidden"
   const plannedCount = visible.length
   const recent = useMemo(() => recipes.slice(0, 6), [recipes])
@@ -126,6 +128,50 @@ export function MealsPlanner({
   function openAdd(day: string, slot: MealSlot) {
     setClientRequestId(crypto.randomUUID())
     setPicker({ day, slot })
+  }
+
+  function placeRecipe(recipe: PlannerRecipe) {
+    const slot = picker
+    const requestId = clientRequestId
+    setPicker(null)
+    if (!slot || !requestId) return
+    const meal: PlannerMeal = {
+      id: requestId,
+      title: recipe.name,
+      meal_on: slot.day,
+      slot: slot.slot,
+      notes: null,
+      visibility: recipe.visibility,
+      servings: recipe.servings,
+      recipe_id: recipe.id,
+      updated_at: null,
+      needed: recipe.need,
+    }
+    if (preview) {
+      setPlaced((current) => [...current, meal])
+      setSelectedId(meal.id)
+      setConfirm(Boolean(recipe.id))
+      return
+    }
+    void savePlannedMeal({
+      title: recipe.name,
+      mealOn: slot.day,
+      slot: slot.slot,
+      servings: recipe.servings,
+      visibility: recipe.visibility,
+      recipeId: recipe.id,
+      clientRequestId: requestId,
+    }).then((result) => {
+      if (!result.ok) {
+        toast(result.message)
+        return
+      }
+      const saved = { ...meal, id: result.id ?? requestId }
+      setPlaced((current) => [...current, saved])
+      setSelectedId(saved.id)
+      setConfirm(Boolean(recipe.id))
+      router.refresh()
+    })
   }
 
   function declineUpdate() {
@@ -187,7 +233,7 @@ export function MealsPlanner({
                   onMenu={setMenuId}
                   onOpen={setSelectedId}
                   onAdd={(slot) => openAdd(day, slot)}
-                  onAskConfirm={() => setConfirm(true)}
+                  onRemove={(meal) => void removeMeal(meal, preview, router)}
                 />
               </div>
             ))}
@@ -211,10 +257,7 @@ export function MealsPlanner({
                         onMenu={setMenuId}
                         onOpen={setSelectedId}
                         onAdd={(slot) => openAdd(day, slot)}
-                        onAskConfirm={() => {
-                          setSelectedId(visible.find((meal) => meal.meal_on === day)?.id ?? selectedId)
-                          setConfirm(true)
-                        }}
+                        onRemove={(meal) => void removeMeal(meal, preview, router)}
                       />
                     </div>
                   ) : null}
@@ -275,7 +318,7 @@ export function MealsPlanner({
                   </Button>
                 </div>
               ) : null}
-              <button type="button" className="justify-self-start text-left text-sm text-muted-foreground" onClick={() => void removeMeal(selected, preview, router)}>
+              <button type="button" className="inline-flex min-h-12 items-center justify-self-start text-left text-sm text-muted-foreground" onClick={() => void removeMeal(selected, preview, router)}>
                 Remove from plan
               </button>
             </div>
@@ -295,24 +338,7 @@ export function MealsPlanner({
                 key={recipe.id}
                 type="button"
                 className="min-h-12 rounded-[10px] border border-border px-3 text-left text-sm text-ink"
-                onClick={() => {
-                  const slot = picker
-                  const requestId = clientRequestId
-                  setPicker(null)
-                  if (!slot || preview || !requestId) return
-                  void savePlannedMeal({
-                    title: recipe.name,
-                    mealOn: slot.day,
-                    slot: slot.slot,
-                    servings: recipe.servings,
-                    visibility: recipe.visibility,
-                    recipeId: recipe.id,
-                    clientRequestId: requestId,
-                  }).then((result) => {
-                    if (!result.ok) toast(result.message)
-                    else router.refresh()
-                  })
-                }}
+                onClick={() => placeRecipe(recipe)}
               >
                 {recipe.name}
               </button>
@@ -348,7 +374,7 @@ function SlotColumn({
   onMenu,
   onOpen,
   onAdd,
-  onAskConfirm,
+  onRemove,
 }: {
   day: string
   meals: PlannerMeal[]
@@ -356,7 +382,7 @@ function SlotColumn({
   onMenu: (id: string | null) => void
   onOpen: (id: string) => void
   onAdd: (slot: MealSlot) => void
-  onAskConfirm: () => void
+  onRemove: (meal: PlannerMeal) => void
 }) {
   return (
     <div className="grid gap-2">
@@ -373,16 +399,14 @@ function SlotColumn({
                     <p className="text-[13px] text-muted-foreground">{mealStatusLine(meal.servings, meal.needed, Boolean(meal.recipe_id))}</p>
                   ) : null}
                 </button>
-                <button type="button" className="text-[13px] text-muted-foreground" aria-label={`${meal.title} menu`} onClick={() => onMenu(menuId === meal.id ? null : meal.id)}>
+                <button type="button" className="inline-flex min-h-12 min-w-12 items-center justify-center text-[13px] text-muted-foreground" aria-label={`${meal.title} menu`} onClick={() => onMenu(menuId === meal.id ? null : meal.id)}>
                   ···
                 </button>
                 {menuId === meal.id ? (
                   <div className="grid gap-1 pt-1">
-                    {["Change servings", "Replace", "Move to…", "Duplicate", "Remove"].map((label) => (
-                      <button key={label} type="button" className="min-h-12 text-left text-[13px] text-ink" onClick={onAskConfirm}>
-                        {label}
-                      </button>
-                    ))}
+                    <button type="button" className="min-h-12 text-left text-[13px] text-ink" onClick={() => onRemove(meal)}>
+                      Remove
+                    </button>
                   </div>
                 ) : null}
               </div>
@@ -436,9 +460,6 @@ function UseWhatWeHave({
             <span className="text-muted-foreground">On list</span>
             <span className="text-muted-foreground">Need</span>
           </div>
-          <button type="button" className="mt-2 min-h-12 text-[13px] text-ink">
-            Add to week
-          </button>
         </article>
       ))}
     </section>

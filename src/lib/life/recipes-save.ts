@@ -3,6 +3,7 @@ import { saveShoppingItemWith, type ShoppingActionResult, type ShoppingWriter } 
 import type { Visibility } from "@/lib/visibility"
 
 import { buildShoppingLines } from "@/lib/life/planner"
+import { isClientRequestId } from "@/lib/life/meals-save"
 import { ADDED_JUST_ME, OTHERS_ADDED, parseRecipeForm, planIngredients, RECIPE_STALE, RECIPE_UNAVAILABLE, RECIPE_VIEW_ONLY, recipeDbMessage, recipeSteps, type RecipeDraft, type RecipeIngredient } from "@/lib/life/recipes"
 
 export type RecipeActionResult =
@@ -168,11 +169,12 @@ export async function addRecipeToShoppingWith(
   ctx: RecipeWriter,
   recipeId: string,
   refresh: () => void,
+  batchId: string,
   saveItem: SaveItem = saveShoppingItemWith,
 ): Promise<RecipeActionResult> {
   const denied = blocked(ctx)
   if (denied) return denied
-  if (!recipeId.trim()) return { ok: false, message: RECIPE_UNAVAILABLE }
+  if (!recipeId.trim() || !isClientRequestId(batchId)) return { ok: false, message: RECIPE_UNAVAILABLE }
   const recipe = await fromTable(ctx, "recipes").select("id, visibility").eq("id", recipeId).eq("household_id", ctx.householdId).maybeSingle()
   const recipeError = failed(recipe.error, "Couldn’t add those ingredients.")
   if (recipeError) return recipeError
@@ -211,7 +213,7 @@ export async function addRecipeToShoppingWith(
   void saveItem
   const saved = await rpc("add_recipe_to_shopping", {
     p_household_id: ctx.householdId,
-    p_add_batch_id: crypto.randomUUID(),
+    p_add_batch_id: batchId,
     p_recipe_id: recipeId,
     p_catalog_recipe_id: null,
     p_servings: 1,
