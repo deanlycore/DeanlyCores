@@ -11,6 +11,7 @@ export type HouseholdContext = {
   currency: string
   lastVisibility: Visibility
   checklistDismissed: boolean
+  canWrite: boolean
 }
 
 export const requireHousehold = cache(async (): Promise<HouseholdContext | null> => {
@@ -21,7 +22,7 @@ export const requireHousehold = cache(async (): Promise<HouseholdContext | null>
 
   const [{ data: profile }, { data: membership }, { data: prefs }] = await Promise.all([
     supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle(),
-    supabase.from("household_members").select("household_id").eq("user_id", user.id).limit(1).maybeSingle(),
+    supabase.from("household_members").select("household_id, role").eq("user_id", user.id).limit(1).maybeSingle(),
     supabase
       .from("user_preferences")
       .select("currency, last_visibility, notification_prefs")
@@ -40,5 +41,6 @@ export const requireHousehold = cache(async (): Promise<HouseholdContext | null>
     currency: prefs?.currency || "USD",
     lastVisibility: prefs?.last_visibility === "private" ? "private" : "shared",
     checklistDismissed: Boolean(notification.home_checklist_dismissed),
+    canWrite: membership.role !== "view_only",
   }
 })

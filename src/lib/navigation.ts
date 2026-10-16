@@ -12,6 +12,7 @@ export type RailIcon =
   | "calendar"
   | "tasks"
   | "meals"
+  | "recipes"
   | "shopping"
   | "family"
 
@@ -170,6 +171,16 @@ export const primaryNav: PrimaryNavItem[] = [
         emptyBody: "Plan breakfast, lunch, and dinner for the household.",
         rail: true,
         icon: "meals",
+      },
+      {
+        href: "/life/recipes",
+        label: "Recipes",
+        description: "Meals you can cook again.",
+        visibility: "shared",
+        emptyTitle: "No recipes yet",
+        emptyBody: "Add a recipe, or start from one that is built in.",
+        rail: true,
+        icon: "recipes",
       },
       {
         href: "/life/shopping",

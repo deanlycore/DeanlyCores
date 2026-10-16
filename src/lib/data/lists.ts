@@ -1,6 +1,7 @@
 import { requireHousehold } from "@/lib/data/context"
 import { monthStart } from "@/lib/home/metrics"
 import type { PantryRow, ShoppingListRow } from "@/lib/life/shopping"
+import { optionalShoppingCategory, recipeSteps, type RecipeIngredient, type RecipeRow, type StarterRecipe } from "@/lib/life/recipes"
 import type {
   BillRow,
   EventRow,
@@ -370,6 +371,96 @@ export async function listMoneyOverviewSources() {
     listMoneyPayments(),
   ])
   return { bills, income, goals, subscriptions, cards, people, payments }
+}
+
+export type RecipeLibrary = {
+  rows: RecipeRow[]
+  starters: StarterRecipe[]
+  error: boolean
+  canWrite: boolean
+}
+
+function ingredientOf(row: { id: string; name: string; quantity: string | null; unit: string | null; category: string | null; sort_order: number }): RecipeIngredient {
+  return {
+    id: row.id,
+    name: row.name,
+    quantity: row.quantity,
+    unit: row.unit,
+    category: optionalShoppingCategory(row.category),
+    sort_order: row.sort_order,
+  }
+}
+
+export async function listRecipes(): Promise<RecipeLibrary> {
+  const ctx = await requireHousehold()
+  if (!ctx) return { rows: [], starters: [], error: false, canWrite: false }
+  const [recipes, ingredients, catalog, catalogIngredients] = await Promise.all([
+    ctx.supabase
+      .from("recipes")
+      .select("id, name, category, servings, steps, notes, visibility, catalog_recipe_id, created_by, updated_at")
+      .eq("household_id", ctx.householdId)
+      .order("name", { ascending: true }),
+    ctx.supabase
+      .from("recipe_ingredients")
+      .select("id, recipe_id, name, quantity, unit, category, sort_order")
+      .eq("household_id", ctx.householdId)
+      .order("sort_order", { ascending: true }),
+    ctx.supabase.from("catalog_recipes").select("id, name, category, servings, steps, notes, sort_order").order("sort_order", { ascending: true }),
+    ctx.supabase.from("catalog_recipe_ingredients").select("id, catalog_recipe_id, name, quantity, unit, category, sort_order").order("sort_order", { ascending: true }),
+  ])
+  const missing = [recipes.error, ingredients.error, catalog.error, catalogIngredients.error].some(
+    (error) => relationMissing(error) || columnMissing(error),
+  )
+  if (missing) return { rows: [], starters: [], error: false, canWrite: ctx.canWrite }
+  if (recipes.error || ingredients.error || catalog.error || catalogIngredients.error) {
+    return { rows: [], starters: [], error: true, canWrite: ctx.canWrite }
+  }
+  const ingredientRows = ingredients.data ?? []
+  const rows: RecipeRow[] = (recipes.data ?? []).map((recipe) => ({
+    id: recipe.id,
+    name: recipe.name,
+    category: recipe.category,
+    servings: recipe.servings,
+    steps: recipeSteps(recipe.steps),
+    notes: recipe.notes,
+    visibility: recipe.visibility,
+    catalog_recipe_id: recipe.catalog_recipe_id,
+    created_by: recipe.created_by,
+    updated_at: recipe.updated_at,
+    ingredients: ingredientRows.filter((item) => item.recipe_id === recipe.id).map(ingredientOf),
+  }))
+  const copied = new Map(rows.filter((recipe) => recipe.catalog_recipe_id).map((recipe) => [recipe.catalog_recipe_id, recipe.id]))
+  const catalogLines = catalogIngredients.data ?? []
+  const starters: StarterRecipe[] = (catalog.data ?? []).map((recipe) => ({
+    id: recipe.id,
+    name: recipe.name,
+    category: recipe.category,
+    servings: recipe.servings,
+    steps: recipeSteps(recipe.steps),
+    notes: recipe.notes,
+    copiedId: copied.get(recipe.id) ?? null,
+    ingredients: catalogLines.filter((item) => item.catalog_recipe_id === recipe.id).map(ingredientOf),
+  }))
+  return { rows, starters, error: false, canWrite: ctx.canWrite }
+}
+
+export async function getRecipe(id: string) {
+  const library = await listRecipes()
+  const recipe = library.rows.find((row) => row.id === id) ?? null
+  const ctx = await requireHousehold()
+  if (!ctx || !recipe) return { recipe, shopping: [] as { name: string; checked_at: string | null }[], pantry: [] as { name: string }[], error: library.error, canWrite: library.canWrite }
+  const [shopping, pantry] = await Promise.all([
+    ctx.supabase.from("shopping_items").select("name, checked_at").eq("household_id", ctx.householdId),
+    ctx.supabase.from("pantry_items").select("name").eq("household_id", ctx.householdId),
+  ])
+  if (shopping.error || pantry.error) return { recipe, shopping: [], pantry: [], error: true, canWrite: library.canWrite }
+  return {
+    recipe,
+    shopping: shopping.data ?? [],
+    pantry: pantry.data ?? [],
+    error: false,
+    canWrite: library.canWrite,
+  }
 }
 
 export async function getNote(id: string) {

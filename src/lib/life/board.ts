@@ -11,12 +11,13 @@ export const LIFE_COPY = {
   mealsPulseEmpty: "No meals planned this week yet.",
   shoppingEmpty: "List is clear. Add what to pick up.",
   shoppingPulseEmpty: "List is clear. Add what to pick up.",
+  recipesEmpty: "No recipes yet. Add one, or start from a starter.",
   filterEmpty: "Nothing matches these filters.",
   markedDone: "Marked done — Undo",
   checkedOff: "Checked off — Undo",
 } as const
 
-export type LifePage = "calendar" | "tasks" | "meals" | "shopping"
+export type LifePage = "calendar" | "tasks" | "meals" | "recipes" | "shopping"
 
 const SLOT_RANK: Record<string, number> = { breakfast: 0, lunch: 1, dinner: 2, snack: 3 }
 
@@ -27,6 +28,7 @@ export function lifeSubtitle(page: LifePage, householdName?: string | null) {
   }
   if (page === "tasks") return "What needs doing."
   if (page === "meals") return "What’s cooking this week."
+  if (page === "recipes") return "Meals you can cook again."
   return "What to pick up."
 }
 

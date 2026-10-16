@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
 import { CheckControl, LifeFab, PhoneFabClearance, useLifeVisibility } from "@/components/life/life-chrome"
+import { StaleChoice } from "@/components/life/stale-choice"
 import { ConfirmRemove, EmptyState, FilterEmpty, MoneyAddButton, MoneyCard, MoneyFrame, RowMenu } from "@/components/money/money-chrome"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { WidgetError } from "@/components/ui/pills"
@@ -29,9 +30,6 @@ import {
   LIST_JUST_ME_BLOCKED,
   LIST_UNAVAILABLE,
   SHOPPING_CATEGORIES,
-  STALE_CHANGED,
-  STALE_KEEP_MINE,
-  STALE_USE_THEIRS,
   calmShoppingMessage,
   displayAmount,
   filterShoppingItems,
@@ -600,14 +598,7 @@ function ItemRow({
           <p className="text-[13px] text-muted-foreground">
             {[displayAmount(item), item.price_cents != null ? formatMoney(item.price_cents, currency) : "", item.notes ?? "", item.visibility === "private" ? "Just me" : ""].filter(Boolean).join(" · ")}
           </p>
-          {conflict ? (
-            <p className="mt-1 text-[13px] text-muted-foreground" onClick={(event) => event.stopPropagation()}>
-              {STALE_CHANGED}{" "}
-              <button type="button" className="text-muted-foreground" onClick={onUseTheirs}>{STALE_USE_THEIRS}</button>
-              {" | "}
-              <button type="button" className="text-muted-foreground" onClick={onKeepMine}>{STALE_KEEP_MINE}</button>
-            </p>
-          ) : null}
+          {conflict ? <StaleChoice onUseTheirs={onUseTheirs} onKeepMine={onKeepMine} /> : null}
         </div>
         <div className="ml-auto pt-1" onClick={(event) => event.stopPropagation()}>
           <RowMenu

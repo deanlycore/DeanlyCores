@@ -1,4 +1,4 @@
-import { KEEP_MINE_ATTEMPTS, STALE_SAVE, shoppingCategory, shoppingDbMessage, type ShoppingCategory } from "@/lib/life/shopping"
+import { KEEP_MINE_ATTEMPTS, LIST_UNAVAILABLE, STALE_SAVE, shoppingCategory, shoppingDbMessage, type ShoppingCategory } from "@/lib/life/shopping"
 import { normalizeTypedAmount } from "@/lib/life/units"
 import { defaultVisibilityFor, type Visibility } from "@/lib/visibility"
 
@@ -64,10 +64,6 @@ function categoryOf(value: FormDataEntryValue | null): ShoppingCategory {
   return shoppingCategory(String(value ?? ""))
 }
 
-function schemaMissing(error: { message: string } | null) {
-  return Boolean(error && /does not exist|schema cache/i.test(error.message))
-}
-
 export function failed(
   error: { code?: string; message: string; details?: string | null } | null,
   fallback: string,
@@ -115,11 +111,23 @@ function stale(error: { code?: string; message: string } | null, count: number |
   return count === 0
 }
 
+function knownScope(ctx: ShoppingWriter, visibility: Visibility) {
+  if (!ctx.householdId.trim() || !ctx.userId.trim()) return false
+  return visibility === "shared" || visibility === "private"
+}
+
 export async function listForVisibility(ctx: ShoppingWriter, listId: string, visibility: Visibility) {
+  if (!knownScope(ctx, visibility)) return { id: null as string | null, missing: false }
   if (listId) {
-    const list = await fromTable(ctx, "shopping_lists").select("id, visibility").eq("id", listId).maybeSingle()
-    if (list.error && schemaMissing(list.error)) return { id: null as string | null, missing: true }
-    if (list.data?.visibility === visibility) return { id: list.data.id, missing: false }
+    let requested = fromTable(ctx, "shopping_lists")
+      .select("id, visibility")
+      .eq("id", listId)
+      .eq("household_id", ctx.householdId)
+      .eq("visibility", visibility)
+    if (visibility === "private") requested = requested.eq("created_by", ctx.userId)
+    const list = await requested.maybeSingle()
+    if (list.error) return { id: null, missing: false }
+    if (list.data?.id && list.data.visibility === visibility) return { id: list.data.id, missing: false }
   }
   let query = fromTable(ctx, "shopping_lists")
     .select("id")
@@ -128,7 +136,7 @@ export async function listForVisibility(ctx: ShoppingWriter, listId: string, vis
     .eq("is_default", true)
   if (visibility === "private") query = query.eq("created_by", ctx.userId)
   const found = await query.maybeSingle()
-  if (found.error && schemaMissing(found.error)) return { id: null, missing: true }
+  if (found.error) return { id: null, missing: false }
   if (found.data?.id) return { id: found.data.id, missing: false }
   const created = await fromTable(ctx, "shopping_lists")
     .insert({
@@ -140,8 +148,8 @@ export async function listForVisibility(ctx: ShoppingWriter, listId: string, vis
     })
     .select("id")
     .single()
-  if (created.error && schemaMissing(created.error)) return { id: null, missing: true }
-  return { id: created.data?.id ?? null, missing: false }
+  if (created.error || !created.data?.id) return { id: null, missing: false }
+  return { id: created.data.id, missing: false }
 }
 
 async function loadStamp(
@@ -169,19 +177,17 @@ async function keepEditedShoppingItem(
   const visibility = visibilityOf(formData.get("visibility"), defaultVisibilityFor("shopping", ctx.lastVisibility))
   const requestedList = textOf(formData.get("list_id"), 80) ?? ""
   const list = await listForVisibility(ctx, requestedList, visibility)
-  const fields = list.missing
-    ? { name, visibility }
-    : {
-        name,
-        ...amountFields(formData),
-        price_cents: price,
-        notes: textOf(formData.get("notes"), 500),
-        category: categoryOf(formData.get("category")),
-        visibility,
-        list_id: list.id,
-        user_edited: true,
-      }
-  if (!list.missing && !list.id) return { ok: false, message: "Choose a list." }
+  if (!list.id) return { ok: false, message: LIST_UNAVAILABLE }
+  const fields = {
+    name,
+    ...amountFields(formData),
+    price_cents: price,
+    notes: textOf(formData.get("notes"), 500),
+    category: categoryOf(formData.get("category")),
+    visibility,
+    list_id: list.id,
+    user_edited: true,
+  }
   const saved = await writeFresh(ctx, id, fields)
   return finishFresh(saved, id, refresh) ?? { ok: false, message: "Couldn’t save that item." }
 }
@@ -203,44 +209,36 @@ export async function saveShoppingItemWith(
   const visibility = visibilityOf(formData.get("visibility"), defaultVisibilityFor("shopping", ctx.lastVisibility))
   const requestedList = textOf(formData.get("list_id"), 80) ?? ""
   const list = await listForVisibility(ctx, requestedList, visibility)
-  if (list.missing) {
-    if (stamp?.ok) {
-      const saved = await fromTable(ctx, "shopping_items")
-        .update({ name, visibility })
-        .eq("id", stamp.id)
-        .eq("updated_at", stamp.updatedAt)
-        .select("id")
-      const blocked = failed(saved.error, "Couldn’t save that item.")
-      if (blocked) return blocked
-      if (!saved.data?.length) return { ok: false, message: STALE_SAVE, conflict: true }
-      refresh()
-      return { ok: true, id: stamp.id }
-    }
-    const legacy = await fromTable(ctx, "shopping_items")
-      .insert({
-        household_id: ctx.householdId,
-        owner_id: ctx.userId,
-        visibility,
+  if (!list.id) return { ok: false, message: LIST_UNAVAILABLE }
+  const fromRecipe = formData.get("source") === "auto"
+  const autoAmount = normalizeTypedAmount(textOf(formData.get("auto_qty"), 40), textOf(formData.get("auto_unit"), 24))
+  const fields = fromRecipe
+    ? {
         name,
-      })
-      .select("id")
-      .single()
-    const blocked = failed(legacy.error, "Couldn’t add that item.")
-    if (blocked || !legacy.data) return blocked ?? { ok: false, message: "Couldn’t add that item." }
-    refresh()
-    return { ok: true, id: legacy.data.id }
-  }
-  if (!list.id) return { ok: false, message: "Choose a list." }
-  const fields = {
-    name,
-    ...amountFields(formData),
-    price_cents: price,
-    notes: textOf(formData.get("notes"), 500),
-    category: categoryOf(formData.get("category")),
-    visibility,
-    list_id: list.id,
-    user_edited: true,
-  }
+        manual_amount_raw: null,
+        manual_unit_raw: null,
+        manual_qty: null,
+        manual_unit: null,
+        auto_qty: autoAmount.qty,
+        auto_unit: autoAmount.unit,
+        price_cents: price,
+        notes: textOf(formData.get("notes"), 500),
+        category: categoryOf(formData.get("category")),
+        visibility,
+        list_id: list.id,
+        user_edited: false,
+        source: "auto" as const,
+      }
+    : {
+        name,
+        ...amountFields(formData),
+        price_cents: price,
+        notes: textOf(formData.get("notes"), 500),
+        category: categoryOf(formData.get("category")),
+        visibility,
+        list_id: list.id,
+        user_edited: true,
+      }
   if (!stamp?.ok) {
     const created = await fromTable(ctx, "shopping_items")
       .insert({

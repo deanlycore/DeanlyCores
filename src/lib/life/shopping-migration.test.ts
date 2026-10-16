@@ -9,6 +9,8 @@ import { fileURLToPath } from "node:url"
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "../../..")
 const upgrade = join(root, "supabase/migrations/20261015200000_shopping_upgrade.sql")
+const revokeAnon = join(root, "supabase/migrations/20261016120000_revoke_shopping_anon.sql")
+const recipes = join(root, "supabase/migrations/20261016121000_recipes.sql")
 
 const beforeUpgrade = `
 create schema if not exists auth;
@@ -235,6 +237,217 @@ test("existing shopping items move into a default list with the manual fields fi
     assert.notEqual(rice.list_id, milk.list_id)
     assert.equal(rice.household_id, "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
     assert.equal(rice.list_created_by, rice.owner_id)
+
+    execFileSync(
+      psql,
+      [...base, "-d", "shopping", "-c", "grant all privileges on table public.shopping_lists, public.shopping_items, public.pantry_items to anon"],
+      { stdio: "pipe" },
+    )
+    execFileSync(psql, [...base, "-d", "shopping", "-f", revokeAnon], { stdio: "pipe" })
+    const anonShopping = execFileSync(
+      psql,
+      [...base, "-d", "shopping", "-t", "-A", "-c", "select count(*) from information_schema.table_privileges where grantee = 'anon' and table_schema = 'public' and table_name in ('shopping_lists', 'shopping_items', 'pantry_items')"],
+      { encoding: "utf8" },
+    ).trim()
+    assert.equal(anonShopping, "0")
+    const authenticated = execFileSync(
+      psql,
+      [...base, "-d", "shopping", "-t", "-A", "-c", "select string_agg(table_name || ':' || privilege_type, ',' order by table_name, privilege_type) from information_schema.table_privileges where grantee = 'authenticated' and table_schema = 'public' and table_name in ('shopping_lists', 'pantry_items')"],
+      { encoding: "utf8" },
+    ).trim()
+    for (const table of ["pantry_items", "shopping_lists"]) {
+      for (const privilege of ["DELETE", "INSERT", "SELECT", "UPDATE"]) assert.match(authenticated, new RegExp(`${table}:${privilege}`))
+      assert.doesNotMatch(authenticated, new RegExp(`${table}:TRUNCATE`))
+    }
+    const policies = execFileSync(
+      psql,
+      [...base, "-d", "shopping", "-t", "-A", "-c", "select string_agg(tablename || ':' || policyname, ',' order by tablename, policyname) from pg_policies where schemaname = 'public' and tablename in ('shopping_lists', 'pantry_items')"],
+      { encoding: "utf8" },
+    ).trim()
+    for (const table of ["pantry_items", "shopping_lists"]) {
+      for (const action of ["delete", "insert", "select", "update"]) assert.match(policies, new RegExp(`${table}:${table}_${action}`))
+    }
+
+    execFileSync(psql, [...base, "-d", "shopping", "-f", recipes], { stdio: "pipe" })
+    const catalogCount = execFileSync(psql, [...base, "-d", "shopping", "-t", "-A", "-c", "select count(*) from public.catalog_recipes"], { encoding: "utf8" }).trim()
+    const householdCount = execFileSync(psql, [...base, "-d", "shopping", "-t", "-A", "-c", "select count(*) from public.recipes"], { encoding: "utf8" }).trim()
+    assert.equal(catalogCount, "30")
+    assert.equal(householdCount, "0")
+    const anonRecipes = execFileSync(
+      psql,
+      [...base, "-d", "shopping", "-t", "-A", "-c", "select count(*) from information_schema.table_privileges where grantee = 'anon' and table_schema = 'public' and table_name in ('catalog_recipes', 'catalog_recipe_ingredients', 'recipes', 'recipe_ingredients')"],
+      { encoding: "utf8" },
+    ).trim()
+    assert.equal(anonRecipes, "0")
+    const mismatch = spawnSync(psql, [...base, "-d", "shopping", "-v", "ON_ERROR_STOP=1", "-c", `
+      insert into public.recipes (id, household_id, created_by, visibility, name, servings)
+      values ('40000000-0000-0000-0000-000000000001', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '11111111-1111-1111-1111-111111111111', 'shared', 'Soup', 4);
+      insert into public.recipe_ingredients (recipe_id, household_id, created_by, visibility, name, sort_order)
+      values ('40000000-0000-0000-0000-000000000001', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '11111111-1111-1111-1111-111111111111', 'shared', 'Onion', 0);
+    `], { encoding: "utf8" })
+    assert.notEqual(mismatch.status, 0)
+    assert.match(`${mismatch.stderr}`, /That recipe is not available/)
+
+    execFileSync(psql, [...base, "-d", "shopping", "-v", "ON_ERROR_STOP=1", "-c", `
+      create table public.household_members (
+        household_id uuid not null,
+        user_id uuid not null,
+        role text not null
+      );
+      insert into public.household_members (household_id, user_id, role)
+      values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '11111111-1111-1111-1111-111111111111', 'owner');
+      create or replace function auth.uid() returns uuid language sql stable as $$
+        select '11111111-1111-1111-1111-111111111111'::uuid
+      $$;
+    `], { stdio: "pipe" })
+    execFileSync(psql, [...base, "-d", "shopping", "-v", "ON_ERROR_STOP=1", "-c", `
+      do $$
+      declare
+        v_result jsonb;
+        v_id uuid;
+        v_stamp timestamptz;
+        v_vis public.visibility;
+        v_ing public.visibility;
+      begin
+        v_result := public.save_household_recipe(jsonb_build_object(
+          'name', 'Tacos',
+          'servings', 4,
+          'steps', jsonb_build_array('Warm.'),
+          'visibility', 'shared',
+          'ingredients', jsonb_build_array(jsonb_build_object('name', 'Onion', 'quantity', '1', 'unit', 'each', 'category', 'produce'))
+        ));
+        if v_result->>'ok' is distinct from 'true' then
+          raise exception 'create failed %', v_result;
+        end if;
+        v_id := (v_result->>'id')::uuid;
+        select updated_at, visibility into v_stamp, v_vis from public.recipes where id = v_id;
+        select visibility into v_ing from public.recipe_ingredients where recipe_id = v_id;
+        if v_vis is distinct from 'shared' or v_ing is distinct from 'shared' then
+          raise exception 'expected shared got % %', v_vis, v_ing;
+        end if;
+
+        v_result := public.save_household_recipe(jsonb_build_object(
+          'id', v_id,
+          'updated_at', v_stamp,
+          'name', 'Tacos',
+          'servings', 4,
+          'steps', jsonb_build_array('Warm.'),
+          'visibility', 'private',
+          'ingredients', jsonb_build_array(jsonb_build_object('name', 'Onion', 'quantity', '1', 'unit', 'each', 'category', 'produce'))
+        ));
+        if v_result->>'ok' is distinct from 'true' then
+          raise exception 'flip private failed %', v_result;
+        end if;
+        select visibility into v_vis from public.recipes where id = v_id;
+        select visibility into v_ing from public.recipe_ingredients where recipe_id = v_id;
+        if v_vis is distinct from 'private' or v_ing is distinct from 'private' then
+          raise exception 'expected private got % %', v_vis, v_ing;
+        end if;
+
+        select updated_at into v_stamp from public.recipes where id = v_id;
+        v_result := public.save_household_recipe(jsonb_build_object(
+          'id', v_id,
+          'updated_at', v_stamp,
+          'name', 'Tacos',
+          'servings', 4,
+          'steps', jsonb_build_array('Warm.'),
+          'visibility', 'shared',
+          'ingredients', jsonb_build_array(jsonb_build_object('name', 'Onion', 'quantity', '1', 'unit', 'each', 'category', 'produce'))
+        ));
+        if v_result->>'ok' is distinct from 'true' then
+          raise exception 'flip shared failed %', v_result;
+        end if;
+        select visibility into v_vis from public.recipes where id = v_id;
+        select visibility into v_ing from public.recipe_ingredients where recipe_id = v_id;
+        if v_vis is distinct from 'shared' or v_ing is distinct from 'shared' then
+          raise exception 'expected shared again got % %', v_vis, v_ing;
+        end if;
+
+        v_result := public.save_household_recipe(jsonb_build_object(
+          'id', v_id,
+          'updated_at', '2000-01-01T00:00:00Z',
+          'name', 'Stale',
+          'servings', 4,
+          'steps', jsonb_build_array('Warm.'),
+          'visibility', 'private',
+          'ingredients', jsonb_build_array(jsonb_build_object('name', 'Gone', 'category', 'produce'))
+        ));
+        if v_result->>'conflict' is distinct from 'true' then
+          raise exception 'expected conflict %', v_result;
+        end if;
+        if exists (
+          select 1 from public.recipes
+          where id = v_id and (name is distinct from 'Tacos' or visibility is distinct from 'shared')
+        ) then
+          raise exception 'stale save changed the recipe';
+        end if;
+        if (select count(*) from public.recipe_ingredients where recipe_id = v_id and name = 'Onion') is distinct from 1 then
+          raise exception 'stale save changed ingredients';
+        end if;
+      end $$;
+    `], { stdio: "pipe" })
+    const beforeFailure = execFileSync(
+      psql,
+      [...base, "-d", "shopping", "-t", "-A", "-c", "select r.visibility || '|' || i.name || '|' || i.visibility from public.recipes r join public.recipe_ingredients i on i.recipe_id = r.id where r.name = 'Tacos'"],
+      { encoding: "utf8" },
+    ).trim()
+    const failedSave = spawnSync(psql, [...base, "-d", "shopping", "-v", "ON_ERROR_STOP=1", "-c", `
+      select public.save_household_recipe(jsonb_build_object(
+        'id', (select id from public.recipes where name = 'Tacos'),
+        'updated_at', (select updated_at from public.recipes where name = 'Tacos'),
+        'name', 'Tacos',
+        'servings', 4,
+        'steps', jsonb_build_array('Warm.'),
+        'visibility', 'private',
+        'ingredients', jsonb_build_array(jsonb_build_object('name', 'Onion', 'quantity', '1', 'unit', 'each', 'category', 'nope'))
+      ));
+    `], { encoding: "utf8" })
+    assert.notEqual(failedSave.status, 0)
+    const afterFailure = execFileSync(
+      psql,
+      [...base, "-d", "shopping", "-t", "-A", "-c", "select r.visibility || '|' || i.name || '|' || i.visibility from public.recipes r join public.recipe_ingredients i on i.recipe_id = r.id where r.name = 'Tacos'"],
+      { encoding: "utf8" },
+    ).trim()
+    assert.equal(afterFailure, beforeFailure)
+    assert.equal(afterFailure, "shared|Onion|shared")
+    const definer = execFileSync(
+      psql,
+      [...base, "-d", "shopping", "-t", "-A", "-c", "select prosecdef::text || '|' || coalesce(proconfig::text, '') from pg_proc where proname = 'save_household_recipe'"],
+      { encoding: "utf8" },
+    ).trim()
+    assert.equal(definer, "false|{search_path=public}")
+    const execute = execFileSync(
+      psql,
+      [...base, "-d", "shopping", "-t", "-A", "-c", "select has_function_privilege('authenticated', 'public.save_household_recipe(jsonb)', 'execute')::text || '|' || has_function_privilege('anon', 'public.save_household_recipe(jsonb)', 'execute')::text || '|' || has_function_privilege('public', 'public.save_household_recipe(jsonb)', 'execute')::text"],
+      { encoding: "utf8" },
+    ).trim()
+    assert.equal(execute, "true|false|false")
+    const deferred = execFileSync(
+      psql,
+      [...base, "-d", "shopping", "-t", "-A", "-c", "select condeferrable::text || '|' || condeferred::text from pg_constraint where conname = 'recipe_ingredients_parent_fk'"],
+      { encoding: "utf8" },
+    ).trim()
+    assert.equal(deferred, "true|true")
+    const steps = execFileSync(
+      psql,
+      [...base, "-d", "shopping", "-t", "-A", "-c", "select pg_get_constraintdef(oid) from pg_constraint where conname in ('recipes_steps_ok', 'catalog_recipes_steps_ok') order by conname"],
+      { encoding: "utf8" },
+    )
+    assert.equal(steps.trim().split("\n").length, 2)
+    assert.match(steps, /recipe_steps_within_limit/)
+    const stepBody = execFileSync(
+      psql,
+      [...base, "-d", "shopping", "-t", "-A", "-c", "select prosecdef::text || '|' || coalesce(proconfig::text, '') || '|' || prosrc from pg_proc where proname = 'recipe_steps_within_limit'"],
+      { encoding: "utf8" },
+    )
+    assert.match(stepBody, /^false\|\{search_path=public\}\|/)
+    assert.match(stepBody, /char_length\(step\.value\) > 2000/)
+    const stepExecute = execFileSync(
+      psql,
+      [...base, "-d", "shopping", "-t", "-A", "-c", "select has_function_privilege('authenticated', 'public.recipe_steps_within_limit(jsonb)', 'execute')::text || '|' || has_function_privilege('anon', 'public.recipe_steps_within_limit(jsonb)', 'execute')::text || '|' || has_function_privilege('public', 'public.recipe_steps_within_limit(jsonb)', 'execute')::text"],
+      { encoding: "utf8" },
+    ).trim()
+    assert.equal(stepExecute, "true|false|false")
   } catch (error) {
     const log = join(dir, "server.log")
     const detail = error instanceof Error ? error.message : String(error)

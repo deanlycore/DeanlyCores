@@ -71,6 +71,7 @@ test("calendar copy uses the household name and a calm empty line", () => {
   assert.equal(lifeSubtitle("calendar", "DeanFamily"), "What’s on for DeanFamily.")
   assert.equal(lifeSubtitle("tasks", "DeanFamily"), "What needs doing.")
   assert.equal(lifeSubtitle("meals", "DeanFamily"), "What’s cooking this week.")
+  assert.equal(lifeSubtitle("recipes", "DeanFamily"), "Meals you can cook again.")
   assert.equal(lifeSubtitle("shopping", "DeanFamily"), "What to pick up.")
   assert.equal(calendarEmpty("DeanFamily"), "No events yet. Add what’s on for DeanFamily.")
   assert.equal(LIFE_COPY.filterEmpty, "Nothing matches these filters.")
