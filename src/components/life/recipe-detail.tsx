@@ -58,6 +58,7 @@ export function RecipeDetail({
   const shown = loaded ?? recipe
   const planned = planIngredients(recipe.ingredients, shopping, pantry)
   const toAdd = planned.filter((item) => item.plan === "add")
+  const settled = recipe.visibility === "private" && (added !== null || notice === ADDED_JUST_ME)
 
   return (
     <div className="grid min-w-0 gap-4">
@@ -94,17 +95,19 @@ export function RecipeDetail({
                   <p className="text-[15px] font-medium text-ink">{ingredientLine(item)}</p>
                   {ingredientCategoryLabel(item.category) ? <p className="text-[13px] text-muted-foreground">{ingredientCategoryLabel(item.category)}</p> : null}
                 </div>
-                <p className="shrink-0 text-[13px] text-muted-foreground">{planLabel(item.plan)}</p>
+                <p className="shrink-0 text-[13px] text-muted-foreground">
+                  {settled && (item.plan === "add" || added?.includes(item.name)) ? "On your list" : planLabel(item.plan)}
+                </p>
               </div>
             </MoneyCard>
           ))}
           {recipe.visibility === "private" ? (
-            <p className="text-sm text-ink">{justMeListLine(added !== null || notice === ADDED_JUST_ME)}</p>
+            <p className="text-sm text-ink">{justMeListLine(settled)}</p>
           ) : notice ? (
             <p className="text-sm text-ink">{notice}</p>
           ) : null}
-          {added ? <p className="text-sm text-ink">{added.length ? `Added ${added.join(", ")}.` : "Nothing new to add."}</p> : null}
-          {canWrite ? (
+          {recipe.visibility !== "private" && added ? <p className="text-sm text-ink">{added.length ? `Added ${added.join(", ")}.` : "Nothing new to add."}</p> : null}
+          {canWrite && !settled ? (
             <Button
               type="button"
               className="h-11 w-fit rounded-button md:h-10"
