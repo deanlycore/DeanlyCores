@@ -9,6 +9,8 @@ import { fileURLToPath } from "node:url"
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "../../..")
 const upgrade = join(root, "supabase/migrations/20261015200000_shopping_upgrade.sql")
+const revokeAnon = join(root, "supabase/migrations/20261016120000_revoke_shopping_anon.sql")
+const recipes = join(root, "supabase/migrations/20261016121000_recipes.sql")
 
 const beforeUpgrade = `
 create schema if not exists auth;
@@ -235,6 +237,56 @@ test("existing shopping items move into a default list with the manual fields fi
     assert.notEqual(rice.list_id, milk.list_id)
     assert.equal(rice.household_id, "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
     assert.equal(rice.list_created_by, rice.owner_id)
+
+    execFileSync(
+      psql,
+      [...base, "-d", "shopping", "-c", "grant all privileges on table public.shopping_lists, public.shopping_items, public.pantry_items to anon"],
+      { stdio: "pipe" },
+    )
+    execFileSync(psql, [...base, "-d", "shopping", "-f", revokeAnon], { stdio: "pipe" })
+    const anonShopping = execFileSync(
+      psql,
+      [...base, "-d", "shopping", "-t", "-A", "-c", "select count(*) from information_schema.table_privileges where grantee = 'anon' and table_schema = 'public' and table_name in ('shopping_lists', 'shopping_items', 'pantry_items')"],
+      { encoding: "utf8" },
+    ).trim()
+    assert.equal(anonShopping, "0")
+    const authenticated = execFileSync(
+      psql,
+      [...base, "-d", "shopping", "-t", "-A", "-c", "select string_agg(table_name || ':' || privilege_type, ',' order by table_name, privilege_type) from information_schema.table_privileges where grantee = 'authenticated' and table_schema = 'public' and table_name in ('shopping_lists', 'pantry_items')"],
+      { encoding: "utf8" },
+    ).trim()
+    for (const table of ["pantry_items", "shopping_lists"]) {
+      for (const privilege of ["DELETE", "INSERT", "SELECT", "UPDATE"]) assert.match(authenticated, new RegExp(`${table}:${privilege}`))
+      assert.doesNotMatch(authenticated, new RegExp(`${table}:TRUNCATE`))
+    }
+    const policies = execFileSync(
+      psql,
+      [...base, "-d", "shopping", "-t", "-A", "-c", "select string_agg(tablename || ':' || policyname, ',' order by tablename, policyname) from pg_policies where schemaname = 'public' and tablename in ('shopping_lists', 'pantry_items')"],
+      { encoding: "utf8" },
+    ).trim()
+    for (const table of ["pantry_items", "shopping_lists"]) {
+      for (const action of ["delete", "insert", "select", "update"]) assert.match(policies, new RegExp(`${table}:${table}_${action}`))
+    }
+
+    execFileSync(psql, [...base, "-d", "shopping", "-f", recipes], { stdio: "pipe" })
+    const catalogCount = execFileSync(psql, [...base, "-d", "shopping", "-t", "-A", "-c", "select count(*) from public.catalog_recipes"], { encoding: "utf8" }).trim()
+    const householdCount = execFileSync(psql, [...base, "-d", "shopping", "-t", "-A", "-c", "select count(*) from public.recipes"], { encoding: "utf8" }).trim()
+    assert.equal(catalogCount, "30")
+    assert.equal(householdCount, "0")
+    const anonRecipes = execFileSync(
+      psql,
+      [...base, "-d", "shopping", "-t", "-A", "-c", "select count(*) from information_schema.table_privileges where grantee = 'anon' and table_schema = 'public' and table_name in ('catalog_recipes', 'catalog_recipe_ingredients', 'recipes', 'recipe_ingredients')"],
+      { encoding: "utf8" },
+    ).trim()
+    assert.equal(anonRecipes, "0")
+    const mismatch = spawnSync(psql, [...base, "-d", "shopping", "-v", "ON_ERROR_STOP=1", "-c", `
+      insert into public.recipes (id, household_id, created_by, visibility, name, servings)
+      values ('40000000-0000-0000-0000-000000000001', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '11111111-1111-1111-1111-111111111111', 'shared', 'Soup', 4);
+      insert into public.recipe_ingredients (recipe_id, household_id, created_by, visibility, name, sort_order)
+      values ('40000000-0000-0000-0000-000000000001', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '11111111-1111-1111-1111-111111111111', 'shared', 'Onion', 0);
+    `], { encoding: "utf8" })
+    assert.notEqual(mismatch.status, 0)
+    assert.match(`${mismatch.stderr}`, /That recipe is not available/)
   } catch (error) {
     const log = join(dir, "server.log")
     const detail = error instanceof Error ? error.message : String(error)

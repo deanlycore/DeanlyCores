@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useEffect, useRef, useState, type FocusEvent } from "react"
 import { createPortal } from "react-dom"
 import {
+  BookOpen,
   CalendarDays,
   ChartNoAxesColumn,
   ChevronDown,
@@ -55,6 +56,7 @@ const childIcons: Record<RailIcon, LucideIcon> = {
   calendar: CalendarDays,
   tasks: SquareCheckBig,
   meals: Utensils,
+  recipes: BookOpen,
   shopping: ShoppingCart,
   family: Users,
 }

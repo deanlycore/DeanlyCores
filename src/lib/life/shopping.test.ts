@@ -10,7 +10,8 @@ import {
   isStapleIngredient,
   normalizeIngredientName,
 } from "./normalize.ts"
-import { saveShoppingItemWith, type ShoppingWriter } from "./shopping-save.ts"
+import type { Visibility } from "../visibility.ts"
+import { listForVisibility, saveShoppingItemWith, type ShoppingWriter } from "./shopping-save.ts"
 import {
   ITEM_UNAVAILABLE,
   KEEP_MINE_ATTEMPTS,
@@ -369,3 +370,107 @@ test("shopping migration keeps parent checks, authenticated catalog reads, and a
   assert.equal(/DeanFamily|Andrey|Arabella/i.test(sql), false)
   assert.equal(/grant\s+(insert|update|delete|all)[\s\S]{0,80}unit_aliases/i.test(sql), false)
 })
+
+test("listForVisibility fails closed and never returns an unfiltered list", async () => {
+  const closed = await listForVisibility({ ...writer(unreachable()), householdId: "  " }, "list-1", "shared")
+  assert.deepEqual(closed, { id: null, missing: false })
+  const unknownHome = await listForVisibility({ ...writer(unreachable()), householdId: "" }, "", "shared")
+  assert.equal(unknownHome.id, null)
+  const unknownUser = await listForVisibility({ ...writer(unreachable()), userId: "" }, "", "private")
+  assert.equal(unknownUser.id, null)
+  const unknownVisibility = await listForVisibility(writer(unreachable()), "", "team" as Visibility)
+  assert.deepEqual(unknownVisibility, { id: null, missing: false })
+
+  const errored = scopedLists({ error: { message: 'relation "shopping_lists" does not exist' } })
+  const missingTable = await listForVisibility(writer(errored.supabase), "list-1", "shared")
+  assert.deepEqual(missingTable, { id: null, missing: false })
+  assert.equal(errored.inserts.length, 0)
+  assert.equal(missingTable.id === "unfiltered", false)
+
+  const denied = scopedLists({ error: { message: "permission denied for table shopping_lists" } })
+  const deniedResult = await listForVisibility(writer(denied.supabase), "", "shared")
+  assert.equal(deniedResult.id, null)
+  assert.equal(denied.inserts.length, 0)
+
+  const found = scopedLists({ row: { id: "wanted", visibility: "shared" } })
+  const hit = await listForVisibility(writer(found.supabase), "wanted", "shared")
+  assert.deepEqual(hit, { id: "wanted", missing: false })
+  assert.equal(found.inserts.length, 0)
+  assert.equal(found.filters.some((filter) => filter[0] === "household_id" && filter[1] === "house-1"), true)
+  assert.equal(found.filters.some((filter) => filter[0] === "visibility" && filter[1] === "shared"), true)
+
+  const created = scopedLists({})
+  const made = await listForVisibility(writer(created.supabase), "", "private")
+  assert.deepEqual(made, { id: "list-1", missing: false })
+  assert.equal(created.inserts[0]?.household_id, "house-1")
+  assert.equal(created.inserts[0]?.visibility, "private")
+  assert.equal(created.inserts[0]?.created_by, "user-1")
+  assert.equal(created.filters.some((filter) => filter[0] === "created_by" && filter[1] === "user-1"), true)
+
+  const writes: string[] = []
+  const brokenSave = await saveShoppingItemWith(
+    writer({
+      from(table: string) {
+        return chain(
+          table === "shopping_lists"
+            ? { data: null, error: { message: "Could not find the table in the schema cache" } }
+            : { data: { id: "item-1" }, error: null },
+          writes,
+          table,
+        )
+      },
+    }),
+    stampedForm(),
+    () => writes.push("refresh"),
+  )
+  assert.equal(brokenSave.ok, false)
+  if (!brokenSave.ok) assert.equal(brokenSave.message, LIST_UNAVAILABLE)
+  assert.deepEqual(writes, [])
+})
+
+function unreachable(): ShoppingWriter["supabase"] {
+  return {
+    from() {
+      throw new Error("unfiltered query")
+    },
+  }
+}
+
+function scopedLists(options: { error?: { message: string } | null; row?: { id: string; visibility?: string } | null }) {
+  const filters: [string, unknown][] = []
+  const inserts: Record<string, unknown>[] = []
+  const supabase: ShoppingWriter["supabase"] = {
+    from() {
+      const local: [string, unknown][] = []
+      const api = {
+        select() {
+          return api
+        },
+        eq(column: string, value: unknown) {
+          local.push([column, value])
+          filters.push([column, value])
+          return api
+        },
+        insert(row: Record<string, unknown>) {
+          inserts.push(row)
+          return api
+        },
+        update() {
+          return api
+        },
+        maybeSingle() {
+          const scoped = local.some(([column, value]) => column === "household_id" && value === "house-1")
+            && local.some(([column, value]) => column === "visibility" && (value === "shared" || value === "private"))
+          if (!scoped) return Promise.resolve({ data: { id: "unfiltered", visibility: "shared" }, error: null })
+          if (options.error) return Promise.resolve({ data: null, error: options.error })
+          return Promise.resolve({ data: options.row ?? null, error: null })
+        },
+        single() {
+          return Promise.resolve({ data: { id: "list-1" }, error: null })
+        },
+      }
+      return api
+    },
+  }
+  return { supabase, filters, inserts }
+}
