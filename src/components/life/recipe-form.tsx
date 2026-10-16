@@ -164,7 +164,7 @@ export function RecipeForm({
                     key={choice}
                     className={cn(
                       "flex min-h-12 items-center justify-center rounded-[10px] border border-border px-3 text-sm",
-                      locked ? "cursor-not-allowed bg-surface-muted text-muted-foreground opacity-50" : selected ? "bg-surface text-ink" : "bg-surface text-muted-foreground",
+                      locked ? "cursor-not-allowed border-dashed bg-surface-muted text-muted-foreground opacity-40" : selected ? "bg-surface text-ink" : "bg-surface text-muted-foreground",
                     )}
                   >
                     <input
