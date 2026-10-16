@@ -1,11 +1,14 @@
 import type { ShoppingCategory } from "@/lib/life/shopping"
 import { saveShoppingItemWith, type ShoppingActionResult, type ShoppingWriter } from "@/lib/life/shopping-save"
-import { normalizeTypedAmount } from "@/lib/life/units"
 import type { Visibility } from "@/lib/visibility"
 
-import { parseRecipeForm, planIngredients, RECIPE_STALE, RECIPE_UNAVAILABLE, RECIPE_VIEW_ONLY, recipeDbMessage, recipeSteps, type RecipeDraft, type RecipeIngredient } from "@/lib/life/recipes"
+import { buildShoppingLines } from "@/lib/life/planner"
+import { isClientRequestId } from "@/lib/life/meals-save"
+import { ADDED_JUST_ME, OTHERS_ADDED, parseRecipeForm, planIngredients, RECIPE_STALE, RECIPE_UNAVAILABLE, RECIPE_VIEW_ONLY, recipeDbMessage, recipeSteps, type RecipeDraft, type RecipeIngredient } from "@/lib/life/recipes"
 
-export type RecipeActionResult = { ok: true; id?: string; added?: string[]; skipped?: string[] } | { ok: false; message: string; conflict?: boolean }
+export type RecipeActionResult =
+  | { ok: true; id?: string; added?: string[]; skipped?: string[]; message?: string }
+  | { ok: false; message: string; conflict?: boolean }
 
 type DbError = { code?: string; message: string; details?: string | null } | null
 
@@ -43,8 +46,8 @@ function failed(error: DbError, fallback: string): RecipeActionResult | null {
 
 type RecipeRpc = (
   fn: string,
-  args: { p_recipe: Record<string, unknown> },
-) => Promise<{ data: { ok?: boolean; conflict?: boolean; id?: string } | null; error: DbError }>
+  args: { p_household_id?: string; p_recipe?: Record<string, unknown>; p_add_batch_id?: string; p_recipe_id?: string | null; p_catalog_recipe_id?: string | null; p_servings?: number; p_lines?: unknown },
+) => Promise<{ data: { ok?: boolean; conflict?: boolean; code?: string; id?: string; added?: number; updated?: number; removed?: number } | null; error: DbError }>
 
 function recipePayload(draft: RecipeDraft, updatedAt: string | null) {
   return {
@@ -80,9 +83,10 @@ export async function saveRecipeWith(ctx: RecipeWriter, formData: FormData, refr
   }
   const rpc = (ctx.supabase as { rpc?: RecipeRpc }).rpc
   if (!rpc) return { ok: false, message: "Couldn’t save that recipe." }
-  const saved = await rpc("save_household_recipe", { p_recipe: recipePayload(draft, updatedAt) })
+  const saved = await rpc("save_household_recipe", { p_household_id: ctx.householdId, p_recipe: recipePayload(draft, updatedAt) })
   const saveError = failed(saved.error, "Couldn’t save that recipe.")
   if (saveError) return saveError
+  if (saved.data?.code === "others_added") return { ok: false, message: OTHERS_ADDED }
   if (saved.data?.conflict) return { ok: false, message: RECIPE_STALE, conflict: true }
   const recipeId = saved.data?.id ? String(saved.data.id) : draft.id
   if (!saved.data?.ok || !recipeId) return { ok: false, message: "Couldn’t save that recipe." }
@@ -165,11 +169,12 @@ export async function addRecipeToShoppingWith(
   ctx: RecipeWriter,
   recipeId: string,
   refresh: () => void,
+  batchId: string,
   saveItem: SaveItem = saveShoppingItemWith,
 ): Promise<RecipeActionResult> {
   const denied = blocked(ctx)
   if (denied) return denied
-  if (!recipeId.trim()) return { ok: false, message: RECIPE_UNAVAILABLE }
+  if (!recipeId.trim() || !isClientRequestId(batchId)) return { ok: false, message: RECIPE_UNAVAILABLE }
   const recipe = await fromTable(ctx, "recipes").select("id, visibility").eq("id", recipeId).eq("household_id", ctx.householdId).maybeSingle()
   const recipeError = failed(recipe.error, "Couldn’t add those ingredients.")
   if (recipeError) return recipeError
@@ -182,33 +187,49 @@ export async function addRecipeToShoppingWith(
   ])
   const readError = failed(ingredients.error, "Couldn’t add those ingredients.") || failed(shopping.error, "Couldn’t add those ingredients.") || failed(pantry.error, "Couldn’t add those ingredients.")
   if (readError) return readError
+  const rows = ((ingredients.data ?? []) as unknown as RecipeIngredient[]).map((item, index) => ({
+    id: String(item.id ?? index),
+    name: String(item.name ?? ""),
+    quantity: item.quantity == null ? null : String(item.quantity),
+    unit: item.unit == null ? null : String(item.unit),
+    category: typeof item.category === "string" ? (item.category as ShoppingCategory) : null,
+    sort_order: Number(item.sort_order ?? index),
+  }))
   const planned = planIngredients(
-    ((ingredients.data ?? []) as unknown as RecipeIngredient[]).map((item, index) => ({
-      id: String(item.id ?? index),
-      name: String(item.name ?? ""),
-      quantity: item.quantity == null ? null : String(item.quantity),
-      unit: item.unit == null ? null : String(item.unit),
-      category: typeof item.category === "string" ? (item.category as ShoppingCategory) : null,
-      sort_order: Number(item.sort_order ?? index),
-    })),
+    rows,
     (shopping.data ?? []).map((item) => ({ name: String(item.name ?? ""), checked_at: (item.checked_at as string | null) ?? null })),
     (pantry.data ?? []).map((item) => ({ name: String(item.name ?? "") })),
   )
-  const added: string[] = []
-  const skipped = planned.filter((item) => item.plan !== "add").map((item) => item.name)
-  for (const item of planned) {
-    if (item.plan !== "add") continue
-    const form = new FormData()
-    const amount = normalizeTypedAmount(item.quantity, item.unit)
-    form.set("name", item.name)
-    form.set("source", "auto")
-    if (amount.qty != null) form.set("auto_qty", String(amount.qty))
-    if (amount.unit) form.set("auto_unit", amount.unit)
-    if (item.category) form.set("category", item.category)
-    form.set("visibility", visibility)
-    const saved = await saveItem(ctx, form, refresh)
-    if (!saved.ok) return saved
-    added.push(item.name)
+  const lines = buildShoppingLines({
+    ingredients: rows,
+    recipeServings: 1,
+    mealServings: 1,
+    shopping: (shopping.data ?? []).map((item) => ({ name: String(item.name ?? ""), checked_at: (item.checked_at as string | null) ?? null })),
+    pantry: (pantry.data ?? []).map((item) => ({ name: String(item.name ?? "") })),
+    includeOnList: false,
+  })
+  const rpc = (ctx.supabase as { rpc?: RecipeRpc }).rpc
+  if (!rpc) return { ok: false, message: "Couldn’t add those ingredients." }
+  void saveItem
+  const saved = await rpc("add_recipe_to_shopping", {
+    p_household_id: ctx.householdId,
+    p_add_batch_id: batchId,
+    p_recipe_id: recipeId,
+    p_catalog_recipe_id: null,
+    p_servings: 1,
+    p_lines: lines,
+  })
+  const saveError = failed(saved.error, "Couldn’t add those ingredients.")
+  if (saveError) return saveError
+  if (!saved.data?.ok) return { ok: false, message: "Couldn’t add those ingredients." }
+  refresh()
+  const added = planned.filter((item) => item.plan === "add" && !lines.every((line) => line.name !== item.name)).map((item) => item.name)
+  const skipped = planned.filter((item) => !added.includes(item.name)).map((item) => item.name)
+  return {
+    ok: true,
+    id: recipeId,
+    added,
+    skipped,
+    message: visibility === "private" ? ADDED_JUST_ME : undefined,
   }
-  return { ok: true, id: recipeId, added, skipped }
 }

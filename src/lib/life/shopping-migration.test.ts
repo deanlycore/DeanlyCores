@@ -11,6 +11,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "../../..")
 const upgrade = join(root, "supabase/migrations/20261015200000_shopping_upgrade.sql")
 const revokeAnon = join(root, "supabase/migrations/20261016120000_revoke_shopping_anon.sql")
 const recipes = join(root, "supabase/migrations/20261016121000_recipes.sql")
+const recipeHousehold = join(root, "supabase/migrations/20261017100000_recipe_save_household_param.sql")
 
 const beforeUpgrade = `
 create schema if not exists auth;
@@ -299,7 +300,22 @@ test("existing shopping items move into a default list with the manual fields fi
       create or replace function auth.uid() returns uuid language sql stable as $$
         select '11111111-1111-1111-1111-111111111111'::uuid
       $$;
+      create or replace function public.is_household_member(p_household_id uuid)
+      returns boolean language sql stable as $$ select true $$;
+      create or replace function public.household_member_role(p_household_id uuid)
+      returns text language sql stable as $$
+        select role from public.household_members
+        where household_id = p_household_id and user_id = auth.uid()
+      $$;
+      create table public.meals (
+        id uuid primary key,
+        household_id uuid not null,
+        recipe_id uuid,
+        meal_on date,
+        slot text
+      );
     `], { stdio: "pipe" })
+    execFileSync(psql, [...base, "-d", "shopping", "-f", recipeHousehold], { stdio: "pipe" })
     execFileSync(psql, [...base, "-d", "shopping", "-v", "ON_ERROR_STOP=1", "-c", `
       do $$
       declare
@@ -309,7 +325,7 @@ test("existing shopping items move into a default list with the manual fields fi
         v_vis public.visibility;
         v_ing public.visibility;
       begin
-        v_result := public.save_household_recipe(jsonb_build_object(
+        v_result := public.save_household_recipe('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', jsonb_build_object(
           'name', 'Tacos',
           'servings', 4,
           'steps', jsonb_build_array('Warm.'),
@@ -326,7 +342,7 @@ test("existing shopping items move into a default list with the manual fields fi
           raise exception 'expected shared got % %', v_vis, v_ing;
         end if;
 
-        v_result := public.save_household_recipe(jsonb_build_object(
+        v_result := public.save_household_recipe('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', jsonb_build_object(
           'id', v_id,
           'updated_at', v_stamp,
           'name', 'Tacos',
@@ -345,7 +361,7 @@ test("existing shopping items move into a default list with the manual fields fi
         end if;
 
         select updated_at into v_stamp from public.recipes where id = v_id;
-        v_result := public.save_household_recipe(jsonb_build_object(
+        v_result := public.save_household_recipe('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', jsonb_build_object(
           'id', v_id,
           'updated_at', v_stamp,
           'name', 'Tacos',
@@ -363,7 +379,7 @@ test("existing shopping items move into a default list with the manual fields fi
           raise exception 'expected shared again got % %', v_vis, v_ing;
         end if;
 
-        v_result := public.save_household_recipe(jsonb_build_object(
+        v_result := public.save_household_recipe('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', jsonb_build_object(
           'id', v_id,
           'updated_at', '2000-01-01T00:00:00Z',
           'name', 'Stale',
@@ -392,7 +408,7 @@ test("existing shopping items move into a default list with the manual fields fi
       { encoding: "utf8" },
     ).trim()
     const failedSave = spawnSync(psql, [...base, "-d", "shopping", "-v", "ON_ERROR_STOP=1", "-c", `
-      select public.save_household_recipe(jsonb_build_object(
+      select public.save_household_recipe('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', jsonb_build_object(
         'id', (select id from public.recipes where name = 'Tacos'),
         'updated_at', (select updated_at from public.recipes where name = 'Tacos'),
         'name', 'Tacos',
@@ -418,10 +434,10 @@ test("existing shopping items move into a default list with the manual fields fi
     assert.equal(definer, "false|{search_path=public}")
     const execute = execFileSync(
       psql,
-      [...base, "-d", "shopping", "-t", "-A", "-c", "select has_function_privilege('authenticated', 'public.save_household_recipe(jsonb)', 'execute')::text || '|' || has_function_privilege('anon', 'public.save_household_recipe(jsonb)', 'execute')::text || '|' || has_function_privilege('public', 'public.save_household_recipe(jsonb)', 'execute')::text"],
+      [...base, "-d", "shopping", "-t", "-A", "-c", "select (to_regprocedure('public.save_household_recipe(jsonb)') is null)::text || '|' || has_function_privilege('authenticated', 'public.save_household_recipe(uuid, jsonb)', 'execute')::text || '|' || has_function_privilege('anon', 'public.save_household_recipe(uuid, jsonb)', 'execute')::text || '|' || has_function_privilege('public', 'public.save_household_recipe(uuid, jsonb)', 'execute')::text"],
       { encoding: "utf8" },
     ).trim()
-    assert.equal(execute, "true|false|false")
+    assert.equal(execute, "true|true|false|false")
     const deferred = execFileSync(
       psql,
       [...base, "-d", "shopping", "-t", "-A", "-c", "select condeferrable::text || '|' || condeferred::text from pg_constraint where conname = 'recipe_ingredients_parent_fk'"],
