@@ -10,7 +10,7 @@ import { ConfirmRemove, MoneyAddButton, MoneyCard } from "@/components/money/mon
 import { Button } from "@/components/ui/button"
 import { VisibilityPill, WidgetError } from "@/components/ui/pills"
 import { addRecipeToShopping, deleteRecipe, loadRecipe, saveRecipe } from "@/lib/actions/recipes"
-import { ADDED_JUST_ME, ingredientCategoryLabel, ingredientLine, planIngredients, planLabel, servingsLabel, type RecipeRow } from "@/lib/life/recipes"
+import { ADDED_JUST_ME, ingredientCategoryLabel, ingredientLine, justMeListLine, planIngredients, planLabel, servingsLabel, type RecipeRow } from "@/lib/life/recipes"
 import { calmShoppingMessage } from "@/lib/life/shopping"
 
 export function RecipeDetail({
@@ -96,7 +96,11 @@ export function RecipeDetail({
               </div>
             </MoneyCard>
           ))}
-          {notice ? <p className="text-sm text-ink">{notice}</p> : null}
+          {recipe.visibility === "private" ? (
+            <p className="text-sm text-ink">{justMeListLine(added !== null || notice === ADDED_JUST_ME)}</p>
+          ) : notice ? (
+            <p className="text-sm text-ink">{notice}</p>
+          ) : null}
           {added ? <p className="text-sm text-ink">{added.length ? `Added ${added.join(", ")}.` : "Nothing new to add."}</p> : null}
           {canWrite ? (
             <Button

@@ -241,7 +241,7 @@ export function MealsPlanner({
             <div className="grid gap-3">
               <p className="text-[13px] text-muted-foreground">Servings</p>
               <p className="text-sm text-ink">{selected.servings}</p>
-              {listAction === "hidden" ? null : (
+              {listAction === "hidden" || confirm ? null : (
                 <Button
                   type="button"
                   variant="outline"

@@ -6,7 +6,7 @@ import { phoneSheetClass } from "@/components/money/money-chrome"
 import { StaleChoice } from "@/components/life/stale-choice"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { SHOPPING_CATEGORY_IDS, type RecipeRow } from "@/lib/life/recipes"
+import { OTHERS_ADDED, SHOPPING_CATEGORY_IDS, type RecipeRow } from "@/lib/life/recipes"
 import { shoppingCategoryLabel } from "@/lib/life/shopping"
 import { cn } from "cn"
 
@@ -50,6 +50,8 @@ export function RecipeForm({
   const [pending, setPending] = useState(false)
   const [note, setNote] = useState(initialNote)
   const [conflict, setConflict] = useState(showConflict)
+  const [visibility, setVisibility] = useState<"shared" | "private">(recipe?.visibility === "private" ? "private" : "shared")
+  const lockJustMe = note === OTHERS_ADDED
 
   function updateLine(index: number, patch: Partial<Line>) {
     setLines((current) => current.map((line, lineIndex) => (lineIndex === index ? { ...line, ...patch } : line)))
@@ -129,9 +131,14 @@ export function RecipeForm({
                     </option>
                   ))}
                 </select>
-                <button type="button" className="col-span-full h-10 justify-self-start text-left text-[13px] text-muted-foreground" onClick={() => setLines((current) => current.filter((_, lineIndex) => lineIndex !== index))}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="col-span-full min-h-12 w-fit justify-self-start px-4 text-muted-foreground"
+                  onClick={() => setLines((current) => current.filter((_, lineIndex) => lineIndex !== index))}
+                >
                   Remove
-                </button>
+                </Button>
               </div>
             ))}
             <button type="button" className="justify-self-start text-sm font-medium text-brand-deep" onClick={() => setLines((current) => [...current, { id: "", name: "", quantity: "", unit: "", category: "" }])}>
@@ -146,13 +153,35 @@ export function RecipeForm({
             Notes
             <textarea name="notes" defaultValue={recipe?.notes ?? ""} rows={2} className="min-h-16 min-w-0 w-full rounded-[10px] border border-border bg-surface px-3 py-2 text-sm text-ink" />
           </label>
-          <label className="grid min-w-0 gap-1 text-[13px] text-muted-foreground">
-            Who can see it
-            <select name="visibility" defaultValue={recipe?.visibility ?? "shared"} className={field}>
-              <option value="shared">Shared</option>
-              <option value="private">Just me</option>
-            </select>
-          </label>
+          <fieldset className="grid min-w-0 gap-2">
+            <legend className="text-[13px] text-muted-foreground">Who can see it</legend>
+            <div className="grid grid-cols-2 gap-2">
+              {(["shared", "private"] as const).map((choice) => {
+                const locked = choice === "private" && lockJustMe
+                const selected = (lockJustMe ? "shared" : visibility) === choice
+                return (
+                  <label
+                    key={choice}
+                    className={cn(
+                      "flex min-h-12 items-center justify-center rounded-[10px] border border-border px-3 text-sm",
+                      locked ? "cursor-not-allowed bg-surface-muted text-muted-foreground opacity-50" : selected ? "bg-surface text-ink" : "bg-surface text-muted-foreground",
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="visibility"
+                      value={choice}
+                      checked={selected}
+                      disabled={locked}
+                      onChange={() => setVisibility(choice)}
+                      className="sr-only"
+                    />
+                    {choice === "shared" ? "Shared" : "Just me"}
+                  </label>
+                )
+              })}
+            </div>
+          </fieldset>
           {note ? <p className="text-sm text-ink">{note}</p> : null}
           <div className="flex items-center justify-end gap-3">
             <Button type="button" variant="outline" className="h-10 rounded-button" onClick={() => onOpenChange(false)}>

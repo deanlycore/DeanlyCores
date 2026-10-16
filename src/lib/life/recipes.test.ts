@@ -4,7 +4,7 @@ import { dirname, join } from "node:path"
 import test from "node:test"
 import { fileURLToPath } from "node:url"
 
-import { ingredientLine, parseRecipeForm, planIngredients, planLabel, RECIPE_REFERENCE, RECIPE_STALE, RECIPE_UNAVAILABLE, RECIPE_VIEW_ONLY, recipeDbMessage, servingsLabel } from "./recipes.ts"
+import { ADDED_JUST_ME, ingredientLine, justMeListLine, parseRecipeForm, planIngredients, planLabel, RECIPE_REFERENCE, RECIPE_STALE, RECIPE_UNAVAILABLE, RECIPE_VIEW_ONLY, recipeDbMessage, servingsLabel } from "./recipes.ts"
 import { addRecipeToShoppingWith, copyCatalogRecipeWith, deleteRecipeWith, saveRecipeWith, type RecipeWriter } from "./recipes-save.ts"
 import type { ShoppingWriter } from "./shopping-save.ts"
 
@@ -143,6 +143,18 @@ test("add ingredients to shopping skips the list and pantry and never sends manu
   assert.equal(call?.fn, "add_recipe_to_shopping")
   assert.deepEqual(call?.args.p_lines?.map((line) => line.name), ["Chicken thighs"])
   assert.equal(JSON.stringify(call?.args.p_lines).includes("manual_"), false)
+})
+
+test("just me confirm copy stays future tense until the add succeeds", () => {
+  assert.equal(justMeListLine(false), "Adds to your Just me list.")
+  assert.equal(justMeListLine(true), "Added to your Just me list.")
+  assert.equal(ADDED_JUST_ME, "Added to your Just me list.")
+  const detail = readFileSync(join(root, "src/components/life/recipe-detail.tsx"), "utf8")
+  assert.match(detail, /justMeListLine\(added !== null \|\| notice === ADDED_JUST_ME\)/)
+  const form = readFileSync(join(root, "src/components/life/recipe-form.tsx"), "utf8")
+  assert.match(form, /min-h-12 w-fit justify-self-start/)
+  assert.match(form, /disabled=\{locked\}/)
+  assert.match(readFileSync(join(root, "src/components/life/meals-planner.tsx"), "utf8"), /listAction === "hidden" \|\| confirm/)
 })
 
 test("berries keep their recipe spelling on the shopping line", async () => {

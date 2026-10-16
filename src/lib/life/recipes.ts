@@ -12,7 +12,14 @@ export const RECIPE_REFERENCE = "That didn’t save. Reload the recipe and try a
 
 export const OTHERS_ADDED = "Others added to this recipe, so it stays Shared."
 
+export const ADDS_TO_JUST_ME = "Adds to your Just me list."
+
 export const ADDED_JUST_ME = "Added to your Just me list."
+
+/** Before the add, the confirm line is future tense. Success switches it. */
+export function justMeListLine(added: boolean) {
+  return added ? ADDED_JUST_ME : ADDS_TO_JUST_ME
+}
 
 export const STARTER_NOTE = "Editing saves a copy for your household. The original stays the same."
 
