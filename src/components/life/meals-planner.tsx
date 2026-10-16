@@ -91,7 +91,6 @@ export function MealsPlanner({
   const [placed, setPlaced] = useState<PlannerMeal[]>([])
   const [query, setQuery] = useState("")
   const [chip, setChip] = useState<string>("all")
-  const [menuId, setMenuId] = useState<string | null>(null)
   const week = weekOf(today, offset)
   const plannedMeals = [...meals, ...placed.filter((meal) => !meals.some((row) => row.id === meal.id))]
   const visible = filterLife(plannedMeals, filter).filter((meal) => meal.meal_on >= week.start && meal.meal_on <= week.end)
@@ -229,11 +228,8 @@ export function MealsPlanner({
                 <SlotColumn
                   day={day}
                   meals={visible}
-                  menuId={menuId}
-                  onMenu={setMenuId}
                   onOpen={setSelectedId}
                   onAdd={(slot) => openAdd(day, slot)}
-                  onRemove={(meal) => void removeMeal(meal, preview, router)}
                 />
               </div>
             ))}
@@ -253,11 +249,8 @@ export function MealsPlanner({
                       <SlotColumn
                         day={day}
                         meals={visible}
-                        menuId={menuId}
-                        onMenu={setMenuId}
                         onOpen={setSelectedId}
                         onAdd={(slot) => openAdd(day, slot)}
-                        onRemove={(meal) => void removeMeal(meal, preview, router)}
                       />
                     </div>
                   ) : null}
@@ -318,9 +311,9 @@ export function MealsPlanner({
                   </Button>
                 </div>
               ) : null}
-              <button type="button" className="inline-flex min-h-12 items-center justify-self-start text-left text-sm text-muted-foreground" onClick={() => void removeMeal(selected, preview, router)}>
+              <Button type="button" variant="outline" className="min-h-12 w-full" onClick={() => void removeMeal(selected, preview, router)}>
                 Remove from plan
-              </button>
+              </Button>
             </div>
           ) : null}
         </DialogContent>
@@ -370,19 +363,13 @@ function Tile({ label, value }: { label: string; value: string }) {
 function SlotColumn({
   day,
   meals,
-  menuId,
-  onMenu,
   onOpen,
   onAdd,
-  onRemove,
 }: {
   day: string
   meals: PlannerMeal[]
-  menuId: string | null
-  onMenu: (id: string | null) => void
   onOpen: (id: string) => void
   onAdd: (slot: MealSlot) => void
-  onRemove: (meal: PlannerMeal) => void
 }) {
   return (
     <div className="grid gap-2">
@@ -399,16 +386,6 @@ function SlotColumn({
                     <p className="text-[13px] text-muted-foreground">{mealStatusLine(meal.servings, meal.needed, Boolean(meal.recipe_id))}</p>
                   ) : null}
                 </button>
-                <button type="button" className="inline-flex min-h-12 min-w-12 items-center justify-center text-[13px] text-muted-foreground" aria-label={`${meal.title} menu`} onClick={() => onMenu(menuId === meal.id ? null : meal.id)}>
-                  ···
-                </button>
-                {menuId === meal.id ? (
-                  <div className="grid gap-1 pt-1">
-                    <button type="button" className="min-h-12 text-left text-[13px] text-ink" onClick={() => onRemove(meal)}>
-                      Remove
-                    </button>
-                  </div>
-                ) : null}
               </div>
             ))}
             <button type="button" className="min-h-12 text-left text-[13px] text-muted-foreground" onClick={() => onAdd(slot)}>
