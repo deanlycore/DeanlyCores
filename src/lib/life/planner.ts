@@ -66,6 +66,13 @@ export function estimateLabel(totalCents: number, missingPrice: boolean) {
   return `About $${Math.round(totalCents / 100)}`
 }
 
+/** Schema test 25. One needed item with no price replaces the dollar estimate. */
+export function neededEstimate(items: { price_cents?: number | null }[]) {
+  const missing = items.some((item) => item.price_cents == null)
+  const cents = items.reduce((sum, item) => sum + (item.price_cents ?? 0), 0)
+  return estimateLabel(cents, missing && items.length > 0)
+}
+
 export function updateListButton(meal: { recipeId: string | null }, canWrite: boolean) {
   if (!meal.recipeId) return "hidden" as const
   if (!canWrite) return "disabled" as const

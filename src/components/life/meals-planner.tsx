@@ -12,11 +12,13 @@ import { phoneSheetClass, MoneyFrame } from "@/components/money/money-chrome"
 import { removePlannedMeal, savePlannedMeal, updateMealList } from "@/lib/actions/meals"
 import { filterLife } from "@/lib/life/board"
 import {
+  confirmListChoice,
   formatWeekLabel,
   mealStatusLine,
   SLOTS,
   slotLabel,
   UPDATE_LIST_CONFIRM,
+  updateListButton,
   weekdayLabel,
   weekOf,
   type MealSlot,
@@ -91,6 +93,7 @@ export function MealsPlanner({
   const week = weekOf(today, offset)
   const visible = filterLife(meals, filter).filter((meal) => meal.meal_on >= week.start && meal.meal_on <= week.end)
   const selected = meals.find((meal) => meal.id === selectedId) ?? null
+  const listAction = selected ? updateListButton({ recipeId: selected.recipe_id }, canWrite) : "hidden"
   const plannedCount = visible.length
   const recent = useMemo(() => recipes.slice(0, 6), [recipes])
   const searched = recipes.filter((recipe) => recipe.name.toLowerCase().includes(query.trim().toLowerCase()))
@@ -117,6 +120,12 @@ export function MealsPlanner({
     }
     setNotice(result.message ?? "List updated.")
     router.refresh()
+  }
+
+  function declineUpdate() {
+    const writes = confirmListChoice("not-now", [])
+    setConfirm(false)
+    if (writes.includes("sync")) void runUpdate()
   }
 
   return (
@@ -232,17 +241,17 @@ export function MealsPlanner({
             <div className="grid gap-3">
               <p className="text-[13px] text-muted-foreground">Servings</p>
               <p className="text-sm text-ink">{selected.servings}</p>
-              {selected.recipe_id ? (
+              {listAction === "hidden" ? null : (
                 <Button
                   type="button"
                   variant="outline"
                   className="min-h-12 w-full"
-                  disabled={!canWrite || pending || updateListButtonState(selected, canWrite) === "disabled"}
+                  disabled={pending || listAction === "disabled"}
                   onClick={() => setConfirm(true)}
                 >
                   {pending ? "Updating…" : "Update list"}
                 </Button>
-              ) : null}
+              )}
               {notice ? <p className="text-[13px] text-muted-foreground">{notice}</p> : null}
               {confirm ? (
                 <div className="grid gap-2 rounded-[12px] border border-border bg-surface-muted p-3">
@@ -254,7 +263,7 @@ export function MealsPlanner({
                     type="button"
                     variant="outline"
                     className="min-h-12"
-                    onClick={() => setConfirm(false)}
+                    onClick={declineUpdate}
                   >
                     Not now
                   </Button>
@@ -306,12 +315,6 @@ export function MealsPlanner({
       </Dialog>
     </MoneyFrame>
   )
-}
-
-function updateListButtonState(meal: PlannerMeal, canWrite: boolean) {
-  if (!meal.recipe_id) return "hidden"
-  if (!canWrite) return "disabled"
-  return "ready"
 }
 
 async function removeMeal(meal: PlannerMeal, preview: boolean, router: { refresh: () => void }) {

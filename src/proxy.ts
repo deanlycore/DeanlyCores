@@ -1,10 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server"
 
-import { previewIsProduction } from "@/lib/preview-access"
+import { previewStatus } from "@/lib/preview-access"
 import { updateSession } from "@/lib/supabase/proxy"
 
 export async function proxy(request: NextRequest) {
-  if (request.nextUrl.pathname.startsWith("/preview") && previewIsProduction()) {
+  if (previewStatus(request.nextUrl.pathname) === 404) {
     return NextResponse.rewrite(new URL("/404", request.url), { status: 404 })
   }
   return updateSession(request)
