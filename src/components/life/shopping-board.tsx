@@ -395,6 +395,13 @@ export function ShoppingBoard({
           )
         ) : null}
         {tab === "buy" && visible.length > 0 && shown.length === 0 ? <FilterEmpty onClear={clearFilters} /> : null}
+        {tab === "buy" && visible.some((item) => item.for_meal && !item.checked_at) ? (
+          <details className="rounded-[12px] border border-border bg-surface">
+            <summary className="cursor-pointer list-none px-3 py-3 text-[13px] font-medium text-ink">
+              {`Needed for planned meals · ${visible.filter((item) => item.for_meal && !item.checked_at).length}`}
+            </summary>
+          </details>
+        ) : null}
         {tab === "buy" ? grouped.groups.map((group) => (
           <details key={group.id} open className="group rounded-[12px] border border-border bg-surface">
             <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-3 text-[13px] font-medium text-ink">

@@ -6,20 +6,21 @@ import { phoneSheetClass } from "@/components/money/money-chrome"
 import { StaleChoice } from "@/components/life/stale-choice"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { SHOPPING_CATEGORY_IDS, type RecipeRow } from "@/lib/life/recipes"
+import { OTHERS_ADDED, SHOPPING_CATEGORY_IDS, type RecipeRow } from "@/lib/life/recipes"
 import { shoppingCategoryLabel } from "@/lib/life/shopping"
 import { cn } from "cn"
 
 const field = "h-10 min-w-0 w-full rounded-[10px] border border-border bg-surface px-3 text-sm text-ink"
 
-type Line = { name: string; quantity: string; unit: string; category: string }
+type Line = { id: string; name: string; quantity: string; unit: string; category: string }
 
 type SaveResult = { ok: boolean; message?: string; conflict?: boolean }
 
 function linesOf(recipe: RecipeRow | null): Line[] {
-  if (!recipe) return [{ name: "", quantity: "", unit: "", category: "" }]
-  if (!recipe.ingredients.length) return [{ name: "", quantity: "", unit: "", category: "" }]
+  if (!recipe) return [{ id: "", name: "", quantity: "", unit: "", category: "" }]
+  if (!recipe.ingredients.length) return [{ id: "", name: "", quantity: "", unit: "", category: "" }]
   return recipe.ingredients.map((item) => ({
+    id: item.id,
     name: item.name,
     quantity: item.quantity ?? "",
     unit: item.unit ?? "",
@@ -31,6 +32,7 @@ export function RecipeForm({
   open,
   recipe,
   showConflict = false,
+  initialNote = "",
   onOpenChange,
   onSubmit,
   onUseTheirs,
@@ -38,6 +40,7 @@ export function RecipeForm({
   open: boolean
   recipe: RecipeRow | null
   showConflict?: boolean
+  initialNote?: string
   onOpenChange: (open: boolean) => void
   onSubmit: (formData: FormData) => Promise<SaveResult>
   onUseTheirs?: () => void
@@ -45,8 +48,10 @@ export function RecipeForm({
   const formRef = useRef<HTMLFormElement>(null)
   const [lines, setLines] = useState<Line[]>(() => linesOf(recipe))
   const [pending, setPending] = useState(false)
-  const [note, setNote] = useState("")
+  const [note, setNote] = useState(initialNote)
   const [conflict, setConflict] = useState(showConflict)
+  const [visibility, setVisibility] = useState<"shared" | "private">(recipe?.visibility === "private" ? "private" : "shared")
+  const lockJustMe = note === OTHERS_ADDED
 
   function updateLine(index: number, patch: Partial<Line>) {
     setLines((current) => current.map((line, lineIndex) => (lineIndex === index ? { ...line, ...patch } : line)))
@@ -114,24 +119,31 @@ export function RecipeForm({
           <fieldset className="grid min-w-0 gap-2">
             <legend className="text-[13px] text-muted-foreground">Ingredients</legend>
             {lines.map((line, index) => (
-              <div key={index} className="grid min-w-0 grid-cols-2 gap-2 md:grid-cols-[minmax(0,1.4fr)_72px_72px_minmax(0,1fr)_auto]">
-                <input aria-label={`Ingredient ${index + 1}`} value={line.name} onChange={(event) => updateLine(index, { name: event.target.value })} placeholder="Name" className={cn(field, "col-span-2 md:col-span-1")} />
-                <input aria-label={`Quantity ${index + 1}`} value={line.quantity} onChange={(event) => updateLine(index, { quantity: event.target.value })} placeholder="Qty" className={field} />
-                <input aria-label={`Unit ${index + 1}`} value={line.unit} onChange={(event) => updateLine(index, { unit: event.target.value })} placeholder="Unit" className={field} />
-                <select aria-label={`Shopping category ${index + 1}`} value={line.category} onChange={(event) => updateLine(index, { category: event.target.value })} className={cn(field, "col-span-2 md:col-span-1")}>
-                  <option value="">No category</option>
-                  {SHOPPING_CATEGORY_IDS.map((id) => (
-                    <option key={id} value={id}>
-                      {shoppingCategoryLabel(id)}
-                    </option>
-                  ))}
-                </select>
-                <button type="button" className="h-10 text-[13px] text-muted-foreground" onClick={() => setLines((current) => current.filter((_, lineIndex) => lineIndex !== index))}>
+              <div key={index} className="flex items-start gap-2">
+                <div className="grid min-w-0 flex-1 grid-cols-2 gap-2 md:grid-cols-[minmax(0,1.4fr)_72px_72px_minmax(0,1fr)]">
+                  <input aria-label={`Ingredient ${index + 1}`} value={line.name} onChange={(event) => updateLine(index, { name: event.target.value })} placeholder="Name" className={cn(field, "col-span-2 md:col-span-1")} />
+                  <input aria-label={`Quantity ${index + 1}`} value={line.quantity} onChange={(event) => updateLine(index, { quantity: event.target.value })} placeholder="Qty" className={field} />
+                  <input aria-label={`Unit ${index + 1}`} value={line.unit} onChange={(event) => updateLine(index, { unit: event.target.value })} placeholder="Unit" className={field} />
+                  <select aria-label={`Shopping category ${index + 1}`} value={line.category} onChange={(event) => updateLine(index, { category: event.target.value })} className={cn(field, "col-span-2 md:col-span-1")}>
+                    <option value="">No category</option>
+                    {SHOPPING_CATEGORY_IDS.map((id) => (
+                      <option key={id} value={id}>
+                        {shoppingCategoryLabel(id)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="min-h-12 shrink-0 px-3 text-muted-foreground"
+                  onClick={() => setLines((current) => current.filter((_, lineIndex) => lineIndex !== index))}
+                >
                   Remove
-                </button>
+                </Button>
               </div>
             ))}
-            <button type="button" className="justify-self-start text-sm font-medium text-brand-deep" onClick={() => setLines((current) => [...current, { name: "", quantity: "", unit: "", category: "" }])}>
+            <button type="button" className="justify-self-start text-sm font-medium text-brand-deep" onClick={() => setLines((current) => [...current, { id: "", name: "", quantity: "", unit: "", category: "" }])}>
               Add ingredient
             </button>
           </fieldset>
@@ -143,13 +155,35 @@ export function RecipeForm({
             Notes
             <textarea name="notes" defaultValue={recipe?.notes ?? ""} rows={2} className="min-h-16 min-w-0 w-full rounded-[10px] border border-border bg-surface px-3 py-2 text-sm text-ink" />
           </label>
-          <label className="grid min-w-0 gap-1 text-[13px] text-muted-foreground">
-            Who can see it
-            <select name="visibility" defaultValue={recipe?.visibility ?? "shared"} className={field}>
-              <option value="shared">Shared</option>
-              <option value="private">Just me</option>
-            </select>
-          </label>
+          <fieldset className="grid min-w-0 gap-2">
+            <legend className="text-[13px] text-muted-foreground">Who can see it</legend>
+            <div className="grid grid-cols-2 gap-2">
+              {(["shared", "private"] as const).map((choice) => {
+                const locked = choice === "private" && lockJustMe
+                const selected = (lockJustMe ? "shared" : visibility) === choice
+                return (
+                  <label
+                    key={choice}
+                    className={cn(
+                      "flex min-h-12 items-center justify-center rounded-[10px] border border-border px-3 text-sm",
+                      locked ? "cursor-not-allowed border-dashed bg-surface-muted text-muted-foreground opacity-40" : selected ? "bg-surface text-ink" : "bg-surface text-muted-foreground",
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="visibility"
+                      value={choice}
+                      checked={selected}
+                      disabled={locked}
+                      onChange={() => setVisibility(choice)}
+                      className="sr-only"
+                    />
+                    {choice === "shared" ? "Shared" : "Just me"}
+                  </label>
+                )
+              })}
+            </div>
+          </fieldset>
           {note ? <p className="text-sm text-ink">{note}</p> : null}
           <div className="flex items-center justify-end gap-3">
             <Button type="button" variant="outline" className="h-10 rounded-button" onClick={() => onOpenChange(false)}>

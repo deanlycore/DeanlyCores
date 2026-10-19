@@ -48,7 +48,7 @@ export const previewTasks: TaskRow[] = [
 ]
 
 export const previewMeals: MealRow[] = [
-  { id: "mon", title: "Grill chicken", meal_on: "2026-09-28", slot: "dinner", notes: null, visibility: "shared" },
+  { id: "mon", title: "Grilled chicken", meal_on: "2026-09-28", slot: "dinner", notes: null, visibility: "shared" },
   { id: "tue", title: "Leftover", meal_on: "2026-09-29", slot: "dinner", notes: "From Monday", visibility: "shared" },
   { id: "wed", title: "Creamy pasta", meal_on: "2026-09-30", slot: "dinner", notes: "Leftovers for Thu", visibility: "shared" },
   { id: "thu", title: "Leftover", meal_on: "2026-10-01", slot: "dinner", notes: null, visibility: "shared" },

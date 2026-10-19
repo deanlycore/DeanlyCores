@@ -1,6 +1,8 @@
 import { cookies } from "next/headers"
 import { notFound } from "next/navigation"
 
+import { previewIsProduction } from "@/lib/preview-access"
+
 import { RedeemForm } from "@/components/auth/redeem-form"
 import { AppearanceControl } from "@/components/settings/appearance-control"
 import { InviteCodesCard } from "@/components/settings/invite-codes-card"
@@ -22,7 +24,7 @@ const codes: InviteCodeView[] = [
 ]
 
 export default async function PreviewInvite() {
-  if (process.env.NODE_ENV === "production") notFound()
+  if (previewIsProduction()) notFound()
   const appearance = parseAppearance((await cookies()).get(APPEARANCE_COOKIE)?.value)
 
   return (

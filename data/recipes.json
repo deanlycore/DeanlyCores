@@ -1,0 +1,3956 @@
+{
+ "nutrition_source": "USDA FoodData Central, SR Legacy (April 2018 release); spices, salt and herbs listed without grams are excluded as negligible",
+ "goal_cutoffs": {
+  "lose_weight": "<=500 kcal and >=20 g protein per serving",
+  "gain_weight": ">=700 kcal per serving",
+  "high_protein": ">=30 g protein per serving",
+  "quick": "<=30 minutes"
+ },
+ "recipes": [
+  {
+   "slug": "chicken-tinga-tacos",
+   "name": "Chicken Tinga Tacos",
+   "cuisine": "Mexican",
+   "servings": 4,
+   "minutes": 35,
+   "vegetarian": false,
+   "summary": "Smoky shredded chicken in a chipotle tomato sauce, piled on warm corn tortillas.",
+   "ingredients": [
+    {
+     "text": "1½ lb boneless skinless chicken breast",
+     "grams": 680,
+     "fdc_id": 171077,
+     "usda_description": "Chicken, broiler or fryers, breast, skinless, boneless, meat only, raw"
+    },
+    {
+     "text": "1 can (14 oz) crushed tomatoes",
+     "grams": 400,
+     "fdc_id": 170501,
+     "usda_description": "Tomatoes, crushed, canned"
+    },
+    {
+     "text": "1 medium onion, sliced",
+     "grams": 150,
+     "fdc_id": 170000,
+     "usda_description": "Onions, raw"
+    },
+    {
+     "text": "3 cloves garlic, minced",
+     "grams": 9,
+     "fdc_id": 169230,
+     "usda_description": "Garlic, raw"
+    },
+    {
+     "text": "1 tbsp olive oil",
+     "grams": 14,
+     "fdc_id": 171413,
+     "usda_description": "Oil, olive, salad or cooking"
+    },
+    {
+     "text": "1–2 chipotle peppers in adobo, chopped"
+    },
+    {
+     "text": "1 tsp dried oregano"
+    },
+    {
+     "text": "Salt to taste"
+    },
+    {
+     "text": "12 corn tortillas (6 in)",
+     "grams": 312,
+     "fdc_id": 175036,
+     "usda_description": "Tortillas, ready-to-bake or -fry, corn"
+    },
+    {
+     "text": "1 avocado, sliced",
+     "grams": 150,
+     "fdc_id": 171705,
+     "usda_description": "Avocados, raw, all commercial varieties"
+    },
+    {
+     "text": "Small handful cilantro",
+     "grams": 8,
+     "fdc_id": 169997,
+     "usda_description": "Coriander (cilantro) leaves, raw"
+    },
+    {
+     "text": "1 lime, cut in wedges",
+     "grams": 30,
+     "fdc_id": 168156,
+     "usda_description": "Lime juice, raw"
+    }
+   ],
+   "steps": [
+    "Simmer the chicken in salted water for 15–18 minutes, until it reaches 165°F inside. Shred with two forks.",
+    "Heat the oil in a large skillet over medium heat. Cook the onion 5 minutes until soft, then add the garlic for 30 seconds.",
+    "Stir in the crushed tomatoes, chipotle and oregano. Simmer 5 minutes.",
+    "Add the shredded chicken and simmer 5 more minutes. Season with salt.",
+    "Warm the tortillas and fill with chicken, avocado, cilantro and a squeeze of lime."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 518,
+    "protein": 46,
+    "carbs": 50,
+    "fat": 16
+   },
+   "goal_tags": [
+    "high_protein"
+   ],
+   "image": "recipes/chicken-tinga-tacos.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "turkey-taco-lettuce-cups",
+   "name": "Turkey Taco Lettuce Cups",
+   "cuisine": "Mexican",
+   "servings": 4,
+   "minutes": 20,
+   "vegetarian": false,
+   "summary": "Seasoned ground turkey with black beans and salsa in crisp romaine cups.",
+   "ingredients": [
+    {
+     "text": "1 lb ground turkey",
+     "grams": 454,
+     "fdc_id": 171505,
+     "usda_description": "Turkey, Ground, raw"
+    },
+    {
+     "text": "1 can (15 oz) black beans, drained and rinsed",
+     "grams": 240,
+     "fdc_id": 175238,
+     "usda_description": "Beans, black, mature seeds, canned, low sodium"
+    },
+    {
+     "text": "½ cup salsa",
+     "grams": 120,
+     "fdc_id": 174524,
+     "usda_description": "Sauce, salsa, ready-to-serve"
+    },
+    {
+     "text": "½ tbsp olive oil",
+     "grams": 7,
+     "fdc_id": 171413,
+     "usda_description": "Oil, olive, salad or cooking"
+    },
+    {
+     "text": "1 tbsp chili powder"
+    },
+    {
+     "text": "1 tsp cumin"
+    },
+    {
+     "text": "Salt to taste"
+    },
+    {
+     "text": "2 romaine hearts, leaves separated",
+     "grams": 150,
+     "fdc_id": 169247,
+     "usda_description": "Lettuce, cos or romaine, raw"
+    },
+    {
+     "text": "1 tomato, diced",
+     "grams": 120,
+     "fdc_id": 170457,
+     "usda_description": "Tomatoes, red, ripe, raw, year round average"
+    },
+    {
+     "text": "½ cup shredded cheddar",
+     "grams": 56,
+     "fdc_id": 173414,
+     "usda_description": "Cheese, cheddar (Includes foods for USDA's Food Distribution Program)"
+    }
+   ],
+   "steps": [
+    "Heat the oil in a skillet over medium-high heat. Brown the turkey, breaking it up, until no pink remains (165°F).",
+    "Stir in the chili powder, cumin and a pinch of salt.",
+    "Add the black beans and salsa. Simmer 3–4 minutes until warmed through.",
+    "Spoon into romaine leaves and top with tomato and cheddar."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 315,
+    "protein": 30,
+    "carbs": 15,
+    "fat": 16
+   },
+   "goal_tags": [
+    "lose_weight",
+    "high_protein",
+    "quick"
+   ],
+   "image": "recipes/turkey-taco-lettuce-cups.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "steak-burrito-bowls",
+   "name": "Steak Burrito Bowls",
+   "cuisine": "Mexican",
+   "servings": 4,
+   "minutes": 35,
+   "vegetarian": false,
+   "summary": "Seared flank steak over rice and beans with corn, salsa and avocado.",
+   "ingredients": [
+    {
+     "text": "1½ lb flank steak",
+     "grams": 680,
+     "fdc_id": 174777,
+     "usda_description": "Beef, flank, steak, separable lean only, trimmed to 0\" fat, select, raw"
+    },
+    {
+     "text": "4 cups cooked white rice",
+     "grams": 600,
+     "fdc_id": 169753,
+     "usda_description": "Rice, white, long-grain, regular, cooked, enriched, with salt"
+    },
+    {
+     "text": "1 can (15 oz) pinto beans, drained",
+     "grams": 340,
+     "fdc_id": 174286,
+     "usda_description": "Beans, pinto, canned, drained solids"
+    },
+    {
+     "text": "1 cup corn kernels",
+     "grams": 160,
+     "fdc_id": 168399,
+     "usda_description": "Corn, sweet, yellow, frozen, kernels cut off cob, boiled, drained, without salt"
+    },
+    {
+     "text": "1 cup salsa",
+     "grams": 240,
+     "fdc_id": 174524,
+     "usda_description": "Sauce, salsa, ready-to-serve"
+    },
+    {
+     "text": "1 large avocado",
+     "grams": 200,
+     "fdc_id": 171705,
+     "usda_description": "Avocados, raw, all commercial varieties"
+    },
+    {
+     "text": "1 cup shredded Monterey Jack",
+     "grams": 113,
+     "fdc_id": 170844,
+     "usda_description": "Cheese, monterey"
+    },
+    {
+     "text": "1 tbsp olive oil",
+     "grams": 14,
+     "fdc_id": 171413,
+     "usda_description": "Oil, olive, salad or cooking"
+    },
+    {
+     "text": "1 lime",
+     "grams": 30,
+     "fdc_id": 168156,
+     "usda_description": "Lime juice, raw"
+    },
+    {
+     "text": "1 tsp cumin, 1 tsp chili powder, salt"
+    }
+   ],
+   "steps": [
+    "Rub the steak with the oil, cumin, chili powder and salt.",
+    "Sear in a hot skillet 4–5 minutes per side to at least 145°F. Rest 5 minutes, then slice thinly across the grain.",
+    "Warm the beans and corn.",
+    "Divide the rice into bowls and top with steak, beans, corn, salsa, cheese and avocado. Finish with lime."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 793,
+    "protein": 56,
+    "carbs": 76,
+    "fat": 29
+   },
+   "goal_tags": [
+    "gain_weight",
+    "high_protein"
+   ],
+   "image": "recipes/steak-burrito-bowls.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "black-bean-sweet-potato-enchiladas",
+   "name": "Black Bean & Sweet Potato Enchiladas",
+   "cuisine": "Mexican",
+   "servings": 4,
+   "minutes": 50,
+   "vegetarian": true,
+   "summary": "Roasted sweet potato and black beans rolled in tortillas and baked in red sauce.",
+   "ingredients": [
+    {
+     "text": "2 medium sweet potatoes, diced",
+     "grams": 500,
+     "fdc_id": 168482,
+     "usda_description": "Sweet potato, raw, unprepared (Includes foods for USDA's Food Distribution Program)"
+    },
+    {
+     "text": "2 cans (15 oz) black beans, drained",
+     "grams": 480,
+     "fdc_id": 175238,
+     "usda_description": "Beans, black, mature seeds, canned, low sodium"
+    },
+    {
+     "text": "1 can (15 oz) tomato sauce",
+     "grams": 425,
+     "fdc_id": 170054,
+     "usda_description": "Tomato products, canned, sauce"
+    },
+    {
+     "text": "8 flour tortillas (8 in)",
+     "grams": 360,
+     "fdc_id": 175037,
+     "usda_description": "Tortillas, ready-to-bake or -fry, flour, refrigerated"
+    },
+    {
+     "text": "1 cup shredded Monterey Jack",
+     "grams": 113,
+     "fdc_id": 170844,
+     "usda_description": "Cheese, monterey"
+    },
+    {
+     "text": "1 small onion, diced",
+     "grams": 110,
+     "fdc_id": 170000,
+     "usda_description": "Onions, raw"
+    },
+    {
+     "text": "1 tbsp olive oil",
+     "grams": 14,
+     "fdc_id": 171413,
+     "usda_description": "Oil, olive, salad or cooking"
+    },
+    {
+     "text": "1 tbsp chili powder, 1 tsp cumin, salt"
+    },
+    {
+     "text": "Cilantro to serve",
+     "grams": 8,
+     "fdc_id": 169997,
+     "usda_description": "Coriander (cilantro) leaves, raw"
+    }
+   ],
+   "steps": [
+    "Heat the oven to 400°F. Toss the sweet potato with the oil and salt and roast 20 minutes until tender.",
+    "Mix the tomato sauce with the chili powder and cumin.",
+    "Combine the sweet potato, beans and onion. Fill each tortilla and roll.",
+    "Place seam-side down in a baking dish, pour the sauce over and top with cheese.",
+    "Bake 20 minutes until bubbling. Top with cilantro."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 665,
+    "protein": 25,
+    "carbs": 98,
+    "fat": 20
+   },
+   "goal_tags": [
+    "vegetarian"
+   ],
+   "image": "recipes/black-bean-sweet-potato-enchiladas.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "shrimp-fajitas",
+   "name": "Sheet Pan Shrimp Fajitas",
+   "cuisine": "Mexican",
+   "servings": 4,
+   "minutes": 25,
+   "vegetarian": false,
+   "summary": "Shrimp, peppers and onions roasted on one pan and wrapped in warm tortillas.",
+   "ingredients": [
+    {
+     "text": "1½ lb raw shrimp, peeled",
+     "grams": 680,
+     "fdc_id": 175179,
+     "usda_description": "Crustaceans, shrimp, raw"
+    },
+    {
+     "text": "3 bell peppers, sliced",
+     "grams": 360,
+     "fdc_id": 170108,
+     "usda_description": "Peppers, sweet, red, raw"
+    },
+    {
+     "text": "1 onion, sliced",
+     "grams": 150,
+     "fdc_id": 170000,
+     "usda_description": "Onions, raw"
+    },
+    {
+     "text": "1½ tbsp olive oil",
+     "grams": 21,
+     "fdc_id": 171413,
+     "usda_description": "Oil, olive, salad or cooking"
+    },
+    {
+     "text": "2 tsp chili powder, 1 tsp cumin, ½ tsp garlic powder, salt"
+    },
+    {
+     "text": "8 corn tortillas",
+     "grams": 208,
+     "fdc_id": 175036,
+     "usda_description": "Tortillas, ready-to-bake or -fry, corn"
+    },
+    {
+     "text": "1 lime",
+     "grams": 30,
+     "fdc_id": 168156,
+     "usda_description": "Lime juice, raw"
+    },
+    {
+     "text": "¼ cup light sour cream",
+     "grams": 60,
+     "fdc_id": 173443,
+     "usda_description": "Sour cream, light"
+    }
+   ],
+   "steps": [
+    "Heat the oven to 425°F. Toss the peppers and onion with 1 tbsp oil and half the spices. Roast 10 minutes.",
+    "Toss the shrimp with the rest of the oil and spices. Add to the pan and roast 6–8 minutes, until pink and opaque.",
+    "Squeeze lime over everything.",
+    "Serve in warm tortillas with sour cream."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 365,
+    "protein": 39,
+    "carbs": 34,
+    "fat": 10
+   },
+   "goal_tags": [
+    "lose_weight",
+    "high_protein",
+    "quick"
+   ],
+   "image": "recipes/shrimp-fajitas.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "carnitas-loaded-plate",
+   "name": "Pork Carnitas Rice Plate",
+   "cuisine": "Mexican",
+   "servings": 4,
+   "minutes": 60,
+   "vegetarian": false,
+   "summary": "Crispy citrus pork with rice, beans and cheese. A big, filling plate.",
+   "ingredients": [
+    {
+     "text": "1¾ lb boneless pork loin, cubed",
+     "grams": 800,
+     "fdc_id": 168263,
+     "usda_description": "Pork, fresh, loin, center loin (chops), boneless, separable lean only, raw"
+    },
+    {
+     "text": "4½ cups cooked white rice",
+     "grams": 720,
+     "fdc_id": 169753,
+     "usda_description": "Rice, white, long-grain, regular, cooked, enriched, with salt"
+    },
+    {
+     "text": "2 cans (15 oz) pinto beans, drained",
+     "grams": 480,
+     "fdc_id": 174286,
+     "usda_description": "Beans, pinto, canned, drained solids"
+    },
+    {
+     "text": "1 cup shredded Monterey Jack",
+     "grams": 113,
+     "fdc_id": 170844,
+     "usda_description": "Cheese, monterey"
+    },
+    {
+     "text": "1 large avocado",
+     "grams": 200,
+     "fdc_id": 171705,
+     "usda_description": "Avocados, raw, all commercial varieties"
+    },
+    {
+     "text": "2 tbsp olive oil",
+     "grams": 28,
+     "fdc_id": 171413,
+     "usda_description": "Oil, olive, salad or cooking"
+    },
+    {
+     "text": "2 limes, juiced",
+     "grams": 60,
+     "fdc_id": 168156,
+     "usda_description": "Lime juice, raw"
+    },
+    {
+     "text": "1 small onion",
+     "grams": 110,
+     "fdc_id": 170000,
+     "usda_description": "Onions, raw"
+    },
+    {
+     "text": "1 tsp cumin, 1 tsp oregano, salt"
+    },
+    {
+     "text": "½ cup salsa",
+     "grams": 120,
+     "fdc_id": 174524,
+     "usda_description": "Sauce, salsa, ready-to-serve"
+    }
+   ],
+   "steps": [
+    "Toss the pork with the lime juice, cumin, oregano and salt.",
+    "Heat the oil in a large pan over medium-high. Brown the pork in batches until crisp outside and 145°F inside, about 8–10 minutes.",
+    "Add the onion for the last 3 minutes.",
+    "Warm the beans. Plate the rice, beans and pork, then top with cheese, avocado and salsa."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 888,
+    "protein": 69,
+    "carbs": 85,
+    "fat": 31
+   },
+   "goal_tags": [
+    "gain_weight",
+    "high_protein"
+   ],
+   "image": "recipes/carnitas-loaded-plate.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "chicken-quesadillas",
+   "name": "Chicken & Cheese Quesadillas",
+   "cuisine": "Mexican",
+   "servings": 4,
+   "minutes": 25,
+   "vegetarian": false,
+   "summary": "Golden flour tortillas packed with chicken, peppers and melted cheese.",
+   "ingredients": [
+    {
+     "text": "1 lb chicken breast",
+     "grams": 454,
+     "fdc_id": 171077,
+     "usda_description": "Chicken, broiler or fryers, breast, skinless, boneless, meat only, raw"
+    },
+    {
+     "text": "8 large flour tortillas (10 in)",
+     "grams": 576,
+     "fdc_id": 175037,
+     "usda_description": "Tortillas, ready-to-bake or -fry, flour, refrigerated"
+    },
+    {
+     "text": "2 cups shredded Monterey Jack",
+     "grams": 226,
+     "fdc_id": 170844,
+     "usda_description": "Cheese, monterey"
+    },
+    {
+     "text": "1 bell pepper, diced",
+     "grams": 120,
+     "fdc_id": 170108,
+     "usda_description": "Peppers, sweet, red, raw"
+    },
+    {
+     "text": "1 tbsp olive oil",
+     "grams": 14,
+     "fdc_id": 171413,
+     "usda_description": "Oil, olive, salad or cooking"
+    },
+    {
+     "text": "1 tsp chili powder, salt"
+    },
+    {
+     "text": "½ cup salsa",
+     "grams": 120,
+     "fdc_id": 174524,
+     "usda_description": "Sauce, salsa, ready-to-serve"
+    },
+    {
+     "text": "½ cup light sour cream",
+     "grams": 120,
+     "fdc_id": 173443,
+     "usda_description": "Sour cream, light"
+    }
+   ],
+   "steps": [
+    "Season the chicken with the chili powder and salt. Cook in half the oil over medium heat, 6–7 minutes per side, to 165°F. Slice.",
+    "Fill half of each tortilla with cheese, chicken and pepper. Fold.",
+    "Cook in a lightly oiled skillet 2–3 minutes per side until golden and the cheese melts.",
+    "Cut into wedges and serve with salsa and sour cream."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 876,
+    "protein": 53,
+    "carbs": 77,
+    "fat": 38
+   },
+   "goal_tags": [
+    "gain_weight",
+    "high_protein",
+    "quick"
+   ],
+   "image": "recipes/chicken-quesadillas.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "mexican-street-corn-chicken-salad",
+   "name": "Street Corn Chicken Salad",
+   "cuisine": "Mexican",
+   "servings": 4,
+   "minutes": 25,
+   "vegetarian": false,
+   "summary": "Charred corn, grilled chicken and crisp romaine with a lime-yogurt dressing.",
+   "ingredients": [
+    {
+     "text": "1⅓ lb chicken breast",
+     "grams": 600,
+     "fdc_id": 171077,
+     "usda_description": "Chicken, broiler or fryers, breast, skinless, boneless, meat only, raw"
+    },
+    {
+     "text": "2 cups corn kernels",
+     "grams": 320,
+     "fdc_id": 168399,
+     "usda_description": "Corn, sweet, yellow, frozen, kernels cut off cob, boiled, drained, without salt"
+    },
+    {
+     "text": "2 large romaine hearts, chopped",
+     "grams": 300,
+     "fdc_id": 169247,
+     "usda_description": "Lettuce, cos or romaine, raw"
+    },
+    {
+     "text": "½ cup nonfat Greek yogurt",
+     "grams": 120,
+     "fdc_id": 170894,
+     "usda_description": "Yogurt, Greek, plain, nonfat (Includes foods for USDA's Food Distribution Program)"
+    },
+    {
+     "text": "1 lime, juiced",
+     "grams": 30,
+     "fdc_id": 168156,
+     "usda_description": "Lime juice, raw"
+    },
+    {
+     "text": "⅓ cup crumbled feta",
+     "grams": 56,
+     "fdc_id": 173420,
+     "usda_description": "Cheese, feta"
+    },
+    {
+     "text": "1 tbsp olive oil",
+     "grams": 14,
+     "fdc_id": 171413,
+     "usda_description": "Oil, olive, salad or cooking"
+    },
+    {
+     "text": "1 tsp chili powder, salt"
+    },
+    {
+     "text": "Cilantro",
+     "grams": 8,
+     "fdc_id": 169997,
+     "usda_description": "Coriander (cilantro) leaves, raw"
+    }
+   ],
+   "steps": [
+    "Season the chicken with the chili powder and salt. Cook in half the oil over medium heat to 165°F, then slice.",
+    "Char the corn in the remaining oil in a hot skillet, 4–5 minutes.",
+    "Whisk the yogurt and lime juice with a pinch of salt.",
+    "Toss the romaine with the dressing and top with chicken, corn, feta and cilantro."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 346,
+    "protein": 42,
+    "carbs": 20,
+    "fat": 11
+   },
+   "goal_tags": [
+    "lose_weight",
+    "high_protein",
+    "quick"
+   ],
+   "image": "recipes/mexican-street-corn-chicken-salad.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "turkey-meatball-marinara",
+   "name": "Turkey Meatball Marinara",
+   "cuisine": "Italian",
+   "servings": 4,
+   "minutes": 40,
+   "vegetarian": false,
+   "summary": "Tender baked turkey meatballs simmered in marinara over spaghetti.",
+   "ingredients": [
+    {
+     "text": "1 lb ground turkey",
+     "grams": 454,
+     "fdc_id": 171505,
+     "usda_description": "Turkey, Ground, raw"
+    },
+    {
+     "text": "1 egg",
+     "grams": 50,
+     "fdc_id": 171287,
+     "usda_description": "Egg, whole, raw, fresh"
+    },
+    {
+     "text": "¼ cup grated parmesan",
+     "grams": 25,
+     "fdc_id": 171247,
+     "usda_description": "Cheese, parmesan, grated"
+    },
+    {
+     "text": "2 cloves garlic, minced",
+     "grams": 6,
+     "fdc_id": 169230,
+     "usda_description": "Garlic, raw"
+    },
+    {
+     "text": "2 cans (14 oz) crushed tomatoes",
+     "grams": 800,
+     "fdc_id": 170501,
+     "usda_description": "Tomatoes, crushed, canned"
+    },
+    {
+     "text": "8 oz dry spaghetti (about 4 cups cooked)",
+     "grams": 560,
+     "fdc_id": 169737,
+     "usda_description": "Pasta, cooked, enriched, without added salt"
+    },
+    {
+     "text": "1 tbsp olive oil",
+     "grams": 14,
+     "fdc_id": 171413,
+     "usda_description": "Oil, olive, salad or cooking"
+    },
+    {
+     "text": "Fresh basil",
+     "grams": 6,
+     "fdc_id": 172232,
+     "usda_description": "Basil, fresh"
+    },
+    {
+     "text": "1 tsp Italian seasoning, salt, pepper"
+    }
+   ],
+   "steps": [
+    "Heat the oven to 400°F. Mix the turkey, egg, parmesan, half the garlic, seasoning and salt. Roll into 16 balls.",
+    "Bake on a lined sheet 15–18 minutes, to 165°F inside.",
+    "Warm the oil in a pot, add the rest of the garlic for 30 seconds, then the tomatoes. Simmer 10 minutes.",
+    "Add the meatballs to the sauce. Cook the spaghetti and serve topped with sauce, meatballs and basil."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 531,
+    "protein": 37,
+    "carbs": 59,
+    "fat": 17
+   },
+   "goal_tags": [
+    "high_protein"
+   ],
+   "image": "recipes/turkey-meatball-marinara.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "chicken-parmesan-pasta",
+   "name": "Baked Chicken Parmesan",
+   "cuisine": "Italian",
+   "servings": 4,
+   "minutes": 45,
+   "vegetarian": false,
+   "summary": "Crisp-baked chicken topped with marinara and melted mozzarella, served with pasta.",
+   "ingredients": [
+    {
+     "text": "1¾ lb chicken breast, halved into cutlets",
+     "grams": 800,
+     "fdc_id": 171077,
+     "usda_description": "Chicken, broiler or fryers, breast, skinless, boneless, meat only, raw"
+    },
+    {
+     "text": "¼ cup flour",
+     "grams": 30,
+     "fdc_id": 168894,
+     "usda_description": "Wheat flour, white, all-purpose, enriched, bleached"
+    },
+    {
+     "text": "1 egg, beaten",
+     "grams": 50,
+     "fdc_id": 171287,
+     "usda_description": "Egg, whole, raw, fresh"
+    },
+    {
+     "text": "½ cup grated parmesan",
+     "grams": 50,
+     "fdc_id": 171247,
+     "usda_description": "Cheese, parmesan, grated"
+    },
+    {
+     "text": "1 can (15 oz) tomato sauce",
+     "grams": 425,
+     "fdc_id": 170054,
+     "usda_description": "Tomato products, canned, sauce"
+    },
+    {
+     "text": "1½ cups shredded part-skim mozzarella",
+     "grams": 170,
+     "fdc_id": 170847,
+     "usda_description": "Cheese, mozzarella, part skim milk"
+    },
+    {
+     "text": "10 oz dry spaghetti (about 5 cups cooked)",
+     "grams": 700,
+     "fdc_id": 169737,
+     "usda_description": "Pasta, cooked, enriched, without added salt"
+    },
+    {
+     "text": "2 tbsp olive oil",
+     "grams": 28,
+     "fdc_id": 171413,
+     "usda_description": "Oil, olive, salad or cooking"
+    },
+    {
+     "text": "1 tsp Italian seasoning, salt"
+    }
+   ],
+   "steps": [
+    "Heat the oven to 425°F. Season the cutlets, dredge in flour, dip in egg, then press in parmesan.",
+    "Brown in the oil 2 minutes per side, then move to a baking dish.",
+    "Spoon the sauce over and top with mozzarella. Bake 15 minutes, until the chicken reaches 165°F and the cheese bubbles.",
+    "Serve over the cooked spaghetti with extra sauce."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 810,
+    "protein": 73,
+    "carbs": 68,
+    "fat": 26
+   },
+   "goal_tags": [
+    "gain_weight",
+    "high_protein"
+   ],
+   "image": "recipes/chicken-parmesan-pasta.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "lemon-garlic-shrimp-zoodles",
+   "name": "Lemon Garlic Shrimp Zoodles",
+   "cuisine": "Italian",
+   "servings": 4,
+   "minutes": 20,
+   "vegetarian": false,
+   "summary": "Light, bright shrimp with zucchini noodles, garlic, lemon and parmesan.",
+   "ingredients": [
+    {
+     "text": "1½ lb raw shrimp, peeled",
+     "grams": 680,
+     "fdc_id": 175179,
+     "usda_description": "Crustaceans, shrimp, raw"
+    },
+    {
+     "text": "4 medium zucchini, spiralized",
+     "grams": 900,
+     "fdc_id": 169291,
+     "usda_description": "Squash, summer, zucchini, includes skin, raw"
+    },
+    {
+     "text": "4 cloves garlic, sliced",
+     "grams": 12,
+     "fdc_id": 169230,
+     "usda_description": "Garlic, raw"
+    },
+    {
+     "text": "1½ tbsp olive oil",
+     "grams": 21,
+     "fdc_id": 171413,
+     "usda_description": "Oil, olive, salad or cooking"
+    },
+    {
+     "text": "1 lemon, juiced",
+     "grams": 45,
+     "fdc_id": 167747,
+     "usda_description": "Lemon juice, raw"
+    },
+    {
+     "text": "¼ cup grated parmesan",
+     "grams": 25,
+     "fdc_id": 171247,
+     "usda_description": "Cheese, parmesan, grated"
+    },
+    {
+     "text": "Pinch red pepper flakes, salt"
+    }
+   ],
+   "steps": [
+    "Heat the oil in a large skillet over medium. Cook the garlic and pepper flakes 1 minute.",
+    "Add the shrimp and cook 2–3 minutes per side until pink and opaque.",
+    "Add the zucchini noodles and toss 2 minutes, just until tender.",
+    "Finish with lemon juice, salt and parmesan."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 262,
+    "protein": 39,
+    "carbs": 10,
+    "fat": 9
+   },
+   "goal_tags": [
+    "lose_weight",
+    "high_protein",
+    "quick"
+   ],
+   "image": "recipes/lemon-garlic-shrimp-zoodles.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "spinach-ricotta-stuffed-shells",
+   "name": "Spinach Ricotta Baked Pasta",
+   "cuisine": "Italian",
+   "servings": 4,
+   "minutes": 45,
+   "vegetarian": true,
+   "summary": "Pasta baked with creamy ricotta, spinach, marinara and mozzarella.",
+   "ingredients": [
+    {
+     "text": "8 oz dry pasta shells (about 4 cups cooked)",
+     "grams": 560,
+     "fdc_id": 169737,
+     "usda_description": "Pasta, cooked, enriched, without added salt"
+    },
+    {
+     "text": "15 oz part-skim ricotta",
+     "grams": 425,
+     "fdc_id": 171248,
+     "usda_description": "Cheese, ricotta, part skim milk"
+    },
+    {
+     "text": "5 oz baby spinach",
+     "grams": 140,
+     "fdc_id": 168462,
+     "usda_description": "Spinach, raw"
+    },
+    {
+     "text": "1 egg",
+     "grams": 50,
+     "fdc_id": 171287,
+     "usda_description": "Egg, whole, raw, fresh"
+    },
+    {
+     "text": "¼ cup grated parmesan",
+     "grams": 25,
+     "fdc_id": 171247,
+     "usda_description": "Cheese, parmesan, grated"
+    },
+    {
+     "text": "1 can (15 oz) tomato sauce",
+     "grams": 425,
+     "fdc_id": 170054,
+     "usda_description": "Tomato products, canned, sauce"
+    },
+    {
+     "text": "1 cup shredded part-skim mozzarella",
+     "grams": 113,
+     "fdc_id": 170847,
+     "usda_description": "Cheese, mozzarella, part skim milk"
+    },
+    {
+     "text": "1 tsp Italian seasoning, salt"
+    }
+   ],
+   "steps": [
+    "Heat the oven to 375°F. Cook the pasta 2 minutes short of the package time and drain.",
+    "Wilt the spinach in a dry pan and chop. Mix with the ricotta, egg, parmesan and salt.",
+    "Toss the pasta with the ricotta mixture and half the sauce. Spread in a baking dish.",
+    "Top with the remaining sauce and the mozzarella. Bake 20–25 minutes until bubbling."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 517,
+    "protein": 33,
+    "carbs": 57,
+    "fat": 18
+   },
+   "goal_tags": [
+    "high_protein",
+    "vegetarian"
+   ],
+   "image": "recipes/spinach-ricotta-stuffed-shells.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "creamy-pesto-chicken-pasta",
+   "name": "Pesto Chicken Pasta",
+   "cuisine": "Italian",
+   "servings": 4,
+   "minutes": 30,
+   "vegetarian": false,
+   "summary": "A hearty bowl of pasta tossed with basil pesto, chicken and tomatoes.",
+   "ingredients": [
+    {
+     "text": "12 oz dry penne (about 6 cups cooked)",
+     "grams": 840,
+     "fdc_id": 169737,
+     "usda_description": "Pasta, cooked, enriched, without added salt"
+    },
+    {
+     "text": "1½ lb chicken breast",
+     "grams": 680,
+     "fdc_id": 171077,
+     "usda_description": "Chicken, broiler or fryers, breast, skinless, boneless, meat only, raw"
+    },
+    {
+     "text": "⅔ cup basil pesto",
+     "grams": 160,
+     "fdc_id": 171579,
+     "usda_description": "Sauce, pesto, ready-to-serve, refrigerated"
+    },
+    {
+     "text": "1½ cups cherry tomatoes, halved",
+     "grams": 200,
+     "fdc_id": 170457,
+     "usda_description": "Tomatoes, red, ripe, raw, year round average"
+    },
+    {
+     "text": "⅓ cup grated parmesan",
+     "grams": 40,
+     "fdc_id": 171247,
+     "usda_description": "Cheese, parmesan, grated"
+    },
+    {
+     "text": "1 tbsp olive oil",
+     "grams": 14,
+     "fdc_id": 171413,
+     "usda_description": "Oil, olive, salad or cooking"
+    },
+    {
+     "text": "Salt and pepper"
+    }
+   ],
+   "steps": [
+    "Cook the pasta, saving ½ cup of the pasta water.",
+    "Season the chicken and cook in the oil over medium heat 6–7 minutes per side to 165°F. Slice.",
+    "Toss the pasta with the pesto, a splash of pasta water, the chicken and tomatoes.",
+    "Top with parmesan."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 785,
+    "protein": 58,
+    "carbs": 72,
+    "fat": 28
+   },
+   "goal_tags": [
+    "gain_weight",
+    "high_protein",
+    "quick"
+   ],
+   "image": "recipes/creamy-pesto-chicken-pasta.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "beef-lasagna-skillet",
+   "name": "Hearty Beef Lasagna Skillet",
+   "cuisine": "Italian",
+   "servings": 6,
+   "minutes": 40,
+   "vegetarian": false,
+   "summary": "All the lasagna flavor in one pan: beef, tomato, pasta and three cheeses.",
+   "ingredients": [
+    {
+     "text": "1½ lb ground beef (85% lean)",
+     "grams": 680,
+     "fdc_id": 171796,
+     "usda_description": "Beef, ground, 85% lean meat / 15% fat, raw (Includes foods for USDA's Food Distribution Program)"
+    },
+    {
+     "text": "12 oz dry wide pasta (about 6 cups cooked)",
+     "grams": 840,
+     "fdc_id": 169737,
+     "usda_description": "Pasta, cooked, enriched, without added salt"
+    },
+    {
+     "text": "2 cans (14 oz) crushed tomatoes",
+     "grams": 800,
+     "fdc_id": 170501,
+     "usda_description": "Tomatoes, crushed, canned"
+    },
+    {
+     "text": "1 cup part-skim ricotta",
+     "grams": 250,
+     "fdc_id": 171248,
+     "usda_description": "Cheese, ricotta, part skim milk"
+    },
+    {
+     "text": "2 cups shredded part-skim mozzarella",
+     "grams": 226,
+     "fdc_id": 170847,
+     "usda_description": "Cheese, mozzarella, part skim milk"
+    },
+    {
+     "text": "½ cup grated parmesan",
+     "grams": 50,
+     "fdc_id": 171247,
+     "usda_description": "Cheese, parmesan, grated"
+    },
+    {
+     "text": "1 onion, diced",
+     "grams": 150,
+     "fdc_id": 170000,
+     "usda_description": "Onions, raw"
+    },
+    {
+     "text": "3 cloves garlic",
+     "grams": 9,
+     "fdc_id": 169230,
+     "usda_description": "Garlic, raw"
+    },
+    {
+     "text": "2 tsp Italian seasoning, salt"
+    }
+   ],
+   "steps": [
+    "Brown the beef and onion in a large deep skillet until no pink remains (160°F). Drain the fat. Add the garlic.",
+    "Stir in the tomatoes, seasoning and 1 cup water. Simmer 5 minutes.",
+    "Stir in the cooked pasta. Dot with spoonfuls of ricotta, then sprinkle the mozzarella and parmesan over the top.",
+    "Cover and cook on low 5 minutes until the cheese melts."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 708,
+    "protein": 48,
+    "carbs": 60,
+    "fat": 30
+   },
+   "goal_tags": [
+    "gain_weight",
+    "high_protein"
+   ],
+   "image": "recipes/beef-lasagna-skillet.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "tuscan-white-bean-chicken",
+   "name": "Tuscan Chicken with Beans & Spinach",
+   "cuisine": "Italian",
+   "servings": 4,
+   "minutes": 30,
+   "vegetarian": false,
+   "summary": "Pan-seared chicken in a garlicky tomato sauce with white beans and spinach.",
+   "ingredients": [
+    {
+     "text": "1½ lb chicken breast",
+     "grams": 680,
+     "fdc_id": 171077,
+     "usda_description": "Chicken, broiler or fryers, breast, skinless, boneless, meat only, raw"
+    },
+    {
+     "text": "1 can (15 oz) chickpeas or white beans, drained",
+     "grams": 240,
+     "fdc_id": 173801,
+     "usda_description": "Chickpeas (garbanzo beans, bengal gram), mature seeds, canned, drained, rinsed in tap water"
+    },
+    {
+     "text": "1 can (14 oz) crushed tomatoes",
+     "grams": 400,
+     "fdc_id": 170501,
+     "usda_description": "Tomatoes, crushed, canned"
+    },
+    {
+     "text": "5 oz baby spinach",
+     "grams": 140,
+     "fdc_id": 168462,
+     "usda_description": "Spinach, raw"
+    },
+    {
+     "text": "3 cloves garlic",
+     "grams": 9,
+     "fdc_id": 169230,
+     "usda_description": "Garlic, raw"
+    },
+    {
+     "text": "1 tbsp olive oil",
+     "grams": 14,
+     "fdc_id": 171413,
+     "usda_description": "Oil, olive, salad or cooking"
+    },
+    {
+     "text": "¼ cup grated parmesan",
+     "grams": 25,
+     "fdc_id": 171247,
+     "usda_description": "Cheese, parmesan, grated"
+    },
+    {
+     "text": "1 tsp Italian seasoning, salt"
+    }
+   ],
+   "steps": [
+    "Season the chicken and sear in the oil over medium-high heat, 5–6 minutes per side, to 165°F. Set aside.",
+    "Add the garlic to the pan for 30 seconds, then the tomatoes, beans and seasoning. Simmer 5 minutes.",
+    "Stir in the spinach until wilted.",
+    "Slice the chicken, return it to the pan and top with parmesan."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 387,
+    "protein": 47,
+    "carbs": 24,
+    "fat": 12
+   },
+   "goal_tags": [
+    "lose_weight",
+    "high_protein",
+    "quick"
+   ],
+   "image": "recipes/tuscan-white-bean-chicken.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "margherita-flatbread",
+   "name": "Margherita Flatbread Pizza",
+   "cuisine": "Italian",
+   "servings": 2,
+   "minutes": 20,
+   "vegetarian": true,
+   "summary": "Quick naan pizzas with tomato sauce, fresh mozzarella and basil.",
+   "ingredients": [
+    {
+     "text": "2 naan breads",
+     "grams": 180,
+     "fdc_id": 171845,
+     "usda_description": "Bread, naan, plain, commercially prepared, refrigerated"
+    },
+    {
+     "text": "½ cup tomato sauce",
+     "grams": 120,
+     "fdc_id": 170054,
+     "usda_description": "Tomato products, canned, sauce"
+    },
+    {
+     "text": "1 cup shredded part-skim mozzarella",
+     "grams": 113,
+     "fdc_id": 170847,
+     "usda_description": "Cheese, mozzarella, part skim milk"
+    },
+    {
+     "text": "1 tomato, sliced",
+     "grams": 120,
+     "fdc_id": 170457,
+     "usda_description": "Tomatoes, red, ripe, raw, year round average"
+    },
+    {
+     "text": "Fresh basil",
+     "grams": 6,
+     "fdc_id": 172232,
+     "usda_description": "Basil, fresh"
+    },
+    {
+     "text": "½ tbsp olive oil",
+     "grams": 7,
+     "fdc_id": 171413,
+     "usda_description": "Oil, olive, salad or cooking"
+    },
+    {
+     "text": "Pinch salt, ½ tsp dried oregano"
+    }
+   ],
+   "steps": [
+    "Heat the oven to 425°F.",
+    "Spread the sauce on the naan, sprinkle with oregano, and top with mozzarella and tomato slices.",
+    "Bake 8–10 minutes until the cheese is bubbling.",
+    "Drizzle with oil and top with basil."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 462,
+    "protein": 24,
+    "carbs": 53,
+    "fat": 18
+   },
+   "goal_tags": [
+    "lose_weight",
+    "quick",
+    "vegetarian"
+   ],
+   "image": "recipes/margherita-flatbread.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "ginger-beef-broccoli",
+   "name": "Ginger Beef & Broccoli",
+   "cuisine": "Asian",
+   "servings": 4,
+   "minutes": 25,
+   "vegetarian": false,
+   "summary": "Tender sirloin and crisp broccoli in a glossy ginger-soy sauce over rice.",
+   "ingredients": [
+    {
+     "text": "1⅓ lb top sirloin, thinly sliced",
+     "grams": 600,
+     "fdc_id": 171804,
+     "usda_description": "Beef, top sirloin, steak, separable lean only, trimmed to 1/8\" fat, select, raw"
+    },
+    {
+     "text": "1 lb broccoli florets",
+     "grams": 450,
+     "fdc_id": 170379,
+     "usda_description": "Broccoli, raw"
+    },
+    {
+     "text": "3 tbsp soy sauce",
+     "grams": 48,
+     "fdc_id": 174278,
+     "usda_description": "Soy sauce made from soy (tamari)"
+    },
+    {
+     "text": "1 tbsp grated fresh ginger",
+     "grams": 15,
+     "fdc_id": 169231,
+     "usda_description": "Ginger root, raw"
+    },
+    {
+     "text": "3 cloves garlic",
+     "grams": 9,
+     "fdc_id": 169230,
+     "usda_description": "Garlic, raw"
+    },
+    {
+     "text": "1 tbsp cornstarch",
+     "grams": 8,
+     "fdc_id": 169698,
+     "usda_description": "Cornstarch"
+    },
+    {
+     "text": "1 tbsp honey",
+     "grams": 21,
+     "fdc_id": 169640,
+     "usda_description": "Honey"
+    },
+    {
+     "text": "1 tbsp sesame oil",
+     "grams": 14,
+     "fdc_id": 171016,
+     "usda_description": "Oil, sesame, salad or cooking"
+    },
+    {
+     "text": "4 cups cooked white rice",
+     "grams": 600,
+     "fdc_id": 169753,
+     "usda_description": "Rice, white, long-grain, regular, cooked, enriched, with salt"
+    }
+   ],
+   "steps": [
+    "Whisk the soy sauce, honey, cornstarch and ½ cup water.",
+    "Heat half the oil in a wok over high heat. Sear the beef 2–3 minutes until browned (145°F). Remove.",
+    "Add the rest of the oil and the broccoli with 2 tbsp water. Cover and steam 3 minutes.",
+    "Add the ginger and garlic for 30 seconds, then the beef and sauce. Toss until glossy.",
+    "Serve over rice."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 492,
+    "protein": 42,
+    "carbs": 58,
+    "fat": 10
+   },
+   "goal_tags": [
+    "lose_weight",
+    "high_protein",
+    "quick"
+   ],
+   "image": "recipes/ginger-beef-broccoli.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "teriyaki-salmon-bowls",
+   "name": "Teriyaki Salmon Bowls",
+   "cuisine": "Asian",
+   "servings": 4,
+   "minutes": 25,
+   "vegetarian": false,
+   "summary": "Glazed salmon with brown rice, edamame, cucumber and avocado.",
+   "ingredients": [
+    {
+     "text": "1½ lb salmon fillets",
+     "grams": 680,
+     "fdc_id": 175167,
+     "usda_description": "Fish, salmon, Atlantic, farmed, raw"
+    },
+    {
+     "text": "⅓ cup teriyaki sauce",
+     "grams": 80,
+     "fdc_id": 172890,
+     "usda_description": "Sauce, teriyaki, ready-to-serve, reduced sodium"
+    },
+    {
+     "text": "4 cups cooked brown rice",
+     "grams": 600,
+     "fdc_id": 169704,
+     "usda_description": "Rice, brown, long-grain, cooked (Includes foods for USDA's Food Distribution Program)"
+    },
+    {
+     "text": "1 cup shelled edamame",
+     "grams": 150,
+     "fdc_id": 168410,
+     "usda_description": "Edamame, frozen, unprepared"
+    },
+    {
+     "text": "1 cucumber, sliced",
+     "grams": 200,
+     "fdc_id": 168409,
+     "usda_description": "Cucumber, with peel, raw"
+    },
+    {
+     "text": "1 avocado",
+     "grams": 150,
+     "fdc_id": 171705,
+     "usda_description": "Avocados, raw, all commercial varieties"
+    },
+    {
+     "text": "Sesame seeds and sliced scallions to serve"
+    }
+   ],
+   "steps": [
+    "Heat the oven to 400°F. Brush the salmon with half the teriyaki.",
+    "Bake 12–15 minutes, until it flakes and reaches 145°F. Brush with the rest of the sauce.",
+    "Cook the edamame according to the package.",
+    "Build bowls with rice, salmon, edamame, cucumber and avocado. Top with sesame seeds and scallions."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 664,
+    "protein": 45,
+    "carbs": 49,
+    "fat": 32
+   },
+   "goal_tags": [
+    "high_protein",
+    "quick"
+   ],
+   "image": "recipes/teriyaki-salmon-bowls.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "chicken-fried-rice",
+   "name": "Chicken Fried Rice",
+   "cuisine": "Asian",
+   "servings": 4,
+   "minutes": 25,
+   "vegetarian": false,
+   "summary": "Classic weeknight fried rice with chicken, egg, peas and carrots.",
+   "ingredients": [
+    {
+     "text": "1 lb chicken breast, diced",
+     "grams": 454,
+     "fdc_id": 171077,
+     "usda_description": "Chicken, broiler or fryers, breast, skinless, boneless, meat only, raw"
+    },
+    {
+     "text": "4½ cups cold cooked white rice",
+     "grams": 720,
+     "fdc_id": 169753,
+     "usda_description": "Rice, white, long-grain, regular, cooked, enriched, with salt"
+    },
+    {
+     "text": "3 eggs, beaten",
+     "grams": 150,
+     "fdc_id": 171287,
+     "usda_description": "Egg, whole, raw, fresh"
+    },
+    {
+     "text": "1 cup frozen peas",
+     "grams": 150,
+     "fdc_id": 170016,
+     "usda_description": "Peas, green, frozen, unprepared (Includes foods for USDA's Food Distribution Program)"
+    },
+    {
+     "text": "2 carrots, diced",
+     "grams": 120,
+     "fdc_id": 170393,
+     "usda_description": "Carrots, raw"
+    },
+    {
+     "text": "3 tbsp soy sauce",
+     "grams": 48,
+     "fdc_id": 174278,
+     "usda_description": "Soy sauce made from soy (tamari)"
+    },
+    {
+     "text": "1 tbsp sesame oil",
+     "grams": 14,
+     "fdc_id": 171016,
+     "usda_description": "Oil, sesame, salad or cooking"
+    },
+    {
+     "text": "1 tbsp cooking oil",
+     "grams": 14,
+     "fdc_id": 171413,
+     "usda_description": "Oil, olive, salad or cooking"
+    },
+    {
+     "text": "2 cloves garlic",
+     "grams": 6,
+     "fdc_id": 169230,
+     "usda_description": "Garlic, raw"
+    }
+   ],
+   "steps": [
+    "Heat the cooking oil in a wok over high heat. Cook the chicken 5–6 minutes until 165°F. Remove.",
+    "Scramble the eggs in the wok and set aside.",
+    "Stir-fry the carrots 2 minutes, then the garlic and peas for 1 minute.",
+    "Add the rice and press it flat to crisp, 3 minutes. Stir in the chicken, eggs, soy sauce and sesame oil."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 536,
+    "protein": 39,
+    "carbs": 60,
+    "fat": 14
+   },
+   "goal_tags": [
+    "high_protein",
+    "quick"
+   ],
+   "image": "recipes/chicken-fried-rice.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "thai-peanut-noodles",
+   "name": "Peanut Chicken Noodles",
+   "cuisine": "Asian",
+   "servings": 4,
+   "minutes": 30,
+   "vegetarian": false,
+   "summary": "Rice noodles in a creamy peanut-lime sauce with chicken and crunchy vegetables.",
+   "ingredients": [
+    {
+     "text": "8 oz dry rice noodles (about 4½ cups cooked)",
+     "grams": 700,
+     "fdc_id": 168914,
+     "usda_description": "Rice noodles, cooked"
+    },
+    {
+     "text": "1⅓ lb chicken breast",
+     "grams": 600,
+     "fdc_id": 171077,
+     "usda_description": "Chicken, broiler or fryers, breast, skinless, boneless, meat only, raw"
+    },
+    {
+     "text": "6 tbsp peanut butter",
+     "grams": 96,
+     "fdc_id": 172470,
+     "usda_description": "Peanut butter, smooth style, without salt"
+    },
+    {
+     "text": "3 tbsp soy sauce",
+     "grams": 48,
+     "fdc_id": 174278,
+     "usda_description": "Soy sauce made from soy (tamari)"
+    },
+    {
+     "text": "1 lime, juiced",
+     "grams": 30,
+     "fdc_id": 168156,
+     "usda_description": "Lime juice, raw"
+    },
+    {
+     "text": "1 tbsp honey",
+     "grams": 21,
+     "fdc_id": 169640,
+     "usda_description": "Honey"
+    },
+    {
+     "text": "1 bell pepper, sliced",
+     "grams": 120,
+     "fdc_id": 170108,
+     "usda_description": "Peppers, sweet, red, raw"
+    },
+    {
+     "text": "1 large carrot, shredded",
+     "grams": 100,
+     "fdc_id": 170393,
+     "usda_description": "Carrots, raw"
+    },
+    {
+     "text": "2 cups shredded cabbage",
+     "grams": 140,
+     "fdc_id": 169975,
+     "usda_description": "Cabbage, raw"
+    },
+    {
+     "text": "¼ cup chopped peanuts",
+     "grams": 36,
+     "fdc_id": 173806,
+     "usda_description": "Peanuts, all types, dry-roasted, without salt"
+    },
+    {
+     "text": "1 tbsp oil",
+     "grams": 14,
+     "fdc_id": 171413,
+     "usda_description": "Oil, olive, salad or cooking"
+    }
+   ],
+   "steps": [
+    "Whisk the peanut butter, soy sauce, lime juice, honey and ¼ cup hot water until smooth.",
+    "Cook the chicken in the oil over medium heat 6–7 minutes per side to 165°F. Slice.",
+    "Cook the noodles according to the package and rinse.",
+    "Toss the noodles with the sauce, vegetables and chicken. Top with peanuts."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 648,
+    "protein": 47,
+    "carbs": 61,
+    "fat": 25
+   },
+   "goal_tags": [
+    "high_protein",
+    "quick"
+   ],
+   "image": "recipes/thai-peanut-noodles.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "tofu-vegetable-stir-fry",
+   "name": "Crispy Tofu Vegetable Stir-Fry",
+   "cuisine": "Asian",
+   "servings": 4,
+   "minutes": 30,
+   "vegetarian": true,
+   "summary": "Golden tofu with broccoli, peppers and snap peas in a garlic-soy glaze.",
+   "ingredients": [
+    {
+     "text": "14 oz firm tofu, pressed and cubed",
+     "grams": 400,
+     "fdc_id": 172475,
+     "usda_description": "Tofu, raw, firm, prepared with calcium sulfate"
+    },
+    {
+     "text": "2 tbsp cornstarch",
+     "grams": 16,
+     "fdc_id": 169698,
+     "usda_description": "Cornstarch"
+    },
+    {
+     "text": "3 cups broccoli florets",
+     "grams": 300,
+     "fdc_id": 170379,
+     "usda_description": "Broccoli, raw"
+    },
+    {
+     "text": "1 bell pepper",
+     "grams": 120,
+     "fdc_id": 170108,
+     "usda_description": "Peppers, sweet, red, raw"
+    },
+    {
+     "text": "2 cups sliced mushrooms",
+     "grams": 150,
+     "fdc_id": 169251,
+     "usda_description": "Mushrooms, white, raw"
+    },
+    {
+     "text": "3 tbsp soy sauce",
+     "grams": 48,
+     "fdc_id": 174278,
+     "usda_description": "Soy sauce made from soy (tamari)"
+    },
+    {
+     "text": "1 tbsp honey",
+     "grams": 21,
+     "fdc_id": 169640,
+     "usda_description": "Honey"
+    },
+    {
+     "text": "3 cloves garlic",
+     "grams": 9,
+     "fdc_id": 169230,
+     "usda_description": "Garlic, raw"
+    },
+    {
+     "text": "2 tbsp oil",
+     "grams": 28,
+     "fdc_id": 171413,
+     "usda_description": "Oil, olive, salad or cooking"
+    },
+    {
+     "text": "3 cups cooked brown rice",
+     "grams": 480,
+     "fdc_id": 169704,
+     "usda_description": "Rice, brown, long-grain, cooked (Includes foods for USDA's Food Distribution Program)"
+    }
+   ],
+   "steps": [
+    "Toss the tofu with 1 tbsp cornstarch. Fry in 1½ tbsp oil over medium-high heat until golden on all sides, 8–10 minutes. Remove.",
+    "Stir-fry the vegetables in the remaining oil 4 minutes.",
+    "Whisk the soy sauce, honey, garlic, the rest of the cornstarch and ¼ cup water. Add to the pan and simmer until thick.",
+    "Return the tofu, toss and serve over rice."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 437,
+    "protein": 26,
+    "carbs": 51,
+    "fat": 17
+   },
+   "goal_tags": [
+    "lose_weight",
+    "quick",
+    "vegetarian"
+   ],
+   "image": "recipes/tofu-vegetable-stir-fry.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "korean-beef-rice-bowl",
+   "name": "Korean-Style Beef Rice Bowl",
+   "cuisine": "Asian",
+   "servings": 4,
+   "minutes": 20,
+   "vegetarian": false,
+   "summary": "Sweet-savory ground beef over rice with quick cucumbers and a fried egg.",
+   "ingredients": [
+    {
+     "text": "1½ lb lean ground beef (93%)",
+     "grams": 680,
+     "fdc_id": 173110,
+     "usda_description": "Beef, ground, 93% lean meat / 7% fat, raw"
+    },
+    {
+     "text": "¼ cup soy sauce",
+     "grams": 64,
+     "fdc_id": 174278,
+     "usda_description": "Soy sauce made from soy (tamari)"
+    },
+    {
+     "text": "2 tbsp brown sugar",
+     "grams": 28,
+     "fdc_id": 168833,
+     "usda_description": "Sugars, brown"
+    },
+    {
+     "text": "1 tbsp sesame oil",
+     "grams": 14,
+     "fdc_id": 171016,
+     "usda_description": "Oil, sesame, salad or cooking"
+    },
+    {
+     "text": "3 cloves garlic",
+     "grams": 9,
+     "fdc_id": 169230,
+     "usda_description": "Garlic, raw"
+    },
+    {
+     "text": "2 tsp grated ginger",
+     "grams": 8,
+     "fdc_id": 169231,
+     "usda_description": "Ginger root, raw"
+    },
+    {
+     "text": "4½ cups cooked white rice",
+     "grams": 720,
+     "fdc_id": 169753,
+     "usda_description": "Rice, white, long-grain, regular, cooked, enriched, with salt"
+    },
+    {
+     "text": "4 eggs",
+     "grams": 200,
+     "fdc_id": 171287,
+     "usda_description": "Egg, whole, raw, fresh"
+    },
+    {
+     "text": "1 cucumber, sliced",
+     "grams": 200,
+     "fdc_id": 168409,
+     "usda_description": "Cucumber, with peel, raw"
+    },
+    {
+     "text": "½ tbsp oil",
+     "grams": 7,
+     "fdc_id": 171413,
+     "usda_description": "Oil, olive, salad or cooking"
+    }
+   ],
+   "steps": [
+    "Brown the beef in a skillet until no pink remains (160°F). Drain any fat.",
+    "Add the garlic and ginger, then the soy sauce, brown sugar and sesame oil. Simmer 2 minutes.",
+    "Fry the eggs in the oil until the whites and yolks are firm.",
+    "Serve the beef over rice with cucumber and a fried egg."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 659,
+    "protein": 49,
+    "carbs": 62,
+    "fat": 23
+   },
+   "goal_tags": [
+    "high_protein",
+    "quick"
+   ],
+   "image": "recipes/korean-beef-rice-bowl.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "shrimp-pad-thai",
+   "name": "Shrimp Pad Thai",
+   "cuisine": "Asian",
+   "servings": 4,
+   "minutes": 30,
+   "vegetarian": false,
+   "summary": "Tangy rice noodles with shrimp, egg, bean sprouts and peanuts.",
+   "ingredients": [
+    {
+     "text": "8 oz dry rice noodles (about 4½ cups cooked)",
+     "grams": 700,
+     "fdc_id": 168914,
+     "usda_description": "Rice noodles, cooked"
+    },
+    {
+     "text": "1 lb raw shrimp, peeled",
+     "grams": 454,
+     "fdc_id": 175179,
+     "usda_description": "Crustaceans, shrimp, raw"
+    },
+    {
+     "text": "2 eggs",
+     "grams": 100,
+     "fdc_id": 171287,
+     "usda_description": "Egg, whole, raw, fresh"
+    },
+    {
+     "text": "3 tbsp soy sauce",
+     "grams": 48,
+     "fdc_id": 174278,
+     "usda_description": "Soy sauce made from soy (tamari)"
+    },
+    {
+     "text": "2 tbsp brown sugar",
+     "grams": 28,
+     "fdc_id": 168833,
+     "usda_description": "Sugars, brown"
+    },
+    {
+     "text": "2 limes",
+     "grams": 60,
+     "fdc_id": 168156,
+     "usda_description": "Lime juice, raw"
+    },
+    {
+     "text": "¼ cup chopped peanuts",
+     "grams": 36,
+     "fdc_id": 173806,
+     "usda_description": "Peanuts, all types, dry-roasted, without salt"
+    },
+    {
+     "text": "2 tbsp oil",
+     "grams": 28,
+     "fdc_id": 171413,
+     "usda_description": "Oil, olive, salad or cooking"
+    },
+    {
+     "text": "2 cloves garlic",
+     "grams": 6,
+     "fdc_id": 169230,
+     "usda_description": "Garlic, raw"
+    },
+    {
+     "text": "1 cup bean sprouts, sliced scallions"
+    }
+   ],
+   "steps": [
+    "Soak or cook the noodles according to the package.",
+    "Whisk the soy sauce, sugar and juice of 1 lime.",
+    "Heat the oil in a wok over high heat. Cook the shrimp and garlic 2–3 minutes until opaque. Push aside and scramble the eggs.",
+    "Add the noodles and sauce and toss 2 minutes. Add the sprouts and scallions.",
+    "Top with peanuts and lime wedges."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 476,
+    "protein": 33,
+    "carbs": 53,
+    "fat": 15
+   },
+   "goal_tags": [
+    "lose_weight",
+    "high_protein",
+    "quick"
+   ],
+   "image": "recipes/shrimp-pad-thai.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "honey-garlic-chicken-thighs",
+   "name": "Honey Garlic Chicken & Rice",
+   "cuisine": "Asian",
+   "servings": 4,
+   "minutes": 35,
+   "vegetarian": false,
+   "summary": "Sticky honey-garlic chicken thighs with green beans and a big scoop of rice.",
+   "ingredients": [
+    {
+     "text": "2 lb boneless skinless chicken thighs",
+     "grams": 900,
+     "fdc_id": 173627,
+     "usda_description": "Chicken, broilers or fryers, dark meat, thigh, meat only, raw"
+    },
+    {
+     "text": "¼ cup honey",
+     "grams": 84,
+     "fdc_id": 169640,
+     "usda_description": "Honey"
+    },
+    {
+     "text": "¼ cup soy sauce",
+     "grams": 64,
+     "fdc_id": 174278,
+     "usda_description": "Soy sauce made from soy (tamari)"
+    },
+    {
+     "text": "5 cloves garlic",
+     "grams": 15,
+     "fdc_id": 169230,
+     "usda_description": "Garlic, raw"
+    },
+    {
+     "text": "1 tbsp oil",
+     "grams": 14,
+     "fdc_id": 171413,
+     "usda_description": "Oil, olive, salad or cooking"
+    },
+    {
+     "text": "5 cups cooked white rice",
+     "grams": 800,
+     "fdc_id": 169753,
+     "usda_description": "Rice, white, long-grain, regular, cooked, enriched, with salt"
+    },
+    {
+     "text": "10 oz green beans",
+     "grams": 300,
+     "fdc_id": 169961,
+     "usda_description": "Beans, snap, green, raw"
+    },
+    {
+     "text": "1 tbsp butter",
+     "grams": 14,
+     "fdc_id": 173410,
+     "usda_description": "Butter, salted"
+    }
+   ],
+   "steps": [
+    "Season the thighs and brown in the oil over medium-high heat, 5 minutes per side.",
+    "Add the garlic, honey and soy sauce. Simmer, turning, until the sauce is sticky and the chicken reaches 165°F, about 8 minutes.",
+    "Steam the green beans and toss with the butter.",
+    "Serve the chicken and sauce over rice with green beans."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 691,
+    "protein": 53,
+    "carbs": 81,
+    "fat": 16
+   },
+   "goal_tags": [
+    "high_protein"
+   ],
+   "image": "recipes/honey-garlic-chicken-thighs.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "bbq-chicken-sweet-potato-bowl",
+   "name": "BBQ Chicken Sweet Potato Bowl",
+   "cuisine": "American",
+   "servings": 4,
+   "minutes": 40,
+   "vegetarian": false,
+   "summary": "Roasted sweet potatoes, BBQ chicken, black beans and a crunchy slaw.",
+   "ingredients": [
+    {
+     "text": "1½ lb chicken breast",
+     "grams": 680,
+     "fdc_id": 171077,
+     "usda_description": "Chicken, broiler or fryers, breast, skinless, boneless, meat only, raw"
+    },
+    {
+     "text": "⅓ cup BBQ sauce",
+     "grams": 80,
+     "fdc_id": 174523,
+     "usda_description": "Sauce, barbecue"
+    },
+    {
+     "text": "2 large sweet potatoes, cubed",
+     "grams": 600,
+     "fdc_id": 168482,
+     "usda_description": "Sweet potato, raw, unprepared (Includes foods for USDA's Food Distribution Program)"
+    },
+    {
+     "text": "1 can (15 oz) black beans, drained",
+     "grams": 240,
+     "fdc_id": 175238,
+     "usda_description": "Beans, black, mature seeds, canned, low sodium"
+    },
+    {
+     "text": "3 cups shredded cabbage",
+     "grams": 200,
+     "fdc_id": 169975,
+     "usda_description": "Cabbage, raw"
+    },
+    {
+     "text": "¼ cup nonfat Greek yogurt",
+     "grams": 60,
+     "fdc_id": 170894,
+     "usda_description": "Yogurt, Greek, plain, nonfat (Includes foods for USDA's Food Distribution Program)"
+    },
+    {
+     "text": "1 lime",
+     "grams": 30,
+     "fdc_id": 168156,
+     "usda_description": "Lime juice, raw"
+    },
+    {
+     "text": "1 tbsp olive oil",
+     "grams": 14,
+     "fdc_id": 171413,
+     "usda_description": "Oil, olive, salad or cooking"
+    },
+    {
+     "text": "Salt, pepper, 1 tsp smoked paprika"
+    }
+   ],
+   "steps": [
+    "Heat the oven to 425°F. Toss the sweet potato with the oil, paprika and salt. Roast 25 minutes.",
+    "Bake the chicken on another pan 20–22 minutes to 165°F, brushing with BBQ sauce for the last 5 minutes. Slice.",
+    "Toss the cabbage with the yogurt, lime juice and salt.",
+    "Build bowls with sweet potato, beans, chicken and slaw."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 476,
+    "protein": 47,
+    "carbs": 52,
+    "fat": 8
+   },
+   "goal_tags": [
+    "lose_weight",
+    "high_protein"
+   ],
+   "image": "recipes/bbq-chicken-sweet-potato-bowl.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "classic-smash-burgers",
+   "name": "Classic Smash Burgers",
+   "cuisine": "American",
+   "servings": 4,
+   "minutes": 40,
+   "vegetarian": false,
+   "summary": "Crispy-edged beef patties with melted cheddar on whole-wheat buns, plus oven fries.",
+   "ingredients": [
+    {
+     "text": "1⅓ lb ground beef (85% lean)",
+     "grams": 600,
+     "fdc_id": 171796,
+     "usda_description": "Beef, ground, 85% lean meat / 15% fat, raw (Includes foods for USDA's Food Distribution Program)"
+    },
+    {
+     "text": "4 slices cheddar",
+     "grams": 84,
+     "fdc_id": 173414,
+     "usda_description": "Cheese, cheddar (Includes foods for USDA's Food Distribution Program)"
+    },
+    {
+     "text": "4 whole-wheat buns",
+     "grams": 240,
+     "fdc_id": 174090,
+     "usda_description": "Rolls, hamburger or hot dog, whole wheat"
+    },
+    {
+     "text": "3 medium potatoes, cut into wedges",
+     "grams": 600,
+     "fdc_id": 170026,
+     "usda_description": "Potatoes, flesh and skin, raw"
+    },
+    {
+     "text": "1½ tbsp olive oil",
+     "grams": 21,
+     "fdc_id": 171413,
+     "usda_description": "Oil, olive, salad or cooking"
+    },
+    {
+     "text": "Lettuce leaves",
+     "grams": 60,
+     "fdc_id": 169248,
+     "usda_description": "Lettuce, iceberg (includes crisphead types), raw"
+    },
+    {
+     "text": "1 tomato, sliced",
+     "grams": 120,
+     "fdc_id": 170457,
+     "usda_description": "Tomatoes, red, ripe, raw, year round average"
+    },
+    {
+     "text": "Pickle slices",
+     "grams": 60,
+     "fdc_id": 168558,
+     "usda_description": "Pickles, cucumber, dill or kosher dill"
+    },
+    {
+     "text": "2 tbsp ketchup",
+     "grams": 34,
+     "fdc_id": 168556,
+     "usda_description": "Catsup"
+    },
+    {
+     "text": "1 tbsp mustard",
+     "grams": 15,
+     "fdc_id": 172234,
+     "usda_description": "Mustard, prepared, yellow"
+    },
+    {
+     "text": "Salt and pepper"
+    }
+   ],
+   "steps": [
+    "Heat the oven to 425°F. Toss the potato wedges with the oil and salt and roast 30 minutes, flipping once.",
+    "Form the beef into 8 loose balls. Smash each flat on a very hot skillet and season.",
+    "Cook 2–3 minutes until crusty, flip, add cheese to half of them and cook 1 more minute (160°F).",
+    "Stack 2 patties per bun with lettuce, tomato, pickles, ketchup and mustard. Serve with the fries."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 751,
+    "protein": 44,
+    "carbs": 58,
+    "fat": 38
+   },
+   "goal_tags": [
+    "gain_weight",
+    "high_protein"
+   ],
+   "image": "recipes/classic-smash-burgers.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "turkey-chili",
+   "name": "Hearty Turkey Chili",
+   "cuisine": "American",
+   "servings": 6,
+   "minutes": 45,
+   "vegetarian": false,
+   "summary": "A thick, high-protein chili with turkey, two kinds of beans and tomatoes.",
+   "ingredients": [
+    {
+     "text": "2 lb ground turkey",
+     "grams": 907,
+     "fdc_id": 171505,
+     "usda_description": "Turkey, Ground, raw"
+    },
+    {
+     "text": "2 cans (15 oz) kidney beans, drained",
+     "grams": 480,
+     "fdc_id": 174285,
+     "usda_description": "Beans, kidney, red, mature seeds, canned, drained solids"
+    },
+    {
+     "text": "1 can (15 oz) black beans, drained",
+     "grams": 240,
+     "fdc_id": 175238,
+     "usda_description": "Beans, black, mature seeds, canned, low sodium"
+    },
+    {
+     "text": "2 cans (14 oz) crushed tomatoes",
+     "grams": 800,
+     "fdc_id": 170501,
+     "usda_description": "Tomatoes, crushed, canned"
+    },
+    {
+     "text": "1 onion, diced",
+     "grams": 150,
+     "fdc_id": 170000,
+     "usda_description": "Onions, raw"
+    },
+    {
+     "text": "1 bell pepper, diced",
+     "grams": 120,
+     "fdc_id": 170108,
+     "usda_description": "Peppers, sweet, red, raw"
+    },
+    {
+     "text": "3 cloves garlic",
+     "grams": 9,
+     "fdc_id": 169230,
+     "usda_description": "Garlic, raw"
+    },
+    {
+     "text": "1 tbsp oil",
+     "grams": 14,
+     "fdc_id": 171413,
+     "usda_description": "Oil, olive, salad or cooking"
+    },
+    {
+     "text": "2 tbsp chili powder, 2 tsp cumin, salt"
+    },
+    {
+     "text": "½ cup shredded cheddar to top",
+     "grams": 56,
+     "fdc_id": 173414,
+     "usda_description": "Cheese, cheddar (Includes foods for USDA's Food Distribution Program)"
+    }
+   ],
+   "steps": [
+    "Heat the oil in a large pot. Cook the onion and pepper 5 minutes, then add the garlic.",
+    "Add the turkey and cook until no pink remains (165°F).",
+    "Stir in the spices, tomatoes, beans and 1 cup water. Simmer 25 minutes, stirring now and then.",
+    "Season with salt and top each bowl with cheddar."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 478,
+    "protein": 43,
+    "carbs": 38,
+    "fat": 18
+   },
+   "goal_tags": [
+    "lose_weight",
+    "high_protein"
+   ],
+   "image": "recipes/turkey-chili.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "mac-and-cheese-chicken",
+   "name": "Chicken Broccoli Mac & Cheese",
+   "cuisine": "American",
+   "servings": 4,
+   "minutes": 30,
+   "vegetarian": false,
+   "summary": "Creamy stovetop mac and cheese loaded with chicken and broccoli.",
+   "ingredients": [
+    {
+     "text": "10 oz dry elbow pasta (about 5 cups cooked)",
+     "grams": 700,
+     "fdc_id": 169737,
+     "usda_description": "Pasta, cooked, enriched, without added salt"
+    },
+    {
+     "text": "1 lb chicken breast, diced",
+     "grams": 454,
+     "fdc_id": 171077,
+     "usda_description": "Chicken, broiler or fryers, breast, skinless, boneless, meat only, raw"
+    },
+    {
+     "text": "3 cups broccoli florets",
+     "grams": 300,
+     "fdc_id": 170379,
+     "usda_description": "Broccoli, raw"
+    },
+    {
+     "text": "1½ cups shredded sharp cheddar",
+     "grams": 170,
+     "fdc_id": 173414,
+     "usda_description": "Cheese, cheddar (Includes foods for USDA's Food Distribution Program)"
+    },
+    {
+     "text": "1½ cups 2% milk",
+     "grams": 360,
+     "fdc_id": 171267,
+     "usda_description": "Milk, reduced fat, fluid, 2% milkfat, with added vitamin A and vitamin D"
+    },
+    {
+     "text": "2 tbsp butter",
+     "grams": 28,
+     "fdc_id": 173410,
+     "usda_description": "Butter, salted"
+    },
+    {
+     "text": "2 tbsp flour",
+     "grams": 16,
+     "fdc_id": 168894,
+     "usda_description": "Wheat flour, white, all-purpose, enriched, bleached"
+    },
+    {
+     "text": "½ tbsp oil",
+     "grams": 7,
+     "fdc_id": 171413,
+     "usda_description": "Oil, olive, salad or cooking"
+    },
+    {
+     "text": "½ tsp mustard powder, salt"
+    }
+   ],
+   "steps": [
+    "Cook the chicken in the oil over medium heat until 165°F. Set aside.",
+    "Boil the pasta, adding the broccoli for the last 3 minutes. Drain.",
+    "Melt the butter, whisk in the flour for 1 minute, then slowly whisk in the milk. Simmer until thick.",
+    "Off the heat, stir in the cheddar, mustard and salt. Fold in the pasta, broccoli and chicken."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 735,
+    "protein": 51,
+    "carbs": 68,
+    "fat": 28
+   },
+   "goal_tags": [
+    "gain_weight",
+    "high_protein",
+    "quick"
+   ],
+   "image": "recipes/mac-and-cheese-chicken.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "sheet-pan-salmon-potatoes",
+   "name": "Sheet Pan Salmon, Potatoes & Asparagus",
+   "cuisine": "American",
+   "servings": 4,
+   "minutes": 35,
+   "vegetarian": false,
+   "summary": "Lemony salmon roasted on one pan with baby potatoes and asparagus.",
+   "ingredients": [
+    {
+     "text": "1½ lb salmon fillets",
+     "grams": 680,
+     "fdc_id": 175167,
+     "usda_description": "Fish, salmon, Atlantic, farmed, raw"
+    },
+    {
+     "text": "1 lb baby red potatoes, halved",
+     "grams": 500,
+     "fdc_id": 170029,
+     "usda_description": "Potatoes, red, flesh and skin, raw"
+    },
+    {
+     "text": "1 lb asparagus",
+     "grams": 450,
+     "fdc_id": 168389,
+     "usda_description": "Asparagus, raw"
+    },
+    {
+     "text": "1½ tbsp olive oil",
+     "grams": 21,
+     "fdc_id": 171413,
+     "usda_description": "Oil, olive, salad or cooking"
+    },
+    {
+     "text": "1 lemon",
+     "grams": 45,
+     "fdc_id": 167747,
+     "usda_description": "Lemon juice, raw"
+    },
+    {
+     "text": "2 cloves garlic",
+     "grams": 6,
+     "fdc_id": 169230,
+     "usda_description": "Garlic, raw"
+    },
+    {
+     "text": "Salt, pepper, dried dill"
+    }
+   ],
+   "steps": [
+    "Heat the oven to 425°F. Toss the potatoes with 1 tbsp oil and salt and roast 15 minutes.",
+    "Add the asparagus and salmon to the pan. Brush with the rest of the oil, garlic, lemon juice and dill.",
+    "Roast 12–15 minutes until the salmon reaches 145°F.",
+    "Serve with lemon wedges."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 515,
+    "protein": 40,
+    "carbs": 26,
+    "fat": 28
+   },
+   "goal_tags": [
+    "high_protein"
+   ],
+   "image": "recipes/sheet-pan-salmon-potatoes.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "buffalo-chicken-wrap",
+   "name": "Buffalo Chicken Wraps",
+   "cuisine": "American",
+   "servings": 4,
+   "minutes": 20,
+   "vegetarian": false,
+   "summary": "Spicy chicken, crisp lettuce and a cool yogurt ranch rolled in tortillas.",
+   "ingredients": [
+    {
+     "text": "1⅓ lb chicken breast",
+     "grams": 600,
+     "fdc_id": 171077,
+     "usda_description": "Chicken, broiler or fryers, breast, skinless, boneless, meat only, raw"
+    },
+    {
+     "text": "4 large flour tortillas (10 in)",
+     "grams": 288,
+     "fdc_id": 175037,
+     "usda_description": "Tortillas, ready-to-bake or -fry, flour, refrigerated"
+    },
+    {
+     "text": "Chopped romaine",
+     "grams": 150,
+     "fdc_id": 169247,
+     "usda_description": "Lettuce, cos or romaine, raw"
+    },
+    {
+     "text": "1 carrot, shredded",
+     "grams": 60,
+     "fdc_id": 170393,
+     "usda_description": "Carrots, raw"
+    },
+    {
+     "text": "½ cup nonfat Greek yogurt",
+     "grams": 120,
+     "fdc_id": 170894,
+     "usda_description": "Yogurt, Greek, plain, nonfat (Includes foods for USDA's Food Distribution Program)"
+    },
+    {
+     "text": "½ tbsp oil",
+     "grams": 7,
+     "fdc_id": 171413,
+     "usda_description": "Oil, olive, salad or cooking"
+    },
+    {
+     "text": "3 tbsp hot sauce, ½ tsp garlic powder, dried dill, salt"
+    }
+   ],
+   "steps": [
+    "Cook the chicken in the oil over medium heat 6–7 minutes per side to 165°F. Slice and toss with hot sauce.",
+    "Mix the yogurt with garlic powder, dill, salt and a splash of water.",
+    "Fill the tortillas with romaine, carrot, chicken and sauce, then roll up tightly."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 446,
+    "protein": 43,
+    "carbs": 39,
+    "fat": 12
+   },
+   "goal_tags": [
+    "lose_weight",
+    "high_protein",
+    "quick"
+   ],
+   "image": "recipes/buffalo-chicken-wrap.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "steak-and-potatoes",
+   "name": "Garlic Butter Steak & Potatoes",
+   "cuisine": "American",
+   "servings": 4,
+   "minutes": 35,
+   "vegetarian": false,
+   "summary": "Pan-seared sirloin with crispy garlic potatoes and green beans.",
+   "ingredients": [
+    {
+     "text": "1¾ lb top sirloin steak",
+     "grams": 800,
+     "fdc_id": 171804,
+     "usda_description": "Beef, top sirloin, steak, separable lean only, trimmed to 1/8\" fat, select, raw"
+    },
+    {
+     "text": "1½ lb baby potatoes, halved",
+     "grams": 700,
+     "fdc_id": 170029,
+     "usda_description": "Potatoes, red, flesh and skin, raw"
+    },
+    {
+     "text": "10 oz green beans",
+     "grams": 300,
+     "fdc_id": 169961,
+     "usda_description": "Beans, snap, green, raw"
+    },
+    {
+     "text": "3 tbsp butter",
+     "grams": 42,
+     "fdc_id": 173410,
+     "usda_description": "Butter, salted"
+    },
+    {
+     "text": "2 tbsp olive oil",
+     "grams": 28,
+     "fdc_id": 171413,
+     "usda_description": "Oil, olive, salad or cooking"
+    },
+    {
+     "text": "4 cloves garlic",
+     "grams": 12,
+     "fdc_id": 169230,
+     "usda_description": "Garlic, raw"
+    },
+    {
+     "text": "Salt, pepper, fresh thyme"
+    }
+   ],
+   "steps": [
+    "Heat the oven to 425°F. Toss the potatoes with the oil and salt and roast 25–30 minutes.",
+    "Season the steak. Sear in a hot skillet 4–5 minutes per side to at least 145°F.",
+    "Add the butter, garlic and thyme and spoon over the steak for 1 minute. Rest 5 minutes and slice.",
+    "Sauté the green beans in the same pan. Serve together."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 541,
+    "protein": 50,
+    "carbs": 34,
+    "fat": 23
+   },
+   "goal_tags": [
+    "high_protein"
+   ],
+   "image": "recipes/steak-and-potatoes.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "chicken-pot-pie-skillet",
+   "name": "Chicken Pot Pie Skillet",
+   "cuisine": "American",
+   "servings": 4,
+   "minutes": 40,
+   "vegetarian": false,
+   "summary": "A creamy chicken and vegetable filling under flaky biscuit-style dumplings.",
+   "ingredients": [
+    {
+     "text": "1⅓ lb chicken breast, diced",
+     "grams": 600,
+     "fdc_id": 171077,
+     "usda_description": "Chicken, broiler or fryers, breast, skinless, boneless, meat only, raw"
+    },
+    {
+     "text": "1 cup frozen peas",
+     "grams": 150,
+     "fdc_id": 170016,
+     "usda_description": "Peas, green, frozen, unprepared (Includes foods for USDA's Food Distribution Program)"
+    },
+    {
+     "text": "2 carrots, diced",
+     "grams": 120,
+     "fdc_id": 170393,
+     "usda_description": "Carrots, raw"
+    },
+    {
+     "text": "1 small onion",
+     "grams": 110,
+     "fdc_id": 170000,
+     "usda_description": "Onions, raw"
+    },
+    {
+     "text": "2 cups chicken broth",
+     "grams": 480,
+     "fdc_id": 174536,
+     "usda_description": "Soup, chicken broth, ready-to-serve"
+    },
+    {
+     "text": "1 cup 2% milk",
+     "grams": 240,
+     "fdc_id": 171267,
+     "usda_description": "Milk, reduced fat, fluid, 2% milkfat, with added vitamin A and vitamin D"
+    },
+    {
+     "text": "1¼ cups flour (sauce and dumplings)",
+     "grams": 150,
+     "fdc_id": 168894,
+     "usda_description": "Wheat flour, white, all-purpose, enriched, bleached"
+    },
+    {
+     "text": "4 tbsp butter",
+     "grams": 56,
+     "fdc_id": 173410,
+     "usda_description": "Butter, salted"
+    },
+    {
+     "text": "2 tsp baking powder, salt, thyme"
+    }
+   ],
+   "steps": [
+    "Melt 2 tbsp butter in an oven-safe skillet. Cook the onion and carrots 5 minutes. Add the chicken and cook 5 minutes.",
+    "Stir in 3 tbsp flour, then the broth and ½ cup milk. Simmer until thick and add the peas.",
+    "Mix the rest of the flour, the baking powder, salt, 2 tbsp melted butter and ½ cup milk into a soft dough.",
+    "Drop spoonfuls on top. Bake at 400°F for 18–20 minutes until golden and the filling reaches 165°F."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 506,
+    "protein": 43,
+    "carbs": 43,
+    "fat": 17
+   },
+   "goal_tags": [
+    "high_protein"
+   ],
+   "image": "recipes/chicken-pot-pie-skillet.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "greek-chicken-sheet-pan",
+   "name": "Greek Chicken Sheet Pan with Tzatziki",
+   "cuisine": "Mediterranean",
+   "servings": 4,
+   "minutes": 40,
+   "vegetarian": false,
+   "summary": "Oregano-lemon chicken roasted with peppers, onion and zucchini, served with tzatziki.",
+   "ingredients": [
+    {
+     "text": "1½ lb chicken breast, cubed",
+     "grams": 680,
+     "fdc_id": 171077,
+     "usda_description": "Chicken, broiler or fryers, breast, skinless, boneless, meat only, raw"
+    },
+    {
+     "text": "2 bell peppers",
+     "grams": 240,
+     "fdc_id": 170108,
+     "usda_description": "Peppers, sweet, red, raw"
+    },
+    {
+     "text": "2 zucchini",
+     "grams": 300,
+     "fdc_id": 169291,
+     "usda_description": "Squash, summer, zucchini, includes skin, raw"
+    },
+    {
+     "text": "1 red onion",
+     "grams": 110,
+     "fdc_id": 170000,
+     "usda_description": "Onions, raw"
+    },
+    {
+     "text": "1½ tbsp olive oil",
+     "grams": 21,
+     "fdc_id": 171413,
+     "usda_description": "Oil, olive, salad or cooking"
+    },
+    {
+     "text": "1 lemon",
+     "grams": 45,
+     "fdc_id": 167747,
+     "usda_description": "Lemon juice, raw"
+    },
+    {
+     "text": "¾ cup nonfat Greek yogurt",
+     "grams": 170,
+     "fdc_id": 170894,
+     "usda_description": "Yogurt, Greek, plain, nonfat (Includes foods for USDA's Food Distribution Program)"
+    },
+    {
+     "text": "½ cucumber, grated",
+     "grams": 100,
+     "fdc_id": 168409,
+     "usda_description": "Cucumber, with peel, raw"
+    },
+    {
+     "text": "2 cloves garlic",
+     "grams": 6,
+     "fdc_id": 169230,
+     "usda_description": "Garlic, raw"
+    },
+    {
+     "text": "2 tsp dried oregano, salt, dill"
+    }
+   ],
+   "steps": [
+    "Heat the oven to 425°F. Toss the chicken and vegetables with the oil, lemon juice, oregano and salt.",
+    "Roast on a sheet pan 20–25 minutes, until the chicken reaches 165°F.",
+    "Mix the yogurt, squeezed cucumber, 1 grated garlic clove, dill and salt.",
+    "Serve the chicken and vegetables with tzatziki."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 323,
+    "protein": 45,
+    "carbs": 12,
+    "fat": 10
+   },
+   "goal_tags": [
+    "lose_weight",
+    "high_protein"
+   ],
+   "image": "recipes/greek-chicken-sheet-pan.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "falafel-chickpea-bowls",
+   "name": "Baked Chickpea Falafel Bowls",
+   "cuisine": "Mediterranean",
+   "servings": 4,
+   "minutes": 40,
+   "vegetarian": true,
+   "summary": "Oven-baked falafel bites over quinoa with cucumber, tomato and tahini.",
+   "ingredients": [
+    {
+     "text": "2 cans (15 oz) chickpeas, drained",
+     "grams": 480,
+     "fdc_id": 173801,
+     "usda_description": "Chickpeas (garbanzo beans, bengal gram), mature seeds, canned, drained, rinsed in tap water"
+    },
+    {
+     "text": "½ onion",
+     "grams": 75,
+     "fdc_id": 170000,
+     "usda_description": "Onions, raw"
+    },
+    {
+     "text": "3 cloves garlic",
+     "grams": 9,
+     "fdc_id": 169230,
+     "usda_description": "Garlic, raw"
+    },
+    {
+     "text": "¼ cup flour",
+     "grams": 30,
+     "fdc_id": 168894,
+     "usda_description": "Wheat flour, white, all-purpose, enriched, bleached"
+    },
+    {
+     "text": "2 tbsp olive oil",
+     "grams": 28,
+     "fdc_id": 171413,
+     "usda_description": "Oil, olive, salad or cooking"
+    },
+    {
+     "text": "3 cups cooked quinoa",
+     "grams": 555,
+     "fdc_id": 168917,
+     "usda_description": "Quinoa, cooked"
+    },
+    {
+     "text": "1 cucumber",
+     "grams": 200,
+     "fdc_id": 168409,
+     "usda_description": "Cucumber, with peel, raw"
+    },
+    {
+     "text": "2 tomatoes",
+     "grams": 200,
+     "fdc_id": 170457,
+     "usda_description": "Tomatoes, red, ripe, raw, year round average"
+    },
+    {
+     "text": "3 tbsp tahini",
+     "grams": 45,
+     "fdc_id": 170189,
+     "usda_description": "Seeds, sesame butter, tahini, from roasted and toasted kernels (most common type)"
+    },
+    {
+     "text": "1 lemon",
+     "grams": 45,
+     "fdc_id": 167747,
+     "usda_description": "Lemon juice, raw"
+    },
+    {
+     "text": "Parsley, 2 tsp cumin, salt"
+    }
+   ],
+   "steps": [
+    "Heat the oven to 400°F. Pulse the chickpeas, onion, garlic, parsley, cumin, salt and flour until coarse.",
+    "Shape into 20 small patties, brush with the oil and bake 25 minutes, flipping halfway.",
+    "Whisk the tahini with lemon juice and water until pourable.",
+    "Build bowls with quinoa, chopped cucumber and tomato, and falafel. Drizzle with tahini."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 518,
+    "protein": 18,
+    "carbs": 72,
+    "fat": 19
+   },
+   "goal_tags": [
+    "vegetarian"
+   ],
+   "image": "recipes/falafel-chickpea-bowls.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "lemon-herb-salmon-couscous",
+   "name": "Lemon Herb Salmon & Couscous",
+   "cuisine": "Mediterranean",
+   "servings": 4,
+   "minutes": 25,
+   "vegetarian": false,
+   "summary": "Flaky salmon on fluffy couscous with tomatoes, olives and feta.",
+   "ingredients": [
+    {
+     "text": "1½ lb salmon",
+     "grams": 680,
+     "fdc_id": 175167,
+     "usda_description": "Fish, salmon, Atlantic, farmed, raw"
+    },
+    {
+     "text": "4 cups cooked couscous",
+     "grams": 600,
+     "fdc_id": 169700,
+     "usda_description": "Couscous, cooked"
+    },
+    {
+     "text": "1½ cups cherry tomatoes",
+     "grams": 200,
+     "fdc_id": 170457,
+     "usda_description": "Tomatoes, red, ripe, raw, year round average"
+    },
+    {
+     "text": "⅓ cup sliced olives",
+     "grams": 60,
+     "fdc_id": 169094,
+     "usda_description": "Olives, ripe, canned (small-extra large)"
+    },
+    {
+     "text": "⅓ cup feta",
+     "grams": 56,
+     "fdc_id": 173420,
+     "usda_description": "Cheese, feta"
+    },
+    {
+     "text": "1 lemon",
+     "grams": 45,
+     "fdc_id": 167747,
+     "usda_description": "Lemon juice, raw"
+    },
+    {
+     "text": "1 tbsp olive oil",
+     "grams": 14,
+     "fdc_id": 171413,
+     "usda_description": "Oil, olive, salad or cooking"
+    },
+    {
+     "text": "Parsley, salt, pepper"
+    }
+   ],
+   "steps": [
+    "Heat the oven to 400°F. Season the salmon with salt, pepper and lemon zest. Bake 12–15 minutes to 145°F.",
+    "Toss the couscous with the tomatoes, olives, oil, lemon juice and parsley.",
+    "Top with feta and the salmon."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 619,
+    "protein": 43,
+    "carbs": 39,
+    "fat": 31
+   },
+   "goal_tags": [
+    "high_protein",
+    "quick"
+   ],
+   "image": "recipes/lemon-herb-salmon-couscous.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "chicken-shawarma-pitas",
+   "name": "Chicken Shawarma Pitas",
+   "cuisine": "Mediterranean",
+   "servings": 4,
+   "minutes": 35,
+   "vegetarian": false,
+   "summary": "Spiced roasted chicken thighs stuffed in pitas with tomato, cucumber and garlic yogurt.",
+   "ingredients": [
+    {
+     "text": "1¾ lb boneless chicken thighs",
+     "grams": 800,
+     "fdc_id": 173627,
+     "usda_description": "Chicken, broilers or fryers, dark meat, thigh, meat only, raw"
+    },
+    {
+     "text": "4 whole-wheat pitas",
+     "grams": 256,
+     "fdc_id": 174916,
+     "usda_description": "Bread, pita, whole-wheat"
+    },
+    {
+     "text": "½ cup nonfat Greek yogurt",
+     "grams": 120,
+     "fdc_id": 170894,
+     "usda_description": "Yogurt, Greek, plain, nonfat (Includes foods for USDA's Food Distribution Program)"
+    },
+    {
+     "text": "1 tomato",
+     "grams": 150,
+     "fdc_id": 170457,
+     "usda_description": "Tomatoes, red, ripe, raw, year round average"
+    },
+    {
+     "text": "½ cucumber",
+     "grams": 150,
+     "fdc_id": 168409,
+     "usda_description": "Cucumber, with peel, raw"
+    },
+    {
+     "text": "½ red onion",
+     "grams": 75,
+     "fdc_id": 170000,
+     "usda_description": "Onions, raw"
+    },
+    {
+     "text": "1½ tbsp olive oil",
+     "grams": 21,
+     "fdc_id": 171413,
+     "usda_description": "Oil, olive, salad or cooking"
+    },
+    {
+     "text": "½ lemon",
+     "grams": 30,
+     "fdc_id": 167747,
+     "usda_description": "Lemon juice, raw"
+    },
+    {
+     "text": "½ cup hummus",
+     "grams": 120,
+     "fdc_id": 174289,
+     "usda_description": "Hummus, commercial"
+    },
+    {
+     "text": "2 tsp cumin, 1 tsp paprika, ½ tsp turmeric, garlic, salt"
+    }
+   ],
+   "steps": [
+    "Heat the oven to 425°F. Toss the chicken with the oil, lemon juice and spices.",
+    "Roast 20–25 minutes to 165°F, then slice.",
+    "Mix the yogurt with grated garlic and salt.",
+    "Spread the pitas with hummus and fill with chicken, vegetables and garlic yogurt."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 566,
+    "protein": 52,
+    "carbs": 46,
+    "fat": 20
+   },
+   "goal_tags": [
+    "high_protein"
+   ],
+   "image": "recipes/chicken-shawarma-pitas.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "lentil-vegetable-soup",
+   "name": "Mediterranean Lentil Soup",
+   "cuisine": "Mediterranean",
+   "servings": 6,
+   "minutes": 45,
+   "vegetarian": true,
+   "summary": "A cozy, fiber-rich soup with lentils, carrots, tomatoes and spinach.",
+   "ingredients": [
+    {
+     "text": "2 cups dry lentils (about 5 cups cooked)",
+     "grams": 1000,
+     "fdc_id": 172421,
+     "usda_description": "Lentils, mature seeds, cooked, boiled, without salt"
+    },
+    {
+     "text": "1 onion",
+     "grams": 150,
+     "fdc_id": 170000,
+     "usda_description": "Onions, raw"
+    },
+    {
+     "text": "3 carrots",
+     "grams": 200,
+     "fdc_id": 170393,
+     "usda_description": "Carrots, raw"
+    },
+    {
+     "text": "1 can (14 oz) crushed tomatoes",
+     "grams": 400,
+     "fdc_id": 170501,
+     "usda_description": "Tomatoes, crushed, canned"
+    },
+    {
+     "text": "5 oz spinach",
+     "grams": 140,
+     "fdc_id": 168462,
+     "usda_description": "Spinach, raw"
+    },
+    {
+     "text": "2 tbsp olive oil",
+     "grams": 28,
+     "fdc_id": 171413,
+     "usda_description": "Oil, olive, salad or cooking"
+    },
+    {
+     "text": "3 cloves garlic",
+     "grams": 9,
+     "fdc_id": 169230,
+     "usda_description": "Garlic, raw"
+    },
+    {
+     "text": "½ lemon",
+     "grams": 30,
+     "fdc_id": 167747,
+     "usda_description": "Lemon juice, raw"
+    },
+    {
+     "text": "6 cups vegetable broth or water, 2 tsp cumin, salt"
+    }
+   ],
+   "steps": [
+    "Heat the oil in a large pot. Cook the onion and carrots 6 minutes, then add the garlic and cumin.",
+    "Add the rinsed dry lentils, tomatoes and broth. Simmer 25–30 minutes until the lentils are tender.",
+    "Stir in the spinach until wilted and finish with lemon juice and salt."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 288,
+    "protein": 17,
+    "carbs": 46,
+    "fat": 6
+   },
+   "goal_tags": [
+    "vegetarian"
+   ],
+   "image": "recipes/lentil-vegetable-soup.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "greek-turkey-meatball-bowl",
+   "name": "Greek Turkey Meatball Bowls",
+   "cuisine": "Mediterranean",
+   "servings": 4,
+   "minutes": 35,
+   "vegetarian": false,
+   "summary": "Herby turkey meatballs with brown rice, hummus, cucumber and feta.",
+   "ingredients": [
+    {
+     "text": "1½ lb ground turkey",
+     "grams": 680,
+     "fdc_id": 171505,
+     "usda_description": "Turkey, Ground, raw"
+    },
+    {
+     "text": "1 egg",
+     "grams": 50,
+     "fdc_id": 171287,
+     "usda_description": "Egg, whole, raw, fresh"
+    },
+    {
+     "text": "⅓ cup feta",
+     "grams": 56,
+     "fdc_id": 173420,
+     "usda_description": "Cheese, feta"
+    },
+    {
+     "text": "3 cups cooked brown rice",
+     "grams": 480,
+     "fdc_id": 169704,
+     "usda_description": "Rice, brown, long-grain, cooked (Includes foods for USDA's Food Distribution Program)"
+    },
+    {
+     "text": "½ cup hummus",
+     "grams": 120,
+     "fdc_id": 174289,
+     "usda_description": "Hummus, commercial"
+    },
+    {
+     "text": "1 cucumber",
+     "grams": 200,
+     "fdc_id": 168409,
+     "usda_description": "Cucumber, with peel, raw"
+    },
+    {
+     "text": "1 tomato",
+     "grams": 150,
+     "fdc_id": 170457,
+     "usda_description": "Tomatoes, red, ripe, raw, year round average"
+    },
+    {
+     "text": "2 cups spinach",
+     "grams": 60,
+     "fdc_id": 168462,
+     "usda_description": "Spinach, raw"
+    },
+    {
+     "text": "2 tsp oregano, garlic powder, salt"
+    }
+   ],
+   "steps": [
+    "Heat the oven to 400°F. Mix the turkey, egg, half the feta, oregano, garlic powder and salt. Roll into 20 balls.",
+    "Bake 15–18 minutes to 165°F.",
+    "Build bowls with rice, spinach, cucumber, tomato and meatballs. Add a scoop of hummus and the rest of the feta."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 543,
+    "protein": 44,
+    "carbs": 40,
+    "fat": 24
+   },
+   "goal_tags": [
+    "high_protein"
+   ],
+   "image": "recipes/greek-turkey-meatball-bowl.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "shrimp-orzo-feta",
+   "name": "Garlic Shrimp with Tomatoes & Feta",
+   "cuisine": "Mediterranean",
+   "servings": 4,
+   "minutes": 25,
+   "vegetarian": false,
+   "summary": "Shrimp baked in a garlicky tomato sauce with feta, served over pasta.",
+   "ingredients": [
+    {
+     "text": "1½ lb raw shrimp",
+     "grams": 680,
+     "fdc_id": 175179,
+     "usda_description": "Crustaceans, shrimp, raw"
+    },
+    {
+     "text": "1 can (14 oz) crushed tomatoes",
+     "grams": 400,
+     "fdc_id": 170501,
+     "usda_description": "Tomatoes, crushed, canned"
+    },
+    {
+     "text": "½ cup feta",
+     "grams": 85,
+     "fdc_id": 173420,
+     "usda_description": "Cheese, feta"
+    },
+    {
+     "text": "4 cloves garlic",
+     "grams": 12,
+     "fdc_id": 169230,
+     "usda_description": "Garlic, raw"
+    },
+    {
+     "text": "1 tbsp olive oil",
+     "grams": 14,
+     "fdc_id": 171413,
+     "usda_description": "Oil, olive, salad or cooking"
+    },
+    {
+     "text": "8 oz dry orzo or small pasta (about 4 cups cooked)",
+     "grams": 560,
+     "fdc_id": 169737,
+     "usda_description": "Pasta, cooked, enriched, without added salt"
+    },
+    {
+     "text": "2 cups spinach",
+     "grams": 60,
+     "fdc_id": 168462,
+     "usda_description": "Spinach, raw"
+    },
+    {
+     "text": "Oregano, red pepper flakes, salt"
+    }
+   ],
+   "steps": [
+    "Heat the oven to 400°F. Warm the oil in an oven-safe skillet and cook the garlic 1 minute.",
+    "Add the tomatoes, oregano and pepper flakes. Simmer 5 minutes, then stir in the spinach.",
+    "Nestle in the shrimp, crumble the feta over and bake 10–12 minutes until the shrimp are opaque.",
+    "Serve over the cooked pasta."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 493,
+    "protein": 48,
+    "carbs": 53,
+    "fat": 11
+   },
+   "goal_tags": [
+    "lose_weight",
+    "high_protein",
+    "quick"
+   ],
+   "image": "recipes/shrimp-orzo-feta.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "loaded-hummus-plate",
+   "name": "Loaded Hummus Power Plate",
+   "cuisine": "Mediterranean",
+   "servings": 2,
+   "minutes": 15,
+   "vegetarian": true,
+   "summary": "A big snack-style plate of hummus, chickpeas, vegetables, feta and warm pita.",
+   "ingredients": [
+    {
+     "text": "1 cup hummus",
+     "grams": 240,
+     "fdc_id": 174289,
+     "usda_description": "Hummus, commercial"
+    },
+    {
+     "text": "½ can chickpeas, drained",
+     "grams": 120,
+     "fdc_id": 173801,
+     "usda_description": "Chickpeas (garbanzo beans, bengal gram), mature seeds, canned, drained, rinsed in tap water"
+    },
+    {
+     "text": "2 whole-wheat pitas",
+     "grams": 128,
+     "fdc_id": 174916,
+     "usda_description": "Bread, pita, whole-wheat"
+    },
+    {
+     "text": "½ cucumber",
+     "grams": 150,
+     "fdc_id": 168409,
+     "usda_description": "Cucumber, with peel, raw"
+    },
+    {
+     "text": "1 tomato",
+     "grams": 150,
+     "fdc_id": 170457,
+     "usda_description": "Tomatoes, red, ripe, raw, year round average"
+    },
+    {
+     "text": "1 carrot",
+     "grams": 100,
+     "fdc_id": 170393,
+     "usda_description": "Carrots, raw"
+    },
+    {
+     "text": "⅓ cup feta",
+     "grams": 56,
+     "fdc_id": 173420,
+     "usda_description": "Cheese, feta"
+    },
+    {
+     "text": "A handful of olives",
+     "grams": 30,
+     "fdc_id": 169094,
+     "usda_description": "Olives, ripe, canned (small-extra large)"
+    },
+    {
+     "text": "1 tbsp olive oil",
+     "grams": 14,
+     "fdc_id": 171413,
+     "usda_description": "Oil, olive, salad or cooking"
+    },
+    {
+     "text": "Paprika"
+    }
+   ],
+   "steps": [
+    "Spread the hummus on a plate and top with the chickpeas, oil and paprika.",
+    "Cut the vegetables into sticks and wedges.",
+    "Warm the pitas and cut into triangles.",
+    "Arrange everything with the feta and olives."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 734,
+    "protein": 26,
+    "carbs": 80,
+    "fat": 39
+   },
+   "goal_tags": [
+    "gain_weight",
+    "quick",
+    "vegetarian"
+   ],
+   "image": "recipes/loaded-hummus-plate.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "greek-yogurt-berry-parfait",
+   "name": "Greek Yogurt Berry Oat Parfait",
+   "cuisine": "Breakfast",
+   "servings": 2,
+   "minutes": 5,
+   "vegetarian": true,
+   "summary": "Layers of creamy Greek yogurt, fresh berries, granola and honey.",
+   "ingredients": [
+    {
+     "text": "1¾ cups nonfat Greek yogurt",
+     "grams": 400,
+     "fdc_id": 170894,
+     "usda_description": "Yogurt, Greek, plain, nonfat (Includes foods for USDA's Food Distribution Program)"
+    },
+    {
+     "text": "⅔ cup blueberries",
+     "grams": 100,
+     "fdc_id": 171711,
+     "usda_description": "Blueberries, raw"
+    },
+    {
+     "text": "1 cup sliced strawberries",
+     "grams": 150,
+     "fdc_id": 167762,
+     "usda_description": "Strawberries, raw"
+    },
+    {
+     "text": "⅓ cup granola",
+     "grams": 40,
+     "fdc_id": 171646,
+     "usda_description": "Cereals ready-to-eat, granola, homemade"
+    },
+    {
+     "text": "2 tsp honey",
+     "grams": 14,
+     "fdc_id": 169640,
+     "usda_description": "Honey"
+    },
+    {
+     "text": "1 tbsp chia seeds",
+     "grams": 12,
+     "fdc_id": 170554,
+     "usda_description": "Seeds, chia seeds, dried"
+    }
+   ],
+   "steps": [
+    "Spoon a layer of yogurt into two glasses.",
+    "Add berries, then granola and chia.",
+    "Repeat the layers and drizzle with honey."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 319,
+    "protein": 25,
+    "carbs": 39,
+    "fat": 8
+   },
+   "goal_tags": [
+    "lose_weight",
+    "quick",
+    "vegetarian"
+   ],
+   "image": "recipes/greek-yogurt-berry-parfait.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "spinach-feta-egg-scramble",
+   "name": "Spinach & Feta Egg Scramble",
+   "cuisine": "Breakfast",
+   "servings": 2,
+   "minutes": 10,
+   "vegetarian": true,
+   "summary": "Fluffy eggs and egg whites with spinach and feta, plus whole-wheat toast.",
+   "ingredients": [
+    {
+     "text": "4 eggs",
+     "grams": 200,
+     "fdc_id": 171287,
+     "usda_description": "Egg, whole, raw, fresh"
+    },
+    {
+     "text": "½ cup egg whites",
+     "grams": 120,
+     "fdc_id": 172183,
+     "usda_description": "Egg, white, raw, fresh"
+    },
+    {
+     "text": "2 cups spinach",
+     "grams": 60,
+     "fdc_id": 168462,
+     "usda_description": "Spinach, raw"
+    },
+    {
+     "text": "3 tbsp feta",
+     "grams": 28,
+     "fdc_id": 173420,
+     "usda_description": "Cheese, feta"
+    },
+    {
+     "text": "2 slices whole-wheat bread",
+     "grams": 56,
+     "fdc_id": 172688,
+     "usda_description": "Bread, whole-wheat, commercially prepared"
+    },
+    {
+     "text": "½ tbsp olive oil",
+     "grams": 7,
+     "fdc_id": 171413,
+     "usda_description": "Oil, olive, salad or cooking"
+    },
+    {
+     "text": "Salt and pepper"
+    }
+   ],
+   "steps": [
+    "Whisk the eggs and egg whites with salt and pepper.",
+    "Wilt the spinach in the oil over medium heat.",
+    "Add the eggs and stir gently until just set and no longer runny.",
+    "Top with feta and serve with toast."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 320,
+    "protein": 25,
+    "carbs": 15,
+    "fat": 17
+   },
+   "goal_tags": [
+    "lose_weight",
+    "quick",
+    "vegetarian"
+   ],
+   "image": "recipes/spinach-feta-egg-scramble.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "peanut-butter-banana-oats",
+   "name": "Peanut Butter Banana Overnight Oats",
+   "cuisine": "Breakfast",
+   "servings": 2,
+   "minutes": 5,
+   "vegetarian": true,
+   "summary": "No-cook oats soaked overnight with milk, banana and peanut butter. A big, filling breakfast.",
+   "ingredients": [
+    {
+     "text": "1⅔ cups rolled oats",
+     "grams": 135,
+     "fdc_id": 173904,
+     "usda_description": "Cereals, oats, regular and quick, not fortified, dry"
+    },
+    {
+     "text": "2 cups 2% milk",
+     "grams": 480,
+     "fdc_id": 171267,
+     "usda_description": "Milk, reduced fat, fluid, 2% milkfat, with added vitamin A and vitamin D"
+    },
+    {
+     "text": "4 tbsp peanut butter",
+     "grams": 64,
+     "fdc_id": 172470,
+     "usda_description": "Peanut butter, smooth style, without salt"
+    },
+    {
+     "text": "2 bananas",
+     "grams": 236,
+     "fdc_id": 173944,
+     "usda_description": "Bananas, raw"
+    },
+    {
+     "text": "2 tbsp chia seeds",
+     "grams": 24,
+     "fdc_id": 170554,
+     "usda_description": "Seeds, chia seeds, dried"
+    },
+    {
+     "text": "1 tbsp honey",
+     "grams": 21,
+     "fdc_id": 169640,
+     "usda_description": "Honey"
+    }
+   ],
+   "steps": [
+    "Mix the oats, milk, chia and honey in two jars.",
+    "Swirl in the peanut butter and half of one mashed banana.",
+    "Refrigerate overnight, or at least 4 hours.",
+    "Top with the rest of the sliced banana in the morning."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 762,
+    "protein": 27,
+    "carbs": 105,
+    "fat": 30
+   },
+   "goal_tags": [
+    "gain_weight",
+    "quick",
+    "vegetarian"
+   ],
+   "image": "recipes/peanut-butter-banana-oats.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "protein-pancakes",
+   "name": "Protein Pancakes",
+   "cuisine": "Breakfast",
+   "servings": 2,
+   "minutes": 15,
+   "vegetarian": true,
+   "summary": "Fluffy oat pancakes made with cottage cheese and eggs, topped with berries.",
+   "ingredients": [
+    {
+     "text": "1 cup rolled oats",
+     "grams": 80,
+     "fdc_id": 173904,
+     "usda_description": "Cereals, oats, regular and quick, not fortified, dry"
+    },
+    {
+     "text": "1 cup 1% cottage cheese",
+     "grams": 226,
+     "fdc_id": 173417,
+     "usda_description": "Cheese, cottage, lowfat, 1% milkfat"
+    },
+    {
+     "text": "3 eggs",
+     "grams": 150,
+     "fdc_id": 171287,
+     "usda_description": "Egg, whole, raw, fresh"
+    },
+    {
+     "text": "1 banana",
+     "grams": 118,
+     "fdc_id": 173944,
+     "usda_description": "Bananas, raw"
+    },
+    {
+     "text": "⅔ cup blueberries",
+     "grams": 100,
+     "fdc_id": 171711,
+     "usda_description": "Blueberries, raw"
+    },
+    {
+     "text": "2 tbsp maple syrup",
+     "grams": 40,
+     "fdc_id": 169661,
+     "usda_description": "Syrups, maple"
+    },
+    {
+     "text": "½ tbsp butter",
+     "grams": 7,
+     "fdc_id": 173410,
+     "usda_description": "Butter, salted"
+    },
+    {
+     "text": "1 tsp baking powder, pinch salt, cinnamon"
+    }
+   ],
+   "steps": [
+    "Blend the oats, cottage cheese, eggs, banana, baking powder, salt and cinnamon until smooth.",
+    "Melt a little butter in a nonstick pan over medium heat.",
+    "Pour ¼-cup scoops and cook 2 minutes per side until golden and cooked through.",
+    "Top with blueberries and maple syrup."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 498,
+    "protein": 30,
+    "carbs": 65,
+    "fat": 14
+   },
+   "goal_tags": [
+    "lose_weight",
+    "high_protein",
+    "quick",
+    "vegetarian"
+   ],
+   "image": "recipes/protein-pancakes.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "breakfast-burritos",
+   "name": "Big Breakfast Burritos",
+   "cuisine": "Breakfast",
+   "servings": 4,
+   "minutes": 25,
+   "vegetarian": false,
+   "summary": "Scrambled eggs, potatoes, turkey sausage-style crumbles and cheese in large tortillas.",
+   "ingredients": [
+    {
+     "text": "8 eggs",
+     "grams": 400,
+     "fdc_id": 171287,
+     "usda_description": "Egg, whole, raw, fresh"
+    },
+    {
+     "text": "¾ lb ground turkey",
+     "grams": 340,
+     "fdc_id": 171505,
+     "usda_description": "Turkey, Ground, raw"
+    },
+    {
+     "text": "2 small potatoes, diced",
+     "grams": 300,
+     "fdc_id": 170026,
+     "usda_description": "Potatoes, flesh and skin, raw"
+    },
+    {
+     "text": "1 cup shredded cheddar",
+     "grams": 113,
+     "fdc_id": 173414,
+     "usda_description": "Cheese, cheddar (Includes foods for USDA's Food Distribution Program)"
+    },
+    {
+     "text": "4 burrito-size flour tortillas",
+     "grams": 360,
+     "fdc_id": 175037,
+     "usda_description": "Tortillas, ready-to-bake or -fry, flour, refrigerated"
+    },
+    {
+     "text": "½ cup salsa",
+     "grams": 120,
+     "fdc_id": 174524,
+     "usda_description": "Sauce, salsa, ready-to-serve"
+    },
+    {
+     "text": "1½ tbsp oil",
+     "grams": 21,
+     "fdc_id": 171413,
+     "usda_description": "Oil, olive, salad or cooking"
+    },
+    {
+     "text": "1 tsp smoked paprika, ½ tsp sage, salt"
+    }
+   ],
+   "steps": [
+    "Cook the diced potatoes in 1 tbsp oil over medium heat, covered, 10–12 minutes until tender and crisp.",
+    "Brown the turkey with paprika, sage and salt until it reaches 165°F.",
+    "Scramble the eggs in the rest of the oil until set.",
+    "Fill the tortillas with eggs, potatoes, turkey, cheese and salsa, then roll."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 771,
+    "protein": 45,
+    "carbs": 61,
+    "fat": 38
+   },
+   "goal_tags": [
+    "gain_weight",
+    "high_protein",
+    "quick"
+   ],
+   "image": "recipes/breakfast-burritos.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "avocado-egg-toast",
+   "name": "Avocado Toast with Eggs",
+   "cuisine": "Breakfast",
+   "servings": 2,
+   "minutes": 10,
+   "vegetarian": true,
+   "summary": "Whole-wheat toast with smashed avocado, eggs and a squeeze of lemon.",
+   "ingredients": [
+    {
+     "text": "4 slices whole-wheat bread",
+     "grams": 112,
+     "fdc_id": 172688,
+     "usda_description": "Bread, whole-wheat, commercially prepared"
+    },
+    {
+     "text": "1 avocado",
+     "grams": 150,
+     "fdc_id": 171705,
+     "usda_description": "Avocados, raw, all commercial varieties"
+    },
+    {
+     "text": "4 eggs",
+     "grams": 200,
+     "fdc_id": 171287,
+     "usda_description": "Egg, whole, raw, fresh"
+    },
+    {
+     "text": "½ lemon",
+     "grams": 15,
+     "fdc_id": 167747,
+     "usda_description": "Lemon juice, raw"
+    },
+    {
+     "text": "1 small tomato",
+     "grams": 100,
+     "fdc_id": 170457,
+     "usda_description": "Tomatoes, red, ripe, raw, year round average"
+    },
+    {
+     "text": "Salt, pepper, red pepper flakes"
+    }
+   ],
+   "steps": [
+    "Toast the bread.",
+    "Mash the avocado with lemon juice and salt and spread on the toast.",
+    "Fry or poach the eggs until the whites and yolks are firm.",
+    "Top the toast with eggs, sliced tomato and pepper flakes."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 415,
+    "protein": 21,
+    "carbs": 33,
+    "fat": 23
+   },
+   "goal_tags": [
+    "lose_weight",
+    "quick",
+    "vegetarian"
+   ],
+   "image": "recipes/avocado-egg-toast.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "veggie-egg-muffins",
+   "name": "Veggie Egg Muffins",
+   "cuisine": "Breakfast",
+   "servings": 4,
+   "minutes": 30,
+   "vegetarian": true,
+   "summary": "Make-ahead baked egg cups with peppers, spinach and cheese.",
+   "ingredients": [
+    {
+     "text": "10 eggs",
+     "grams": 500,
+     "fdc_id": 171287,
+     "usda_description": "Egg, whole, raw, fresh"
+    },
+    {
+     "text": "½ cup egg whites",
+     "grams": 120,
+     "fdc_id": 172183,
+     "usda_description": "Egg, white, raw, fresh"
+    },
+    {
+     "text": "1 bell pepper, diced",
+     "grams": 120,
+     "fdc_id": 170108,
+     "usda_description": "Peppers, sweet, red, raw"
+    },
+    {
+     "text": "2 cups spinach, chopped",
+     "grams": 60,
+     "fdc_id": 168462,
+     "usda_description": "Spinach, raw"
+    },
+    {
+     "text": "¼ onion, diced",
+     "grams": 55,
+     "fdc_id": 170000,
+     "usda_description": "Onions, raw"
+    },
+    {
+     "text": "½ cup shredded cheddar",
+     "grams": 56,
+     "fdc_id": 173414,
+     "usda_description": "Cheese, cheddar (Includes foods for USDA's Food Distribution Program)"
+    },
+    {
+     "text": "1 tsp oil for the pan",
+     "grams": 5,
+     "fdc_id": 171413,
+     "usda_description": "Oil, olive, salad or cooking"
+    },
+    {
+     "text": "Salt and pepper"
+    }
+   ],
+   "steps": [
+    "Heat the oven to 350°F and grease a 12-cup muffin tin.",
+    "Whisk the eggs and egg whites with salt and pepper.",
+    "Divide the vegetables and cheese among the cups, then pour in the eggs.",
+    "Bake 20–22 minutes until set in the center."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 279,
+    "protein": 23,
+    "carbs": 5,
+    "fat": 18
+   },
+   "goal_tags": [
+    "lose_weight",
+    "quick",
+    "vegetarian"
+   ],
+   "image": "recipes/veggie-egg-muffins.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "banana-berry-protein-smoothie",
+   "name": "Berry Banana Protein Smoothie",
+   "cuisine": "Breakfast",
+   "servings": 2,
+   "minutes": 5,
+   "vegetarian": true,
+   "summary": "A thick, quick smoothie with berries, banana, Greek yogurt and protein powder.",
+   "ingredients": [
+    {
+     "text": "¾ cup nonfat Greek yogurt",
+     "grams": 170,
+     "fdc_id": 170894,
+     "usda_description": "Yogurt, Greek, plain, nonfat (Includes foods for USDA's Food Distribution Program)"
+    },
+    {
+     "text": "2 scoops whey protein powder",
+     "grams": 60,
+     "fdc_id": 173180,
+     "usda_description": "Beverages, Protein powder whey based"
+    },
+    {
+     "text": "1 banana",
+     "grams": 118,
+     "fdc_id": 173944,
+     "usda_description": "Bananas, raw"
+    },
+    {
+     "text": "1 cup strawberries",
+     "grams": 150,
+     "fdc_id": 167762,
+     "usda_description": "Strawberries, raw"
+    },
+    {
+     "text": "½ cup blueberries",
+     "grams": 75,
+     "fdc_id": 171711,
+     "usda_description": "Blueberries, raw"
+    },
+    {
+     "text": "1½ cups 1% milk",
+     "grams": 360,
+     "fdc_id": 170872,
+     "usda_description": "Milk, lowfat, fluid, 1% milkfat, with added vitamin A and vitamin D"
+    }
+   ],
+   "steps": [
+    "Add everything to a blender.",
+    "Blend until smooth, adding ice for a thicker shake.",
+    "Pour into two glasses."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 329,
+    "protein": 40,
+    "carbs": 39,
+    "fat": 3
+   },
+   "goal_tags": [
+    "lose_weight",
+    "high_protein",
+    "quick",
+    "vegetarian"
+   ],
+   "image": "recipes/banana-berry-protein-smoothie.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "steak-and-eggs-hash",
+   "name": "Steak & Egg Potato Hash",
+   "cuisine": "Breakfast",
+   "servings": 2,
+   "minutes": 30,
+   "vegetarian": false,
+   "summary": "A hearty skillet of crispy potatoes, sirloin, peppers and fried eggs.",
+   "ingredients": [
+    {
+     "text": "⅔ lb top sirloin, diced",
+     "grams": 300,
+     "fdc_id": 171804,
+     "usda_description": "Beef, top sirloin, steak, separable lean only, trimmed to 1/8\" fat, select, raw"
+    },
+    {
+     "text": "2 medium potatoes, diced",
+     "grams": 400,
+     "fdc_id": 170026,
+     "usda_description": "Potatoes, flesh and skin, raw"
+    },
+    {
+     "text": "1 bell pepper",
+     "grams": 120,
+     "fdc_id": 170108,
+     "usda_description": "Peppers, sweet, red, raw"
+    },
+    {
+     "text": "½ onion",
+     "grams": 75,
+     "fdc_id": 170000,
+     "usda_description": "Onions, raw"
+    },
+    {
+     "text": "4 eggs",
+     "grams": 200,
+     "fdc_id": 171287,
+     "usda_description": "Egg, whole, raw, fresh"
+    },
+    {
+     "text": "2 tbsp olive oil",
+     "grams": 28,
+     "fdc_id": 171413,
+     "usda_description": "Oil, olive, salad or cooking"
+    },
+    {
+     "text": "½ cup shredded cheddar",
+     "grams": 56,
+     "fdc_id": 173414,
+     "usda_description": "Cheese, cheddar (Includes foods for USDA's Food Distribution Program)"
+    },
+    {
+     "text": "Salt, pepper, paprika"
+    }
+   ],
+   "steps": [
+    "Cook the potatoes in 1½ tbsp oil, covered, over medium heat 12 minutes until tender, then uncover to crisp.",
+    "Add the pepper, onion and steak. Cook 4–5 minutes until the steak reaches 145°F.",
+    "Make 4 wells, add the rest of the oil and crack in the eggs. Cover and cook until the whites and yolks are firm.",
+    "Top with cheese and paprika."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 755,
+    "protein": 57,
+    "carbs": 44,
+    "fat": 39
+   },
+   "goal_tags": [
+    "gain_weight",
+    "high_protein",
+    "quick"
+   ],
+   "image": "recipes/steak-and-eggs-hash.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  },
+  {
+   "slug": "apple-cinnamon-oatmeal",
+   "name": "Apple Cinnamon Protein Oatmeal",
+   "cuisine": "Breakfast",
+   "servings": 2,
+   "minutes": 10,
+   "vegetarian": true,
+   "summary": "Warm oatmeal cooked in milk with apple, cinnamon, walnuts and a protein boost.",
+   "ingredients": [
+    {
+     "text": "1¼ cups rolled oats",
+     "grams": 100,
+     "fdc_id": 173904,
+     "usda_description": "Cereals, oats, regular and quick, not fortified, dry"
+    },
+    {
+     "text": "2 cups 2% milk",
+     "grams": 480,
+     "fdc_id": 171267,
+     "usda_description": "Milk, reduced fat, fluid, 2% milkfat, with added vitamin A and vitamin D"
+    },
+    {
+     "text": "1 apple, diced",
+     "grams": 180,
+     "fdc_id": 171688,
+     "usda_description": "Apples, raw, with skin (Includes foods for USDA's Food Distribution Program)"
+    },
+    {
+     "text": "1 scoop whey protein powder",
+     "grams": 30,
+     "fdc_id": 173180,
+     "usda_description": "Beverages, Protein powder whey based"
+    },
+    {
+     "text": "¼ cup walnuts",
+     "grams": 28,
+     "fdc_id": 170187,
+     "usda_description": "Nuts, walnuts, english"
+    },
+    {
+     "text": "1 tbsp maple syrup",
+     "grams": 20,
+     "fdc_id": 169661,
+     "usda_description": "Syrups, maple"
+    },
+    {
+     "text": "1 tsp cinnamon, pinch salt"
+    }
+   ],
+   "steps": [
+    "Simmer the oats, milk, apple, cinnamon and salt 5–6 minutes, stirring.",
+    "Take off the heat and stir in the protein powder with a splash of milk if thick.",
+    "Top with walnuts and maple syrup."
+   ],
+   "nutrition_per_serving": {
+    "kcal": 527,
+    "protein": 29,
+    "carbs": 67,
+    "fat": 18
+   },
+   "goal_tags": [
+    "quick",
+    "vegetarian"
+   ],
+   "image": "recipes/apple-cinnamon-oatmeal.webp",
+   "source": "Deanly original",
+   "license": "Owned by Deanly"
+  }
+ ]
+}

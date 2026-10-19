@@ -103,6 +103,14 @@ export async function listEvents() {
 export async function listMeals() {
   const ctx = await requireHousehold()
   if (!ctx) return listed<MealRow>(Promise.resolve({ data: [], error: null }))
+  const full = await ctx.supabase
+    .from("meals")
+    .select("id, title, meal_on, slot, notes, visibility, servings, recipe_id, catalog_recipe_id, updated_at, owner_id")
+    .eq("household_id", ctx.householdId)
+    .order("meal_on", { ascending: true })
+    .limit(200)
+  if (!full.error) return { rows: (full.data ?? []) as MealRow[], error: false, currency: ctx.currency, visibility: ctx.lastVisibility }
+  if (!columnMissing(full.error)) return { rows: [] as MealRow[], error: true, currency: ctx.currency, visibility: ctx.lastVisibility }
   return listed<MealRow>(
     ctx.supabase
       .from("meals")
@@ -111,6 +119,74 @@ export async function listMeals() {
       .order("meal_on", { ascending: true })
       .limit(80),
   )
+}
+
+export async function listMealNeedCounts() {
+  const counts = new Map<string, number>()
+  const ctx = await requireHousehold()
+  if (!ctx) return counts
+  const links = await ctx.supabase.from("meal_shopping_needs").select("meal_id, shopping_item_id").eq("household_id", ctx.householdId)
+  if (links.error) return counts
+  const itemIds = [...new Set((links.data ?? []).map((link) => link.shopping_item_id))]
+  if (itemIds.length === 0) return counts
+  const items = await ctx.supabase.from("shopping_items").select("id, checked_at").eq("household_id", ctx.householdId).in("id", itemIds)
+  if (items.error) return counts
+  const open = new Set((items.data ?? []).filter((item) => !item.checked_at).map((item) => item.id))
+  for (const link of links.data ?? []) {
+    if (!link.meal_id || !open.has(link.shopping_item_id)) continue
+    counts.set(link.meal_id, (counts.get(link.meal_id) ?? 0) + 1)
+  }
+  return counts
+}
+
+export async function listMealShoppingLines() {
+  const lines: { mealId: string; checked: boolean; priceCents: number | null }[] = []
+  const ctx = await requireHousehold()
+  if (!ctx) return lines
+  const links = await ctx.supabase.from("meal_shopping_needs").select("meal_id, shopping_item_id").eq("household_id", ctx.householdId)
+  if (links.error) return lines
+  const itemIds = [...new Set((links.data ?? []).map((link) => link.shopping_item_id))]
+  if (itemIds.length === 0) return lines
+  const items = await ctx.supabase
+    .from("shopping_items")
+    .select("id, checked_at, price_cents")
+    .eq("household_id", ctx.householdId)
+    .in("id", itemIds)
+  if (items.error) return lines
+  const byId = new Map((items.data ?? []).map((item) => [item.id, item]))
+  for (const link of links.data ?? []) {
+    const item = link.shopping_item_id ? byId.get(link.shopping_item_id) : null
+    if (!link.meal_id || !item) continue
+    lines.push({ mealId: link.meal_id, checked: Boolean(item.checked_at), priceCents: item.price_cents ?? null })
+  }
+  return lines
+}
+
+export async function listMealLabels(itemIds: string[]) {
+  const labels = new Map<string, string>()
+  const ctx = await requireHousehold()
+  if (!ctx || itemIds.length === 0) return labels
+  const links = await ctx.supabase
+    .from("meal_shopping_needs")
+    .select("shopping_item_id, meal_id")
+    .eq("household_id", ctx.householdId)
+    .in("shopping_item_id", itemIds)
+  if (links.error) return labels
+  const mealIds = [...new Set((links.data ?? []).map((link) => link.meal_id).filter((id): id is string => Boolean(id)))]
+  if (mealIds.length === 0) return labels
+  const meals = await ctx.supabase.from("meals").select("id, title").eq("household_id", ctx.householdId).in("id", mealIds)
+  if (meals.error) return labels
+  const titles = new Map((meals.data ?? []).map((meal) => [meal.id, meal.title]))
+  const grouped = new Map<string, string[]>()
+  for (const link of links.data ?? []) {
+    const title = link.meal_id ? titles.get(link.meal_id) : null
+    if (!title) continue
+    const current = grouped.get(link.shopping_item_id) ?? []
+    if (!current.includes(title)) current.push(title)
+    grouped.set(link.shopping_item_id, current)
+  }
+  for (const [id, titlesForItem] of grouped) labels.set(id, titlesForItem.join(", "))
+  return labels
 }
 
 const SHOPPING_COLUMNS = "id, name, checked_at, visibility, store, need_soon, list_id, manual_amount_raw, manual_unit_raw, manual_qty, manual_unit, auto_qty, auto_unit, price_cents, notes, category, updated_at"

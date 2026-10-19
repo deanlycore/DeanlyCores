@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation"
 
 import { RecipesBoard } from "@/components/life/recipes-board"
+import { previewIsProduction } from "@/lib/preview-access"
 
 import { LifePreview } from "../chrome"
 import { previewRecipes, previewStarters } from "./sample"
@@ -10,9 +11,9 @@ export const dynamic = "force-dynamic"
 export default async function PreviewRecipes({
   searchParams,
 }: {
-  searchParams: Promise<{ empty?: string; error?: string; view?: string; stale?: string }>
+  searchParams: Promise<{ empty?: string; error?: string; view?: string; stale?: string; blocked?: string; starter?: string }>
 }) {
-  if (process.env.NODE_ENV === "production") notFound()
+  if (previewIsProduction()) notFound()
   const params = await searchParams
   const empty = params.empty === "1"
   const failed = params.error === "1"
@@ -26,6 +27,8 @@ export default async function PreviewRecipes({
         canWrite={!view}
         preview
         staleOpen={params.stale === "1" && !empty && !failed && !view}
+        blockedOpen={params.blocked === "1" && !empty && !failed}
+        starterOpen={params.starter === "1" && !empty && !failed}
         hrefBase="/preview/life/recipes"
       />
     </LifePreview>

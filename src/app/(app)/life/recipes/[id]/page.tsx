@@ -1,22 +1,17 @@
-import type { Metadata } from "next"
-import { notFound } from "next/navigation"
+import { permanentRedirect } from "next/navigation"
 
-import { RecipeDetail } from "@/components/life/recipe-detail"
-import { getRecipe } from "@/lib/data/lists"
-
-export const metadata: Metadata = { title: "Recipe" }
-
-export default async function Page({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
-  const result = await getRecipe(id)
-  if (result.error) return <RecipeDetail recipe={null} shopping={[]} pantry={[]} error canWrite={result.canWrite} />
-  if (!result.recipe) notFound()
-  return (
-    <RecipeDetail
-      recipe={result.recipe}
-      shopping={result.shopping}
-      pantry={result.pantry}
-      canWrite={result.canWrite}
-    />
-  )
+export default async function Page({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
+  const [{ id }, raw] = await Promise.all([params, searchParams])
+  const query = new URLSearchParams()
+  for (const [key, value] of Object.entries(raw)) {
+    if (typeof value === "string") query.set(key, value)
+  }
+  const suffix = query.toString()
+  permanentRedirect(suffix ? `/life/meal-planner/mine/${id}?${suffix}` : `/life/meal-planner/mine/${id}`)
 }
