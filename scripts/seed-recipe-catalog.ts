@@ -4,10 +4,10 @@ import { fileURLToPath } from "node:url"
 
 import { createClient } from "@supabase/supabase-js"
 
+import { assertLocalCatalogTarget, catalogPhotoObjectPath, readCatalogPhotos } from "@/lib/life/catalog-photos"
 import { toCatalogRecipes, type CatalogSourceFile } from "@/lib/life/catalog-seed"
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..")
-const IMAGE_BYTES = 1024 * 1024
 
 function fail(message: string): never {
   console.error(message)
@@ -25,6 +25,15 @@ if (!supabaseUrl) fail("Set SUPABASE_URL to the project URL.")
 
 const file = JSON.parse(readFileSync(join(root, "data/recipes.json"), "utf8")) as CatalogSourceFile
 const rows = toCatalogRecipes(file)
+const imageDir = process.env.RECIPE_CATALOG_IMAGE_DIR?.trim() || join(root, "supabase/seed/recipe-photos")
+
+let photos
+try {
+  photos = readCatalogPhotos(imageDir, rows.map((row) => row.slug))
+  assertLocalCatalogTarget(supabaseUrl)
+} catch (error) {
+  fail(error instanceof Error ? error.message : "Recipe photos are not valid.")
+}
 
 const supabase = createClient(supabaseUrl, serviceKey, {
   auth: { persistSession: false, autoRefreshToken: false },
@@ -33,21 +42,12 @@ const supabase = createClient(supabaseUrl, serviceKey, {
 const saved = await supabase.from("recipe_catalog").upsert(rows, { onConflict: "slug" })
 if (saved.error) fail(saved.error.message)
 
-const imageDir = process.env.RECIPE_CATALOG_IMAGE_DIR?.trim()
-if (imageDir) {
-  const { readdirSync } = await import("node:fs")
-  for (const name of readdirSync(imageDir)) {
-    if (/\.svg$/i.test(name)) fail(`SVG is not allowed in recipe-catalog: ${name}`)
-    if (!/\.(webp|jpe?g)$/i.test(name)) continue
-    const bytes = readFileSync(join(imageDir, name))
-    if (bytes.byteLength > IMAGE_BYTES) fail(`${name} is over the 1MB catalog limit.`)
-    const contentType = /\.webp$/i.test(name) ? "image/webp" : "image/jpeg"
-    const uploaded = await supabase.storage.from("recipe-catalog").upload(`recipes/${name.toLowerCase()}`, bytes, {
-      contentType,
-      upsert: true,
-    })
-    if (uploaded.error) fail(uploaded.error.message)
-  }
+for (const photo of photos) {
+  const uploaded = await supabase.storage.from("recipe-catalog").upload(catalogPhotoObjectPath(photo.slug), photo.bytes, {
+    contentType: "image/webp",
+    upsert: true,
+  })
+  if (uploaded.error) fail(uploaded.error.message)
 }
 
 console.log(`Upserted ${rows.length} catalog recipes.`)

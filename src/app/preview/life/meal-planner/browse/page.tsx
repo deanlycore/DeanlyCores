@@ -20,7 +20,7 @@ export default async function Page({
   const recipes = params.view === "error" ? [] : filterCatalog(catalogFileRecipes, filters)
   return (
     <LifePreview>
-      <RecipeBrowse recipes={recipes} error={params.view === "error"} filters={filters} supabaseUrl={null} base="/preview/life/meal-planner" />
+      <RecipeBrowse recipes={recipes} error={params.view === "error"} filters={filters} preview base="/preview/life/meal-planner" />
     </LifePreview>
   )
 }

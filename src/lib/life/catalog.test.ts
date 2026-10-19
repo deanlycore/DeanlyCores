@@ -1,5 +1,6 @@
 import assert from "node:assert/strict"
-import { readFileSync } from "node:fs"
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import test from "node:test"
 import { fileURLToPath } from "node:url"
@@ -20,6 +21,7 @@ import {
   SHELF_MIN,
   textSimilarity,
 } from "./catalog.ts"
+import { assertLocalCatalogTarget, catalogPhotoObjectPath, readCatalogPhotos } from "./catalog-photos.ts"
 import { toCatalogRecipes, type CatalogSourceFile } from "./catalog-seed.ts"
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "../../..")
@@ -117,6 +119,7 @@ test("catalog photos use the storage host and never upscale past 960x720", () =>
   assert.match(photo, /max-w-\[960px\]/)
   assert.match(photo, /max-h-\[720px\]/)
   assert.match(photo, /bg-surface-muted/)
+  assert.match(photo, /unoptimized/)
   assert.doesNotMatch(photo, /dangerouslySetInnerHTML|<img/)
 })
 
@@ -126,6 +129,12 @@ test("the seed reads the service role and no app route writes the catalog", () =
   assert.match(seed, /onConflict:\s*"slug"/)
   assert.match(seed, /Refusing to seed with a client key/)
   assert.doesNotMatch(seed, /NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY/)
+  const readAt = seed.indexOf("readCatalogPhotos(")
+  const localAt = seed.indexOf("assertLocalCatalogTarget(")
+  const uploadAt = seed.indexOf(".upload(")
+  assert.ok(readAt > 0 && localAt > readAt && uploadAt > localAt)
+  assert.match(seed, /catalogPhotoObjectPath\(photo\.slug\)/)
+  assert.doesNotMatch(seed, /jpe\?g|image\/jpeg|\.jpg/)
   const browse = readFileSync(join(root, "src/components/life/recipe-browse.tsx"), "utf8")
   const detail = readFileSync(join(root, "src/components/life/recipe-catalog-detail.tsx"), "utf8")
   assert.doesNotMatch(browse, /dangerouslySetInnerHTML/)
@@ -140,4 +149,67 @@ test("the seed reads the service role and no app route writes the catalog", () =
   assert.match(detail, /Nutrition per serving/)
   assert.match(browse, /SEARCH_PLACEHOLDER/)
   assert.match(browse, /NO_RESULTS_COPY/)
+  assert.match(browse, /seedPhotoSrc/)
+  assert.match(detail, /preview \? seedPhotoSrc/)
+})
+
+function sampleWebp(width: number, height: number) {
+  const bytes = Buffer.alloc(30)
+  bytes.write("RIFF", 0)
+  bytes.writeUInt32LE(22, 4)
+  bytes.write("WEBP", 8)
+  bytes.write("VP8X", 12)
+  bytes.writeUInt32LE(10, 16)
+  bytes.writeUIntLE(width - 1, 24, 3)
+  bytes.writeUIntLE(height - 1, 27, 3)
+  return bytes
+}
+
+test("catalog photo upload accepts only the recipes.json webp set", () => {
+  assert.equal(catalogPhotoObjectPath("chicken-tinga-tacos"), "recipes/chicken-tinga-tacos.webp")
+  assert.doesNotThrow(() => assertLocalCatalogTarget("http://127.0.0.1:54321"))
+  assert.throws(() => assertLocalCatalogTarget("https://example.supabase.co"), /local Supabase/)
+
+  const dir = mkdtempSync(join(tmpdir(), "recipe-photos-"))
+  const slugs = ["chicken-tinga-tacos", "apple-cinnamon-oatmeal"]
+  try {
+    for (const slug of slugs) writeFileSync(join(dir, `${slug}.webp`), sampleWebp(960, 720))
+    const photos = readCatalogPhotos(dir, slugs)
+    assert.deepEqual(photos.map((photo) => photo.slug).sort(), slugs.slice().sort())
+
+    writeFileSync(join(dir, "notes.md"), "nope")
+    assert.throws(() => readCatalogPhotos(dir, slugs), /Unexpected files: notes\.md/)
+    rmSync(join(dir, "notes.md"))
+
+    writeFileSync(join(dir, "extra.jpg"), sampleWebp(960, 720))
+    assert.throws(() => readCatalogPhotos(dir, slugs), /Unexpected files: extra\.jpg/)
+    rmSync(join(dir, "extra.jpg"))
+
+    rmSync(join(dir, "apple-cinnamon-oatmeal.webp"))
+    assert.throws(() => readCatalogPhotos(dir, slugs), /Missing files: apple-cinnamon-oatmeal\.webp/)
+    writeFileSync(join(dir, "apple-cinnamon-oatmeal.webp"), Buffer.from("not-a-webp"))
+    assert.throws(() => readCatalogPhotos(dir, slugs), /not a WebP image/)
+    writeFileSync(join(dir, "apple-cinnamon-oatmeal.webp"), sampleWebp(100, 100))
+    assert.throws(() => readCatalogPhotos(dir, slugs), /must be 960x720/)
+    const huge = Buffer.alloc(1048577)
+    sampleWebp(960, 720).copy(huge)
+    writeFileSync(join(dir, "apple-cinnamon-oatmeal.webp"), huge)
+    assert.throws(() => readCatalogPhotos(dir, slugs), /1MB catalog limit/)
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+
+  const nested = mkdtempSync(join(tmpdir(), "recipe-photos-dir-"))
+  try {
+    mkdirSync(join(nested, "nested"))
+    assert.throws(() => readCatalogPhotos(nested, ["chicken-tinga-tacos"]), /unexpected entry/)
+  } finally {
+    rmSync(nested, { recursive: true, force: true })
+  }
+})
+
+test("checked-in recipe photos cover every catalog slug at 960x720", () => {
+  const photos = readCatalogPhotos(join(root, "supabase/seed/recipe-photos"), recipes.map((recipe) => recipe.slug))
+  assert.equal(photos.length, 50)
+  assert.equal(new Set(photos.map((photo) => photo.slug)).size, 50)
 })
