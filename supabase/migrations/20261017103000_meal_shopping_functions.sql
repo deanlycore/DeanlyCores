@@ -491,7 +491,17 @@ $fn$;
   if v_list is null then
     insert into public.shopping_lists (household_id, created_by, visibility, name, is_default)
     values (p_household_id, v_user, v_visibility, 'Groceries', true)
+    on conflict do nothing
     returning id into v_list;
+    if v_list is null then
+      select list.id into v_list
+      from public.shopping_lists as list
+      where list.household_id = p_household_id
+        and list.visibility = v_visibility
+        and list.is_default
+        and (v_visibility = 'shared' or list.created_by = v_user)
+      limit 1;
+    end if;
   end if;
   perform pg_advisory_xact_lock(hashtextextended(v_list::text, 0));
   select meal.visibility, meal.recipe_id, meal.catalog_recipe_id
@@ -550,7 +560,17 @@ $pre$;
   if v_list is null then
     insert into public.shopping_lists (household_id, created_by, visibility, name, is_default)
     values (p_household_id, v_user, v_visibility, 'Groceries', true)
+    on conflict do nothing
     returning id into v_list;
+    if v_list is null then
+      select list.id into v_list
+      from public.shopping_lists as list
+      where list.household_id = p_household_id
+        and list.visibility = v_visibility
+        and list.is_default
+        and (v_visibility = 'shared' or list.created_by = v_user)
+      limit 1;
+    end if;
   end if;
   perform pg_advisory_xact_lock(hashtextextended(v_list::text, 0));
   if p_recipe_id is not null then
