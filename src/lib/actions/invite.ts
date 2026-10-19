@@ -1,5 +1,7 @@
 "use server"
 
+import "server-only"
+
 import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { revalidatePath } from "next/cache"
 import { cookies, headers } from "next/headers"
@@ -61,8 +63,12 @@ export async function checkInviteCode(_state: InviteFormState, formData: FormDat
   const code = normalizeInviteCode(String(formData.get("code") ?? ""))
   if (!validInviteCodeShape(code)) return { message: INVALID_CODE_MESSAGE }
 
-  const supabase = await createClient()
-  const { data, error } = await supabase.rpc("peek_household_invite_code", { p_code: code })
+  const admin = adminAuth()
+  if (!admin) {
+    console.warn("Invite check skipped: set SUPABASE_SERVICE_ROLE_KEY.")
+    return { message: INVALID_CODE_MESSAGE }
+  }
+  const { data, error } = await admin.rpc("peek_household_invite_code", { p_code: code })
   if (error || data !== true) return { message: INVALID_CODE_MESSAGE }
   return { message: "", ok: true }
 }

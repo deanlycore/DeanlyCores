@@ -1,4 +1,4 @@
--- Assert invite-code privileges and the signed-out peek / hold behavior.
+-- Assert invite-code privileges, service-role peek, and the hold behavior.
 -- Run with psql after the migrations. The script rolls back its fixture rows.
 --   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/revoke_anon_invite_execute.sql
 
@@ -30,15 +30,23 @@ declare
   seed_config text;
   seed_definer boolean;
   caller record;
+  peek_comment text;
 begin
-  if not has_function_privilege('anon', peek, 'execute') then
-    raise exception 'anon lost execute on peek_household_invite_code';
+  if has_function_privilege('anon', peek, 'execute') then
+    raise exception 'anon still has execute on peek_household_invite_code';
   end if;
   if not has_function_privilege('authenticated', peek, 'execute') then
     raise exception 'authenticated lost execute on peek_household_invite_code';
   end if;
+  if not has_function_privilege('service_role', peek, 'execute') then
+    raise exception 'service_role lost execute on peek_household_invite_code';
+  end if;
   if has_function_privilege('public', peek, 'execute') then
     raise exception 'public still has execute on peek_household_invite_code';
+  end if;
+  peek_comment := obj_description('public.peek_household_invite_code(text)'::regprocedure);
+  if peek_comment is distinct from 'Called only server-side via service_role from the rate-limited /join check; anon revoked. Dropped with email sign-up.' then
+    raise exception 'peek comment is %', peek_comment;
   end if;
 
   foreach fn in array locked_fns loop
@@ -145,9 +153,9 @@ set local role anon;
 
 do $$
 declare
-  answer boolean;
   call text;
   calls text[] := array[
+    'select public.peek_household_invite_code(''HOME-23456789'')',
     'select public.protect_invite_code_row()',
     'select public.generate_invite_code()',
     'select public.create_household_invite_code(1, null)',
@@ -158,16 +166,6 @@ declare
     'select public.release_household_invite_account(''HOME-23456789'', ''guest@example.com'')'
   ];
 begin
-  answer := public.peek_household_invite_code('HOME-23456789');
-  if answer is not true then
-    raise exception 'anon peek of a valid code returned %', answer;
-  end if;
-
-  answer := public.peek_household_invite_code('NOPE');
-  if answer is not false then
-    raise exception 'anon peek of a bad code returned %', answer;
-  end if;
-
   foreach call in array calls loop
     begin
       execute call;
@@ -187,9 +185,20 @@ set local role service_role;
 
 do $$
 declare
+  answer boolean;
   first_hold boolean;
   repeat_hold boolean;
 begin
+  answer := public.peek_household_invite_code('HOME-23456789');
+  if answer is not true then
+    raise exception 'service_role peek of a valid code returned %', answer;
+  end if;
+
+  answer := public.peek_household_invite_code('NOPE');
+  if answer is not false then
+    raise exception 'service_role peek of a bad code returned %', answer;
+  end if;
+
   first_hold := public.reserve_household_invite_account('HOME-23456789', 'guest@example.com');
   if first_hold is not true then
     raise exception 'first reserve returned %', first_hold;
