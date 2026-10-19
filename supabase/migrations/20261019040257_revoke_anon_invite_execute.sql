@@ -3,8 +3,8 @@
 -- Not applied to production by this change.
 --
 -- App call sites in src/lib/actions/invite.ts, and who still may execute:
---   peek_household_invite_code(text)                 anon and authenticated
---     Signed-out /join peeks as anon. That grant stays until email sign-up.
+--   peek_household_invite_code(text)                 anon and authenticated here.
+--     The next migration revokes anon. /join then peeks with service_role.
 --   redeem_household_invite_code(text, text, text)   authenticated (user client, after sign-in)
 --   create_household_invite_code(integer, timestamptz) authenticated (user client, after sign-in)
 --   revoke_household_invite_code(uuid)               authenticated (user client, after sign-in)
@@ -28,7 +28,6 @@ revoke execute on function public.generate_invite_code() from public, anon;
 revoke execute on function public.create_household_invite_code(integer, timestamptz) from public, anon;
 revoke execute on function public.revoke_household_invite_code(uuid) from public, anon;
 revoke execute on function public.peek_household_invite_code(text) from public;
--- kept for signed-out /join, dropped with email sign-up
 grant execute on function public.peek_household_invite_code(text) to anon, authenticated;
 revoke execute on function public.redeem_household_invite_code(text, text, text) from public, anon;
 revoke execute on function public.create_household_member_code(text, integer, timestamptz) from public, anon;
