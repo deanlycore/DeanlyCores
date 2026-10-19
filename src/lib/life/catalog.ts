@@ -127,6 +127,12 @@ export function catalogBrowseHref(base: string, filters: Partial<CatalogFilters>
   return query ? `${base}?${query}` : base
 }
 
+/** Checked-in preview photo. A 404 still falls back to the empty frame. */
+export function seedPhotoSrc(slug: string) {
+  if (!isCatalogSlug(slug)) return null
+  return `/recipe-photos/${slug}.webp`
+}
+
 export function recipeCatalogImageUrl(slug: string, supabaseUrl: string | null | undefined) {
   if (!supabaseUrl || !isCatalogSlug(slug)) return null
   try {

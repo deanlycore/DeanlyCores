@@ -14,10 +14,10 @@ import {
   PHOTO_ILLUSTRATION_LINE,
   recipeCatalogImageUrl,
   SAVED_TO_MINE,
+  seedPhotoSrc,
   scaledGrams,
   type CatalogRecipe,
 } from "@/lib/life/catalog"
-import { seedPhotoSrc } from "@/lib/life/catalog-photos"
 import { slotLabel, type MealSlot, SLOTS } from "@/lib/life/planner"
 import { cn } from "cn"
 
