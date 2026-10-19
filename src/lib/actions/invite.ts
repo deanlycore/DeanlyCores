@@ -1,8 +1,10 @@
 "use server"
 
+import "server-only"
+
 import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { revalidatePath } from "next/cache"
-import { cookies } from "next/headers"
+import { cookies, headers } from "next/headers"
 import { redirect } from "next/navigation"
 
 import {
@@ -16,6 +18,7 @@ import {
   shouldReleaseInviteHold,
   validInviteCodeShape,
 } from "@/lib/invite"
+import { allowInviteCodeCheck, inviteCheckClientIp } from "@/lib/invite-rate-limit"
 import { getServiceRoleKey } from "@/lib/push/env"
 import { REMEMBER_COOKIE } from "@/lib/supabase/cookies"
 import { getSupabaseUrl, isSupabaseConfigured } from "@/lib/supabase/env"
@@ -49,11 +52,23 @@ export async function checkInviteCode(_state: InviteFormState, formData: FormDat
   if (!isSupabaseConfigured()) {
     return { message: "Add your Supabase URL and anon key to .env.local, then restart." }
   }
+  try {
+    const headerList = await headers()
+    if (!allowInviteCodeCheck(inviteCheckClientIp((name) => headerList.get(name)))) {
+      return { message: INVALID_CODE_MESSAGE }
+    }
+  } catch {
+    return { message: INVALID_CODE_MESSAGE }
+  }
   const code = normalizeInviteCode(String(formData.get("code") ?? ""))
   if (!validInviteCodeShape(code)) return { message: INVALID_CODE_MESSAGE }
 
-  const supabase = await createClient()
-  const { data, error } = await supabase.rpc("peek_household_invite_code", { p_code: code })
+  const admin = adminAuth()
+  if (!admin) {
+    console.warn("Invite check skipped: set SUPABASE_SERVICE_ROLE_KEY.")
+    return { message: INVALID_CODE_MESSAGE }
+  }
+  const { data, error } = await admin.rpc("peek_household_invite_code", { p_code: code })
   if (error || data !== true) return { message: INVALID_CODE_MESSAGE }
   return { message: "", ok: true }
 }
