@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url"
 import { previewStatus } from "../preview-access.ts"
 import { LINKED_STAYS_SHARED, shoppingDbMessage } from "./shopping.ts"
 import { isClientRequestId, savePlannedMealWith } from "./meals-save.ts"
-import { buildShoppingLines, confirmListChoice, neededEstimate, syncCountsUnchanged, updateListButton } from "./planner.ts"
+import { buildShoppingLines, confirmListChoice, neededEstimate, syncCountsUnchanged, updateListButton, weekShoppingStats } from "./planner.ts"
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "../../..")
 
@@ -111,6 +111,22 @@ test("schema test 25: update list stays quiet for view-only, free-text meals, an
   assert.deepEqual(confirmListChoice("update", []), ["sync"])
   assert.equal(neededEstimate([{ price_cents: 4800 }]), "About $48")
   assert.equal(neededEstimate([{ price_cents: 4800 }, { price_cents: null }]), "Some prices not set")
+  const lines = [
+    { mealId: "mon", checked: false, priceCents: 1200 },
+    { mealId: "mon", checked: true, priceCents: 300 },
+    { mealId: "fri", checked: false, priceCents: 800 },
+  ]
+  const emptyWeek = weekShoppingStats([], lines)
+  assert.deepEqual(emptyWeek, { stillNeeded: 0, boughtLabel: "0 of 0", estimate: "About $0" })
+  const added = weekShoppingStats(["mon"], lines)
+  assert.equal(added.stillNeeded, 1)
+  assert.equal(added.boughtLabel, "1 of 2")
+  assert.equal(added.estimate, "About $12")
+  const both = weekShoppingStats(["mon", "fri"], lines)
+  assert.equal(both.stillNeeded, 2)
+  assert.equal(both.boughtLabel, "1 of 3")
+  const removed = weekShoppingStats([], lines)
+  assert.deepEqual(removed, emptyWeek)
   assert.equal(syncCountsUnchanged({ added: 0, updated: 0, removed: 0 }), true)
   assert.equal(
     shoppingDbMessage(
@@ -131,7 +147,10 @@ test("schema test 25: update list stays quiet for view-only, free-text meals, an
   assert.match(planner, /Update list/)
   assert.match(planner, /Not now/)
   assert.match(planner, /LIST_ALREADY_HAS_MEAL/)
-  assert.match(readFileSync(join(root, "src/app/(app)/life/meals/page.tsx"), "utf8"), /neededEstimate\(/)
+  assert.match(planner, /weekShoppingStats\(/)
+  assert.match(planner, /Use what we have/)
+  assert.doesNotMatch(planner, /\["week", "This week"\]/)
+  assert.match(readFileSync(join(root, "src/app/(app)/life/meals/page.tsx"), "utf8"), /listMealShoppingLines\(/)
   assert.match(readFileSync(join(root, "src/lib/life/recipes.ts"), "utf8"), /Your list already has this meal\./)
   assert.match(planner, /min-h-12/)
 })

@@ -19,7 +19,7 @@ export async function saveCatalogRecipe(slug: string) {
   if (!ctx) return { ok: false as const, message: "Create your household first." }
   if (!ctx.canWrite) return { ok: false as const, message: "You don’t have access to change that." }
   if (!isCatalogSlug(slug)) return { ok: false as const, message: "That recipe is not available." }
-  const copied = await ctx.supabase.rpc("copy_recipe_catalog", { p_slug: slug })
+  const copied = await ctx.supabase.rpc("copy_recipe_catalog", { p_slug: slug, p_household_id: ctx.householdId })
   if (copied.error || !copied.data || typeof copied.data !== "object") {
     return { ok: false as const, message: "Couldn’t save that recipe." }
   }

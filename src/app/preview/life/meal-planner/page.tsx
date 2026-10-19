@@ -2,6 +2,7 @@ import { notFound } from "next/navigation"
 
 import { MealsPlanner, type PlannerMeal, type PlannerRecipe } from "@/components/life/meals-planner"
 import { addedDayLabel } from "@/lib/life/catalog"
+import type { WeekShoppingLine } from "@/lib/life/planner"
 import { previewIsProduction } from "@/lib/preview-access"
 
 import { LifePreview } from "../chrome"
@@ -13,6 +14,15 @@ const meals: PlannerMeal[] = [
   { id: "mon", title: "Grilled chicken", meal_on: "2026-09-28", slot: "dinner", notes: null, visibility: "shared", servings: 4, recipe_id: "tacos", updated_at: "2026-10-02T00:00:00.000Z", needed: 2 },
   { id: "fri", title: "Tacos", meal_on: "2026-10-02", slot: "dinner", notes: null, visibility: "shared", servings: 4, recipe_id: "tacos", updated_at: "2026-10-02T00:00:00.000Z", needed: 2 },
   { id: "sat", title: "Leftovers", meal_on: "2026-10-03", slot: "lunch", notes: null, visibility: "shared", servings: 2, recipe_id: null, updated_at: "2026-10-02T00:00:00.000Z", needed: 0 },
+]
+
+const shoppingLines: WeekShoppingLine[] = [
+  { mealId: "mon", checked: false, priceCents: 1200 },
+  { mealId: "mon", checked: false, priceCents: 800 },
+  { mealId: "mon", checked: true, priceCents: 400 },
+  { mealId: "fri", checked: false, priceCents: 1500 },
+  { mealId: "fri", checked: true, priceCents: 900 },
+  { mealId: "fri", checked: true, priceCents: 200 },
 ]
 
 const recipes: PlannerRecipe[] = [
@@ -33,9 +43,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ a
         canWrite={params.view !== "1"}
         preview
         initialSheet={sheet}
-        estimate="About $48"
-        stillNeeded={6}
-        boughtLabel="4 of 10"
+        shoppingLines={shoppingLines}
         showTabs
         addedDay={addedDayLabel(params.added)}
         browseHref="/preview/life/meal-planner/browse"

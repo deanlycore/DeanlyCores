@@ -24,7 +24,9 @@ import {
   updateListButton,
   weekdayLabel,
   weekOf,
+  weekShoppingStats,
   type MealSlot,
+  type WeekShoppingLine,
 } from "@/lib/life/planner"
 import { ALREADY_ON_LIST, LIST_ALREADY_HAS_MEAL, STARTER_NOTE } from "@/lib/life/recipes"
 import type { Visibility } from "@/lib/visibility"
@@ -65,9 +67,7 @@ export function MealsPlanner({
   error = false,
   preview = false,
   initialSheet = null,
-  estimate,
-  stillNeeded,
-  boughtLabel,
+  shoppingLines = [],
   showTabs = false,
   addedDay = null,
   browseHref = "/life/meal-planner/browse",
@@ -80,9 +80,7 @@ export function MealsPlanner({
   error?: boolean
   preview?: boolean
   initialSheet?: "detail" | "confirm" | "already" | null
-  estimate: string
-  stillNeeded: number
-  boughtLabel: string
+  shoppingLines?: WeekShoppingLine[]
   showTabs?: boolean
   addedDay?: string | null
   browseHref?: string
@@ -91,7 +89,7 @@ export function MealsPlanner({
   const router = useRouter()
   const { filter, setFilter } = useLifeVisibility()
   const [offset, setOffset] = useState(0)
-  const [tab, setTab] = useState<"week" | "pantry" | "recipes">("week")
+  const [useWhatWeHave, setUseWhatWeHave] = useState(false)
   const [openDays, setOpenDays] = useState<Record<string, boolean>>({})
   const [selectedId, setSelectedId] = useState<string | null>(initialSheet ? meals.find((meal) => meal.recipe_id)?.id ?? meals[0]?.id ?? null : null)
   const [confirm, setConfirm] = useState(initialSheet === "confirm")
@@ -109,6 +107,10 @@ export function MealsPlanner({
   const listAction = selected ? updateListButton({ recipeId: selected.recipe_id }, canWrite) : "hidden"
   const alreadyOnList = notice === LIST_ALREADY_HAS_MEAL
   const plannedCount = visible.length
+  const stats = weekShoppingStats(
+    visible.map((meal) => meal.id),
+    shoppingLines,
+  )
   const recent = useMemo(() => recipes.slice(0, 6), [recipes])
   const searched = recipes.filter((recipe) => recipe.name.toLowerCase().includes(query.trim().toLowerCase()))
 
@@ -207,34 +209,25 @@ export function MealsPlanner({
       {error ? <WidgetError /> : null}
       <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
         <Tile label="Planned" value={`${plannedCount} meal${plannedCount === 1 ? "" : "s"}`} />
-        <Tile label="Still needed" value={`${stillNeeded} item${stillNeeded === 1 ? "" : "s"}`} />
-        <Tile label="Bought" value={boughtLabel} />
-        <Tile label="Estimated" value={estimate} />
+        <Tile label="Still needed" value={`${stats.stillNeeded} item${stats.stillNeeded === 1 ? "" : "s"}`} />
+        <Tile label="Bought" value={stats.boughtLabel} />
+        <Tile label="Estimated" value={stats.estimate} />
       </div>
-      <div className="flex min-w-0 gap-2 overflow-x-auto">
-        {(
-          [
-            ["week", "This week"],
-            ["pantry", "Use what we have"],
-            ["recipes", "Recipes"],
-          ] as const
-        ).map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            aria-pressed={tab === id}
-            onClick={() => setTab(id)}
-            className={cn(
-              "inline-flex h-10 shrink-0 items-center rounded-full border px-3 text-[13px]",
-              tab === id ? "border-border bg-surface-muted text-ink" : "border-border bg-surface text-muted-foreground",
-            )}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-      {tab === "week" ? (
-        <section className="grid min-w-0 gap-3" aria-label="This week">
+      <button
+        type="button"
+        aria-pressed={useWhatWeHave}
+        onClick={() => setUseWhatWeHave((open) => !open)}
+        className={cn(
+          "inline-flex min-h-12 w-fit items-center rounded-full border px-4 text-sm",
+          useWhatWeHave ? "border-border bg-surface-muted text-ink" : "border-border bg-surface text-muted-foreground",
+        )}
+      >
+        Use what we have
+      </button>
+      {useWhatWeHave ? (
+        <UseWhatWeHave recipes={recipes} chip={chip} onChip={setChip} emptyPantry={recipes.every((recipe) => recipe.atHome === 0)} />
+      ) : null}
+      <section className="grid min-w-0 gap-3" aria-label="This week">
           <div className="flex items-center justify-between gap-2">
             <button type="button" className="inline-flex min-h-12 min-w-12 items-center justify-center text-muted-foreground" aria-label="Previous week" onClick={() => setOffset((value) => value - 1)}>
               ‹
@@ -303,21 +296,6 @@ export function MealsPlanner({
             })}
           </div>
         </section>
-      ) : null}
-      {tab === "pantry" ? (
-        <UseWhatWeHave recipes={recipes} chip={chip} onChip={setChip} emptyPantry={recipes.every((recipe) => recipe.atHome === 0)} />
-      ) : null}
-      {tab === "recipes" ? (
-        <div className="grid gap-2">
-          {recipes.length === 0 ? <p className="text-sm text-muted-foreground">No recipes yet.</p> : null}
-          {recipes.map((recipe) => (
-            <div key={recipe.id} className="rounded-[12px] border border-border bg-surface px-3 py-3">
-              <p className="text-[15px] font-medium text-ink">{recipe.name}</p>
-              <p className="text-[13px] text-muted-foreground">{[recipe.minutes ? `${recipe.minutes} min` : null, `${recipe.servings} servings`].filter(Boolean).join(" · ")}</p>
-            </div>
-          ))}
-        </div>
-      ) : null}
       <Dialog open={Boolean(selected)} onOpenChange={(open) => { if (!open) { setSelectedId(null); setConfirm(false); setNotice("") } }}>
         <DialogContent className={cn("sm:max-w-[440px]", phoneSheetClass)}>
           <DialogHeader>

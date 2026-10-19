@@ -23,6 +23,16 @@ export function justMeListLine(added: boolean) {
 
 export const STARTER_NOTE = "Editing saves a copy for your household. The original stays the same."
 
+/** Seeded catalog samples on My recipes. Browse copies are household rows and use a different count. */
+export function seededExampleCount(count: number) {
+  return count === 1 ? "1 example" : `${count} examples`
+}
+
+/** Household rows copied from Browse. The word stays "saved" for one and for many. */
+export function browseSavedCount(count: number) {
+  return `${count} saved`
+}
+
 export const LIST_ALREADY_HAS_MEAL = "Your list already has this meal."
 export const ALREADY_ON_LIST = "Already on your list"
 

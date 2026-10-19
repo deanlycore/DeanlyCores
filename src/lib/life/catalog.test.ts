@@ -12,6 +12,7 @@ import {
   filterCatalog,
   mealPlannerRedirects,
   parseCatalogFilters,
+  PHOTO_ILLUSTRATION_LINE,
   recipeCatalogImageCsp,
   recipeCatalogImageUrl,
   recipeCatalogRemotePatterns,
@@ -95,13 +96,21 @@ test("catalog photos use the storage host and never upscale past 960x720", () =>
   )
   assert.equal(recipeCatalogImageUrl("Not Safe", "https://example.supabase.co"), null)
   const patterns = recipeCatalogRemotePatterns("https://cdn.example.com")
-  assert.equal(patterns[0]?.hostname, "**.supabase.co")
-  assert.equal(patterns[0]?.pathname, "/storage/v1/object/public/recipe-catalog/**")
-  assert.equal(patterns[1]?.hostname, "cdn.example.com")
+  assert.equal(patterns.length, 1)
+  assert.equal(patterns[0]?.hostname, "cdn.example.com")
+  assert.equal(patterns[0]?.pathname, "/storage/v1/object/public/**")
+  assert.deepEqual(recipeCatalogRemotePatterns(), [])
+  const pinned = recipeCatalogRemotePatterns("https://example.supabase.co")
+  assert.equal(pinned[0]?.hostname, "example.supabase.co")
+  assert.equal(pinned[0]?.hostname.includes("*"), false)
   const csp = recipeCatalogImageCsp("https://cdn.example.com")
   assert.match(csp, /img-src/)
-  assert.match(csp, /https:\/\/\*\.supabase\.co/)
+  assert.match(csp, /'self'/)
+  assert.match(csp, /data:/)
+  assert.match(csp, /blob:/)
   assert.match(csp, /https:\/\/cdn\.example\.com/)
+  assert.equal(csp.includes("supabase.co"), false)
+  assert.equal(recipeCatalogImageCsp(), "img-src 'self' data: blob:;")
   const photo = readFileSync(join(root, "src/components/life/recipe-photo.tsx"), "utf8")
   assert.match(photo, /aspect-\[4\/3\]/)
   assert.match(photo, /object-cover/)
@@ -121,7 +130,13 @@ test("the seed reads the service role and no app route writes the catalog", () =
   const detail = readFileSync(join(root, "src/components/life/recipe-catalog-detail.tsx"), "utf8")
   assert.doesNotMatch(browse, /dangerouslySetInnerHTML/)
   assert.doesNotMatch(detail, /dangerouslySetInnerHTML/)
-  assert.match(detail, /ILLUSTRATION_LABEL/)
+  assert.match(detail, /\{item\.text\}/)
+  assert.match(detail, /\{step\}/)
+  assert.equal(PHOTO_ILLUSTRATION_LINE, "Photos are AI-generated illustrations.")
+  assert.match(detail, /PHOTO_ILLUSTRATION_LINE/)
+  assert.match(detail, /‹ Browse/)
+  assert.doesNotMatch(detail, /ILLUSTRATION_LABEL/)
+  assert.match(browse, /flex flex-wrap gap-2/)
   assert.match(detail, /Nutrition per serving/)
   assert.match(browse, /SEARCH_PLACEHOLDER/)
   assert.match(browse, /NO_RESULTS_COPY/)
