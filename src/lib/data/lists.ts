@@ -139,6 +139,29 @@ export async function listMealNeedCounts() {
   return counts
 }
 
+export async function listMealShoppingLines() {
+  const lines: { mealId: string; checked: boolean; priceCents: number | null }[] = []
+  const ctx = await requireHousehold()
+  if (!ctx) return lines
+  const links = await ctx.supabase.from("meal_shopping_needs").select("meal_id, shopping_item_id").eq("household_id", ctx.householdId)
+  if (links.error) return lines
+  const itemIds = [...new Set((links.data ?? []).map((link) => link.shopping_item_id))]
+  if (itemIds.length === 0) return lines
+  const items = await ctx.supabase
+    .from("shopping_items")
+    .select("id, checked_at, price_cents")
+    .eq("household_id", ctx.householdId)
+    .in("id", itemIds)
+  if (items.error) return lines
+  const byId = new Map((items.data ?? []).map((item) => [item.id, item]))
+  for (const link of links.data ?? []) {
+    const item = link.shopping_item_id ? byId.get(link.shopping_item_id) : null
+    if (!link.meal_id || !item) continue
+    lines.push({ mealId: link.meal_id, checked: Boolean(item.checked_at), priceCents: item.price_cents ?? null })
+  }
+  return lines
+}
+
 export async function listMealLabels(itemIds: string[]) {
   const labels = new Map<string, string>()
   const ctx = await requireHousehold()

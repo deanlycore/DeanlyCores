@@ -14,7 +14,7 @@ import { VisibilityPill, WidgetError } from "@/components/ui/pills"
 import { copyCatalogRecipe, deleteRecipe, loadRecipe, saveRecipe } from "@/lib/actions/recipes"
 import { filterLife, LIFE_COPY, lifeSubtitle } from "@/lib/life/board"
 import { MealPlannerTabs } from "@/components/life/meal-planner-tabs"
-import { ingredientLine, OTHERS_ADDED, RECIPE_STALE, servingsLabel, STARTER_NOTE, type RecipeRow, type StarterRecipe } from "@/lib/life/recipes"
+import { ingredientLine, OTHERS_ADDED, RECIPE_STALE, seededExampleCount, servingsLabel, STARTER_NOTE, type RecipeRow, type StarterRecipe } from "@/lib/life/recipes"
 import { calmShoppingMessage } from "@/lib/life/shopping"
 
 export function RecipesBoard({
@@ -144,7 +144,7 @@ export function RecipesBoard({
         chips={
           <>
             <MetricChip tone={visible.length > 0 ? "brand" : "muted"}>{`${visible.length} recipe${visible.length === 1 ? "" : "s"}`}</MetricChip>
-            <MetricChip>{`${visibleStarters.length} starter${visibleStarters.length === 1 ? "" : "s"}`}</MetricChip>
+            <MetricChip>{seededExampleCount(visibleStarters.length)}</MetricChip>
           </>
         }
         pulse={

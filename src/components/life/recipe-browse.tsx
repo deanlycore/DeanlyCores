@@ -66,7 +66,7 @@ export function RecipeBrowse({
           className="min-h-12 w-full rounded-[12px] border border-border bg-surface px-3 text-sm text-ink"
         />
       </form>
-      <div className="flex gap-2 overflow-x-auto" role="group" aria-label="Goals">
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Goals">
         {CATALOG_GOALS.map((goal) => {
           const selected = filters.goal === goal.id
           return (

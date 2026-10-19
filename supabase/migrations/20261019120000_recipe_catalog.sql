@@ -3,7 +3,9 @@
 -- Authenticated users can read. They cannot insert, update, delete, or truncate.
 -- The seed uses the service role, which is the only writer, including for storage.
 
-create extension if not exists pg_trgm;
+create schema if not exists extensions;
+create extension if not exists pg_trgm with schema extensions;
+grant usage on schema extensions to authenticated;
 
 create table public.recipe_catalog (
   slug text primary key,
@@ -50,10 +52,10 @@ create index recipe_catalog_search_idx
   on public.recipe_catalog using gin (search);
 
 create index recipe_catalog_name_trgm_idx
-  on public.recipe_catalog using gin (name gin_trgm_ops);
+  on public.recipe_catalog using gin (name extensions.gin_trgm_ops);
 
 create index recipe_catalog_ingredients_trgm_idx
-  on public.recipe_catalog using gin ((ingredients::text) gin_trgm_ops);
+  on public.recipe_catalog using gin ((ingredients::text) extensions.gin_trgm_ops);
 
 create index recipe_catalog_tags_idx
   on public.recipe_catalog using gin (tags);
@@ -102,15 +104,15 @@ as $$
       or r.search @@ websearch_to_tsquery('simple', p_query)
       or r.name ilike '%' || replace(replace(btrim(p_query), '%', ''), '_', '') || '%'
       or r.ingredients::text ilike '%' || replace(replace(btrim(p_query), '%', ''), '_', '') || '%'
-      or word_similarity(btrim(p_query), r.name) > 0.3
-      or word_similarity(btrim(p_query), coalesce(r.ingredients::text, '')) > 0.3
+      or extensions.word_similarity(btrim(p_query), r.name) > 0.3
+      or extensions.word_similarity(btrim(p_query), coalesce(r.ingredients::text, '')) > 0.3
     )
   order by
     case
       when p_query is null or btrim(p_query) = '' then 0
       else ts_rank(r.search, websearch_to_tsquery('simple', p_query))
     end desc,
-    similarity(r.name, coalesce(btrim(p_query), '')) desc,
+    extensions.similarity(r.name, coalesce(btrim(p_query), '')) desc,
     r.name;
 $$;
 
@@ -140,8 +142,11 @@ create unique index if not exists recipes_household_catalog_slug
   on public.recipes (household_id, catalog_slug)
   where catalog_slug is not null;
 
--- Copies one library recipe into the caller's household. A second call returns the same row.
-create or replace function public.copy_recipe_catalog(p_slug text)
+-- Household comes from the caller. Membership and write access are checked before the copy.
+-- A second call for the same slug returns the same household row.
+drop function if exists public.copy_recipe_catalog(text);
+
+create or replace function public.copy_recipe_catalog(p_slug text, p_household_id uuid)
 returns jsonb
 language plpgsql
 security invoker
@@ -149,7 +154,7 @@ set search_path to 'public'
 as $$
 declare
   v_user uuid := auth.uid();
-  v_household uuid;
+  v_household uuid := p_household_id;
   v_existing uuid;
   v_id uuid;
   v_row public.recipe_catalog%rowtype;
@@ -161,13 +166,9 @@ begin
     raise exception 'That recipe is not available.';
   end if;
 
-  select hm.household_id
-    into v_household
-  from public.household_members hm
-  where hm.user_id = v_user
-  limit 1;
-
-  if v_household is null or not public.can_write_household_content(v_household) then
+  if p_household_id is null
+     or not public.is_household_member(p_household_id)
+     or not public.can_write_household_content(p_household_id) then
     raise exception 'You don’t have access to change that.';
   end if;
 
@@ -245,8 +246,8 @@ exception
 end;
 $$;
 
-revoke all on function public.copy_recipe_catalog(text) from public, anon;
-grant execute on function public.copy_recipe_catalog(text) to authenticated;
+revoke all on function public.copy_recipe_catalog(text, uuid) from public, anon;
+grant execute on function public.copy_recipe_catalog(text, uuid) to authenticated;
 
 -- Public read of recipe photos. No insert, update, or delete policy, so only the service role can write.
 do $$
@@ -270,12 +271,7 @@ begin
     allowed_mime_types = excluded.allowed_mime_types;
 
   execute 'alter table storage.objects enable row level security';
+  -- The bucket is public, so a known photo URL still serves the file.
+  -- A SELECT policy on storage.objects would let anyone list the whole bucket.
   execute 'drop policy if exists recipe_catalog_objects_select on storage.objects';
-  execute $policy$
-    create policy recipe_catalog_objects_select
-      on storage.objects
-      for select
-      to public
-      using (bucket_id = 'recipe-catalog')
-  $policy$;
 end $$;

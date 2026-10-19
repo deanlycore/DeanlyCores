@@ -27,7 +27,7 @@ export const SEARCH_PLACEHOLDER = "Search recipes or ingredients"
 export const NO_RESULTS_COPY = "No recipes match that. Try fewer filters."
 export const CATALOG_ERROR_COPY = "Recipes can't load right now."
 export const SAVED_TO_MINE = "Saved to My recipes."
-export const ILLUSTRATION_LABEL = "Illustration"
+export const PHOTO_ILLUSTRATION_LINE = "Photos are AI-generated illustrations."
 
 export const MEAL_PLANNER_HREF = "/life/meal-planner"
 export const MEAL_PLANNER_TABS = [
@@ -139,49 +139,32 @@ export function recipeCatalogImageUrl(slug: string, supabaseUrl: string | null |
 }
 
 export function recipeCatalogRemotePatterns(supabaseUrl?: string) {
-  const patterns: {
-    protocol: "http" | "https"
-    hostname: string
-    port?: string
-    pathname: string
-    search: string
-  }[] = [
-    {
-      protocol: "https",
-      hostname: "**.supabase.co",
-      pathname: "/storage/v1/object/public/recipe-catalog/**",
-      search: "",
-    },
-  ]
-  if (!supabaseUrl) return patterns
+  if (!supabaseUrl) return []
   try {
     const url = new URL(supabaseUrl)
-    if (url.protocol !== "https:" && url.protocol !== "http:") return patterns
-    const hostname = url.hostname
-    if (hostname.endsWith(".supabase.co")) return patterns
-    patterns.push({
-      protocol: url.protocol === "http:" ? "http" : "https",
-      hostname,
-      port: url.port,
-      pathname: "/storage/v1/object/public/recipe-catalog/**",
-      search: "",
-    })
+    if (url.protocol !== "https:" && url.protocol !== "http:") return []
+    return [
+      {
+        protocol: url.protocol === "http:" ? ("http" as const) : ("https" as const),
+        hostname: url.hostname,
+        ...(url.port ? { port: url.port } : {}),
+        pathname: "/storage/v1/object/public/**",
+        search: "",
+      },
+    ]
   } catch {
-    return patterns
+    return []
   }
-  return patterns
 }
 
 export function recipeCatalogImageCsp(supabaseUrl?: string) {
-  const sources = ["'self'", "data:", "blob:", "https://*.supabase.co"]
+  const sources = ["'self'", "data:", "blob:"]
   if (supabaseUrl) {
     try {
       const url = new URL(supabaseUrl)
-      if ((url.protocol === "https:" || url.protocol === "http:") && !url.hostname.endsWith(".supabase.co")) {
-        sources.push(`${url.protocol}//${url.host}`)
-      }
+      if (url.protocol === "https:" || url.protocol === "http:") sources.push(`${url.protocol}//${url.host}`)
     } catch {
-      // A malformed project URL still leaves the Supabase storage host allowed.
+      // A malformed project URL leaves only local image sources.
     }
   }
   return `img-src ${sources.join(" ")};`

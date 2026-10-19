@@ -11,7 +11,7 @@ import { phoneSheetClass } from "@/components/money/money-chrome"
 import { addCatalogRecipeToWeek, saveCatalogRecipe } from "@/lib/actions/catalog"
 import {
   cardMeta,
-  ILLUSTRATION_LABEL,
+  PHOTO_ILLUSTRATION_LINE,
   recipeCatalogImageUrl,
   SAVED_TO_MINE,
   scaledGrams,
@@ -92,14 +92,11 @@ export function RecipeCatalogDetail({
   return (
     <div className="grid min-w-0 gap-5">
       <Link href={`${base}/browse`} className="inline-flex min-h-12 items-center text-sm font-medium text-brand-deep">
-        Browse
+        ‹ Browse
       </Link>
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="grid min-w-0 gap-4">
-          <figure className="grid gap-2">
-            <RecipePhoto name={recipe.name} src={recipeCatalogImageUrl(recipe.slug, supabaseUrl)} variant="detail" />
-            <figcaption className="text-[13px] text-muted-foreground">{ILLUSTRATION_LABEL}</figcaption>
-          </figure>
+          <RecipePhoto name={recipe.name} src={recipeCatalogImageUrl(recipe.slug, supabaseUrl)} variant="detail" />
           <header>
             <h1 className="font-display text-[28px] font-semibold tracking-[-0.02em] text-ink">{recipe.name}</h1>
             <p className="mt-1 text-sm text-muted-foreground">{cardMeta(recipe)}</p>
@@ -160,7 +157,7 @@ export function RecipeCatalogDetail({
             </ol>
           </section>
           <p className="text-[13px] text-muted-foreground">
-            {recipe.source}. {recipe.license}.
+            {recipe.source}. {recipe.license}. {PHOTO_ILLUSTRATION_LINE}
           </p>
         </div>
       </div>

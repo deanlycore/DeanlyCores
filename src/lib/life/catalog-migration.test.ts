@@ -1,6 +1,6 @@
 import assert from "node:assert/strict"
 import { execFileSync, spawnSync } from "node:child_process"
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { createServer } from "node:net"
 import { tmpdir, userInfo } from "node:os"
 import { dirname, join } from "node:path"
@@ -152,6 +152,11 @@ values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '11111111-1111-1111-1111-1111111
 create or replace function public.can_write_household_content(p_household_id uuid)
 returns boolean language sql stable as $$ select true $$;
 
+create or replace function public.is_household_member(p_household_id uuid)
+returns boolean language sql stable as $$
+  select p_household_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid
+$$;
+
 create schema if not exists storage;
 create table storage.buckets (
   id text primary key,
@@ -179,7 +184,16 @@ test("recipe catalog is read-only for authenticated users, hidden from anon, and
   assert.match(sql, /for select/)
   assert.doesNotMatch(sql, /for insert|for update|for delete/)
   assert.match(sql, /using gin \(search\)/)
-  assert.match(sql, /gin_trgm_ops/)
+  assert.match(sql, /create extension if not exists pg_trgm with schema extensions/)
+  assert.match(sql, /extensions\.gin_trgm_ops/)
+  assert.match(sql, /extensions\.word_similarity/)
+  assert.match(sql, /extensions\.similarity/)
+  assert.match(sql, /copy_recipe_catalog\(p_slug text, p_household_id uuid\)/)
+  assert.match(sql, /is_household_member\(p_household_id\)/)
+  assert.match(sql, /can_write_household_content\(p_household_id\)/)
+  assert.doesNotMatch(sql, /from public\.household_members/)
+  assert.match(sql, /drop policy if exists recipe_catalog_objects_select/)
+  assert.doesNotMatch(sql, /create policy recipe_catalog_objects_select/)
   assert.match(sql, /recipe-catalog/)
   assert.match(sql, /image\/webp/)
   assert.match(sql, /1048576/)
@@ -251,20 +265,27 @@ test("recipe catalog is read-only for authenticated users, hidden from anon, and
       grant usage on schema auth to authenticated;
       grant execute on function auth.uid() to authenticated;
       grant execute on function public.can_write_household_content(uuid) to authenticated;
+      grant execute on function public.is_household_member(uuid) to authenticated;
       grant select on public.household_members to authenticated;
       grant select, insert on public.recipes, public.recipe_ingredients to authenticated;
     `], { stdio: "pipe" })
     const copied = execFileSync(psql, [...base, "-d", "catalog", "-t", "-A", "-c", `
       set role authenticated;
-      select public.copy_recipe_catalog('chicken-tinga-tacos')->>'id';
+      select public.copy_recipe_catalog('chicken-tinga-tacos', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')->>'id';
     `], { encoding: "utf8" }).trim()
     const copiedAgain = execFileSync(psql, [...base, "-d", "catalog", "-t", "-A", "-c", `
       set role authenticated;
-      select public.copy_recipe_catalog('chicken-tinga-tacos')->>'id';
+      select public.copy_recipe_catalog('chicken-tinga-tacos', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')->>'id';
     `], { encoding: "utf8" }).trim()
     assert.equal(copied, copiedAgain)
     const householdCopies = execFileSync(psql, [...base, "-d", "catalog", "-t", "-A", "-c", "select count(*) from public.recipes where catalog_slug = 'chicken-tinga-tacos'"], { encoding: "utf8" }).trim()
     assert.equal(householdCopies, "1")
+    const otherHousehold = spawnSync(psql, [...base, "-d", "catalog", "-c", `
+      set role authenticated;
+      select public.copy_recipe_catalog('chicken-tinga-tacos', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb');
+    `], { encoding: "utf8" })
+    assert.notEqual(otherHousehold.status, 0)
+    assert.match(`${otherHousehold.stderr}`, /don’t have access/i)
 
     const anonRead = spawnSync(psql, [...base, "-d", "catalog", "-c", "set role anon; select count(*) from public.recipe_catalog"], { encoding: "utf8" })
     assert.notEqual(anonRead.status, 0)
@@ -285,7 +306,110 @@ test("recipe catalog is read-only for authenticated users, hidden from anon, and
     const policies = execFileSync(psql, [...base, "-d", "catalog", "-t", "-A", "-c", `
       select string_agg(cmd, ',' order by cmd) from pg_policies where policyname like 'recipe_catalog_objects%'
     `], { encoding: "utf8" }).trim()
-    assert.equal(policies, "SELECT")
+    assert.equal(policies, "")
+    const trgmSchema = execFileSync(psql, [...base, "-d", "catalog", "-t", "-A", "-c", `
+      select n.nspname from pg_extension e join pg_namespace n on n.oid = e.extnamespace where e.extname = 'pg_trgm'
+    `], { encoding: "utf8" }).trim()
+    assert.equal(trgmSchema, "extensions")
+  } finally {
+    execFileSync(tool("pg_ctl"), ["-D", dir, "-w", "stop"], { stdio: "pipe" })
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+const chainBootstrap = `
+create schema if not exists auth;
+create table auth.users (
+  id uuid primary key,
+  email text,
+  raw_user_meta_data jsonb
+);
+create or replace function auth.uid() returns uuid language sql stable as $$ select null::uuid $$;
+create or replace function auth.role() returns text language sql stable as $$ select null::text $$;
+create or replace function auth.jwt() returns jsonb language sql stable as $$ select '{}'::jsonb $$;
+
+do $$ begin create role authenticated nologin; exception when duplicate_object then null; end $$;
+do $$ begin create role anon nologin; exception when duplicate_object then null; end $$;
+do $$ begin create role service_role nologin; exception when duplicate_object then null; end $$;
+do $$ begin create role supabase_auth_admin nologin; exception when duplicate_object then null; end $$;
+
+create schema if not exists extensions;
+create extension if not exists pgcrypto with schema extensions;
+
+create schema if not exists storage;
+create table storage.buckets (
+  id text primary key,
+  name text not null,
+  public boolean not null default false,
+  file_size_limit bigint,
+  allowed_mime_types text[]
+);
+create table storage.objects (
+  id uuid primary key default gen_random_uuid(),
+  bucket_id text,
+  name text
+);
+create or replace function storage.foldername(name text)
+returns text[]
+language sql
+immutable
+as $$
+  select string_to_array(name, '/')
+$$;
+alter table storage.objects enable row level security;
+`
+
+test("the full migration chain defines recipe_steps_within_limit before the catalog constraint", async () => {
+  const recipesSql = readFileSync(join(root, "supabase/migrations/20261016121000_recipes.sql"), "utf8")
+  const catalogSql = readFileSync(migration, "utf8")
+  assert.match(recipesSql, /function public\.recipe_steps_within_limit/)
+  assert.doesNotMatch(catalogSql, /function public\.recipe_steps_within_limit/)
+
+  const files = readdirSync(join(root, "supabase/migrations"))
+    .filter((name) => name.endsWith(".sql"))
+    .sort()
+  const dir = mkdtempSync(join(tmpdir(), "deanly-chain-"))
+  const port = await freePort()
+  const initdb = tool("initdb")
+  const pgCtl = tool("pg_ctl")
+  const psql = tool("psql")
+  const base = ["-h", dir, "-p", String(port), "-v", "ON_ERROR_STOP=1"]
+  try {
+    execFileSync(initdb, ["-D", dir, "--username", userInfo().username, "--auth=trust", "--no-instructions"], { stdio: "pipe" })
+    execFileSync(pgCtl, ["-D", dir, "-o", `-p ${port} -k ${dir}`, "-l", join(dir, "server.log"), "-w", "start"], { stdio: "pipe" })
+    execFileSync(psql, [...base, "-d", "postgres", "-c", "create database chain"], { stdio: "pipe" })
+    const before = join(dir, "before.sql")
+    writeFileSync(before, chainBootstrap)
+    execFileSync(psql, [...base, "-d", "chain", "-f", before], { stdio: "pipe" })
+    for (const name of files) {
+      const applied = spawnSync(psql, [...base, "-d", "chain", "-f", join(root, "supabase/migrations", name)], { encoding: "utf8" })
+      if (applied.status !== 0) {
+        throw new Error(`${name}\n${applied.stderr}\n${applied.stdout}`)
+      }
+    }
+    const report = execFileSync(psql, [...base, "-d", "chain", "-t", "-A", "-c", `
+      select cast((
+        select count(*) from pg_proc p
+        join pg_namespace n on n.oid = p.pronamespace
+        where n.nspname = 'public' and p.proname = 'recipe_steps_within_limit'
+      ) as text)
+      || '|' || (
+        select pg_get_constraintdef(c.oid) from pg_constraint c where c.conname = 'recipe_catalog_steps_ok'
+      )
+      || '|' || (
+        select n.nspname from pg_extension e
+        join pg_namespace n on n.oid = e.extnamespace
+        where e.extname = 'pg_trgm'
+      )
+      || '|' || coalesce((
+        select string_agg(policyname, ',') from pg_policies where policyname = 'recipe_catalog_objects_select'
+      ), '')
+    `], { encoding: "utf8" }).trim()
+    const [count, constraint, schema, policy] = report.split("|")
+    assert.equal(count, "1")
+    assert.match(constraint ?? "", /recipe_steps_within_limit/)
+    assert.equal(schema, "extensions")
+    assert.equal(policy, "")
   } finally {
     execFileSync(tool("pg_ctl"), ["-D", dir, "-w", "stop"], { stdio: "pipe" })
     rmSync(dir, { recursive: true, force: true })
