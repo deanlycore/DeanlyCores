@@ -10,7 +10,7 @@ import { previewToday } from "../sample"
 export const dynamic = "force-dynamic"
 
 const meals: PlannerMeal[] = [
-  { id: "mon", title: "Grill chicken", meal_on: "2026-09-28", slot: "dinner", notes: null, visibility: "shared", servings: 4, recipe_id: "tacos", updated_at: "2026-10-02T00:00:00.000Z", needed: 2 },
+  { id: "mon", title: "Grilled chicken", meal_on: "2026-09-28", slot: "dinner", notes: null, visibility: "shared", servings: 4, recipe_id: "tacos", updated_at: "2026-10-02T00:00:00.000Z", needed: 2 },
   { id: "fri", title: "Tacos", meal_on: "2026-10-02", slot: "dinner", notes: null, visibility: "shared", servings: 4, recipe_id: "tacos", updated_at: "2026-10-02T00:00:00.000Z", needed: 2 },
   { id: "sat", title: "Leftovers", meal_on: "2026-10-03", slot: "lunch", notes: null, visibility: "shared", servings: 2, recipe_id: null, updated_at: "2026-10-02T00:00:00.000Z", needed: 0 },
 ]
