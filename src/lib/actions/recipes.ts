@@ -16,6 +16,7 @@ async function gate() {
 
 function refresh() {
   revalidatePath("/life/recipes", "layout")
+  revalidatePath("/life/meal-planner/mine")
   revalidatePath("/life/shopping")
   revalidatePath("/home")
 }

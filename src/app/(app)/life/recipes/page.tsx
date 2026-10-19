@@ -1,11 +1,15 @@
-import type { Metadata } from "next"
+import { permanentRedirect } from "next/navigation"
 
-import { RecipesBoard } from "@/components/life/recipes-board"
-import { listRecipes } from "@/lib/data/lists"
-
-export const metadata: Metadata = { title: "Recipes" }
-
-export default async function Page() {
-  const library = await listRecipes()
-  return <RecipesBoard rows={library.rows} starters={library.starters} error={library.error} canWrite={library.canWrite} />
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
+  const params = await searchParams
+  const query = new URLSearchParams()
+  for (const [key, value] of Object.entries(params)) {
+    if (typeof value === "string") query.set(key, value)
+  }
+  const suffix = query.toString()
+  permanentRedirect(suffix ? `/life/meal-planner/mine?${suffix}` : "/life/meal-planner/mine")
 }

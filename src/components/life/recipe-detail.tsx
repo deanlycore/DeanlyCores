@@ -22,7 +22,8 @@ export function RecipeDetail({
   preview = false,
   reviewOpen = false,
   addedNotice = "",
-  backHref = "/life/recipes",
+  backHref = "/life/meal-planner/mine",
+  backLabel = "My recipes",
 }: {
   recipe: RecipeRow | null
   shopping: { name: string; checked_at?: string | null }[]
@@ -33,6 +34,7 @@ export function RecipeDetail({
   reviewOpen?: boolean
   addedNotice?: string
   backHref?: string
+  backLabel?: string
 }) {
   const router = useRouter()
   const [editing, setEditing] = useState(false)
@@ -49,7 +51,7 @@ export function RecipeDetail({
   if (error) {
     return (
       <div className="grid min-w-0 gap-3">
-        <Back href={backHref} />
+        <Back href={backHref} label={backLabel} />
         <WidgetError />
       </div>
     )
@@ -62,7 +64,7 @@ export function RecipeDetail({
 
   return (
     <div className="grid min-w-0 gap-4">
-      <Back href={backHref} />
+      <Back href={backHref} label={backLabel} />
       <header className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="font-display text-[28px] font-semibold tracking-[-0.02em] text-ink">{recipe.name}</h1>
@@ -222,10 +224,10 @@ export function RecipeDetail({
   )
 }
 
-function Back({ href }: { href: string }) {
+function Back({ href, label }: { href: string; label: string }) {
   return (
-    <Link href={href} className="text-sm font-medium text-brand-deep">
-      Recipes
+    <Link href={href} className="inline-flex min-h-12 items-center text-sm font-medium text-brand-deep">
+      {label}
     </Link>
   )
 }
