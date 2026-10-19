@@ -26,7 +26,7 @@ import {
   weekOf,
   type MealSlot,
 } from "@/lib/life/planner"
-import { LIST_ALREADY_HAS_MEAL, STARTER_NOTE } from "@/lib/life/recipes"
+import { ALREADY_ON_LIST, LIST_ALREADY_HAS_MEAL, STARTER_NOTE } from "@/lib/life/recipes"
 import type { Visibility } from "@/lib/visibility"
 import { cn } from "cn"
 
@@ -107,6 +107,7 @@ export function MealsPlanner({
   const visible = filterLife(plannedMeals, filter).filter((meal) => meal.meal_on >= week.start && meal.meal_on <= week.end)
   const selected = plannedMeals.find((meal) => meal.id === selectedId) ?? null
   const listAction = selected ? updateListButton({ recipeId: selected.recipe_id }, canWrite) : "hidden"
+  const alreadyOnList = notice === LIST_ALREADY_HAS_MEAL
   const plannedCount = visible.length
   const recent = useMemo(() => recipes.slice(0, 6), [recipes])
   const searched = recipes.filter((recipe) => recipe.name.toLowerCase().includes(query.trim().toLowerCase()))
@@ -244,22 +245,31 @@ export function MealsPlanner({
             </button>
           </div>
           <div className="hidden md:grid md:grid-cols-7 md:gap-2">
-            {week.days.map((day) => (
-              <div key={day} className={cn("rounded-[12px] border border-border p-2", day === today && "bg-surface-muted")}>
-                <p className="text-[13px] text-ink">{weekdayLabel(day)}</p>
-                <SlotColumn
-                  day={day}
-                  meals={visible}
-                  onOpen={setSelectedId}
-                  onAdd={(slot) => openAdd(day, slot)}
-                />
-                {visible.some((meal) => meal.meal_on === day) ? null : (
-                  <Link href={browseHref} className="inline-flex min-h-12 items-center text-[13px] font-medium text-brand-deep">
-                    Find a recipe
-                  </Link>
-                )}
-              </div>
-            ))}
+            {week.days.map((day) => {
+              const dayMeals = visible.filter((meal) => meal.meal_on === day)
+              return (
+                <div key={day} className={cn("rounded-[12px] border border-border p-2", day === today && "bg-surface-muted")}>
+                  <p className="text-[13px] text-ink">{weekdayLabel(day)}</p>
+                  {dayMeals.length === 0 ? (
+                    <button type="button" className="min-h-12 text-left text-[13px] text-muted-foreground" onClick={() => openAdd(day, "dinner")}>
+                      + Add
+                    </button>
+                  ) : (
+                    <SlotColumn
+                      day={day}
+                      meals={visible}
+                      onOpen={setSelectedId}
+                      onAdd={(slot) => openAdd(day, slot)}
+                    />
+                  )}
+                  {dayMeals.length === 0 ? (
+                    <Link href={browseHref} className="inline-flex min-h-12 items-center text-[13px] font-medium text-brand-deep">
+                      Find a recipe
+                    </Link>
+                  ) : null}
+                </div>
+              )
+            })}
           </div>
           <div className="grid gap-2 md:hidden">
             {week.days.map((day) => {
@@ -317,7 +327,16 @@ export function MealsPlanner({
             <div className="grid gap-3">
               <p className="text-[13px] text-muted-foreground">Servings</p>
               <p className="text-sm text-ink">{selected.servings}</p>
-              {listAction === "hidden" || confirm ? null : (
+              {listAction === "hidden" || confirm ? null : alreadyOnList ? (
+                <button
+                  type="button"
+                  disabled
+                  aria-disabled="true"
+                  className="inline-flex min-h-12 w-full cursor-not-allowed items-center justify-center rounded-lg bg-surface-muted px-3 text-sm font-medium text-muted-foreground opacity-60"
+                >
+                  {ALREADY_ON_LIST}
+                </button>
+              ) : (
                 <Button
                   type="button"
                   variant="outline"
