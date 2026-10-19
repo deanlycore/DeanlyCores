@@ -1,6 +1,8 @@
 import { cookies } from "next/headers"
 import { notFound } from "next/navigation"
 
+import { previewIsProduction } from "@/lib/preview-access"
+
 import { NoteEditor } from "@/components/notes/note-editor"
 import { AppearanceControl } from "@/components/settings/appearance-control"
 import { AppShell } from "@/components/shell/app-shell"
@@ -12,7 +14,7 @@ import { previewNotes } from "../sample"
 export const dynamic = "force-dynamic"
 
 export default async function PreviewNote({ params }: { params: Promise<{ id: string }> }) {
-  if (process.env.NODE_ENV === "production") notFound()
+  if (previewIsProduction()) notFound()
   const { id } = await params
   const note = previewNotes().find((row) => row.id === id)
   if (!note) notFound()

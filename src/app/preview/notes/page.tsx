@@ -1,6 +1,8 @@
 import { cookies } from "next/headers"
 import { notFound } from "next/navigation"
 
+import { previewIsProduction } from "@/lib/preview-access"
+
 import { NotesBoard } from "@/components/notes/notes-board"
 import { AppearanceControl } from "@/components/settings/appearance-control"
 import { AppShell } from "@/components/shell/app-shell"
@@ -19,7 +21,7 @@ export default async function PreviewNotes({
 }: {
   searchParams: Promise<{ empty?: string }>
 }) {
-  if (process.env.NODE_ENV === "production") notFound()
+  if (previewIsProduction()) notFound()
   const params = await searchParams
   const appearance = parseAppearance((await cookies()).get(APPEARANCE_COOKIE)?.value)
   const rows = params.empty === "1" ? [] : previewNotes()

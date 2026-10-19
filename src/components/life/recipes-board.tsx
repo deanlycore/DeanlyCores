@@ -7,11 +7,13 @@ import { toast } from "sonner"
 
 import { RecipeForm } from "@/components/life/recipe-form"
 import { useLifeVisibility } from "@/components/life/life-chrome"
-import { ConfirmRemove, EmptyState, FilterEmpty, MetricChip, MoneyAddButton, MoneyCard, MoneyFrame } from "@/components/money/money-chrome"
+import { ConfirmRemove, EmptyState, FilterEmpty, MetricChip, MoneyAddButton, MoneyCard, MoneyFrame, phoneSheetClass } from "@/components/money/money-chrome"
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { VisibilityPill, WidgetError } from "@/components/ui/pills"
 import { copyCatalogRecipe, deleteRecipe, loadRecipe, saveRecipe } from "@/lib/actions/recipes"
 import { filterLife, LIFE_COPY, lifeSubtitle } from "@/lib/life/board"
-import { ingredientLine, RECIPE_STALE, servingsLabel, type RecipeRow, type StarterRecipe } from "@/lib/life/recipes"
+import { ingredientLine, OTHERS_ADDED, RECIPE_STALE, servingsLabel, STARTER_NOTE, type RecipeRow, type StarterRecipe } from "@/lib/life/recipes"
 import { calmShoppingMessage } from "@/lib/life/shopping"
 
 export function RecipesBoard({
@@ -22,6 +24,8 @@ export function RecipesBoard({
   preview = false,
   hrefBase = "/life/recipes",
   staleOpen = false,
+  blockedOpen = false,
+  starterOpen = false,
 }: {
   rows: RecipeRow[]
   starters: StarterRecipe[]
@@ -30,6 +34,8 @@ export function RecipesBoard({
   preview?: boolean
   hrefBase?: string
   staleOpen?: boolean
+  blockedOpen?: boolean
+  starterOpen?: boolean
 }) {
   const router = useRouter()
   const { filter, setFilter } = useLifeVisibility()
@@ -37,7 +43,8 @@ export function RecipesBoard({
   const [catalog, setCatalog] = useState(starters)
   const [query, setQuery] = useState("")
   const [adding, setAdding] = useState(false)
-  const [editing, setEditing] = useState<RecipeRow | null>(() => (staleOpen ? rows[0] ?? null : null))
+  const [editing, setEditing] = useState<RecipeRow | null>(() => (staleOpen || blockedOpen ? rows.find((recipe) => recipe.visibility === "shared") ?? rows[0] ?? null : null))
+  const [previewing, setPreviewing] = useState<StarterRecipe | null>(() => (starterOpen ? starters[0] ?? null : null))
   const [formKey, setFormKey] = useState(0)
   const [removing, setRemoving] = useState<RecipeRow | null>(null)
   const [pendingRemove, setPendingRemove] = useState(false)
@@ -185,15 +192,15 @@ export function RecipesBoard({
         {visibleStarters.map((starter) => (
           <MoneyCard key={starter.id}>
             <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0">
+              <button type="button" className="min-w-0 text-left" onClick={() => setPreviewing(starter)}>
                 <p className="text-[15px] font-medium text-ink">{starter.name}</p>
                 <p className="mt-0.5 text-[13px] text-muted-foreground">
                   {[starter.category, servingsLabel(starter.servings), "Starter"].filter(Boolean).join(" · ")}
                 </p>
-              </div>
+              </button>
               {canWrite && !starter.copiedId ? (
-                <button type="button" className="text-[13px] font-medium text-brand-deep" onClick={() => void copyStarter(starter)}>
-                  Add to your recipes
+                <button type="button" className="text-[13px] font-medium text-brand-deep" onClick={() => setPreviewing(starter)}>
+                  Preview
                 </button>
               ) : null}
               {starter.copiedId ? (
@@ -214,6 +221,7 @@ export function RecipesBoard({
           open
           recipe={editing}
           showConflict={staleOpen && formKey === 0}
+          initialNote={blockedOpen && formKey === 0 ? OTHERS_ADDED : ""}
           onOpenChange={(open) => {
             if (!open) setEditing(null)
           }}
@@ -231,6 +239,30 @@ export function RecipesBoard({
           onSubmit={submit}
         />
       ) : null}
+      <Dialog open={Boolean(previewing)} onOpenChange={(open) => { if (!open) setPreviewing(null) }}>
+        <DialogContent className={phoneSheetClass}>
+          <DialogHeader>
+            <DialogTitle className="font-display text-lg">{previewing?.name}</DialogTitle>
+          </DialogHeader>
+          {previewing ? (
+            <div className="grid gap-3">
+              <p className="text-[13px] text-muted-foreground">{STARTER_NOTE}</p>
+              <p className="text-sm text-ink">{[previewing.category, servingsLabel(previewing.servings)].filter(Boolean).join(" · ")}</p>
+              {previewing.ingredients.map((item) => (
+                <p key={item.id} className="text-sm text-ink">{ingredientLine(item)}</p>
+              ))}
+              {previewing.steps.map((step) => (
+                <p key={step} className="text-sm text-muted-foreground">{step}</p>
+              ))}
+              {canWrite && !previewing.copiedId ? (
+                <Button type="button" className="min-h-12" onClick={() => void copyStarter(previewing)}>
+                  Add to your recipes
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
       <ConfirmRemove
         sheetOnPhone
         open={Boolean(removing)}

@@ -1,6 +1,8 @@
 import { cookies } from "next/headers"
 import { notFound } from "next/navigation"
 
+import { previewIsProduction } from "@/lib/preview-access"
+
 import { PeopleBoard } from "@/components/money/balance-board"
 import { AppearanceControl } from "@/components/settings/appearance-control"
 import { AppShell } from "@/components/shell/app-shell"
@@ -33,7 +35,7 @@ const payments: MoneyPaymentRow[] = [
 ]
 
 export default async function PreviewPeople() {
-  if (process.env.NODE_ENV === "production") notFound()
+  if (previewIsProduction()) notFound()
   const appearance = parseAppearance((await cookies()).get(APPEARANCE_COOKIE)?.value)
   const money = primaryNav.find((item) => item.href === "/money")
   return (

@@ -1,8 +1,12 @@
-import { type NextRequest } from "next/server"
+import { NextResponse, type NextRequest } from "next/server"
 
+import { previewStatus } from "@/lib/preview-access"
 import { updateSession } from "@/lib/supabase/proxy"
 
 export async function proxy(request: NextRequest) {
+  if (previewStatus(request.nextUrl.pathname) === 404) {
+    return NextResponse.rewrite(new URL("/404", request.url), { status: 404 })
+  }
   return updateSession(request)
 }
 
