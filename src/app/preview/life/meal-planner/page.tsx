@@ -46,7 +46,6 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ a
         shoppingLines={shoppingLines}
         showTabs
         addedDay={addedDayLabel(params.added)}
-        browseHref="/preview/life/meal-planner/browse"
         tabBase="/preview/life/meal-planner"
       />
     </LifePreview>

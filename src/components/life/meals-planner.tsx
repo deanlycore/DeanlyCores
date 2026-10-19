@@ -1,7 +1,6 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
@@ -70,7 +69,6 @@ export function MealsPlanner({
   shoppingLines = [],
   showTabs = false,
   addedDay = null,
-  browseHref = "/life/meal-planner/browse",
   tabBase = "/life/meal-planner",
 }: {
   meals: PlannerMeal[]
@@ -83,7 +81,6 @@ export function MealsPlanner({
   shoppingLines?: WeekShoppingLine[]
   showTabs?: boolean
   addedDay?: string | null
-  browseHref?: string
   tabBase?: string
 }) {
   const router = useRouter()
@@ -255,11 +252,6 @@ export function MealsPlanner({
                       onAdd={(slot) => openAdd(day, slot)}
                     />
                   )}
-                  {dayMeals.length === 0 ? (
-                    <Link href={browseHref} className="inline-flex min-h-12 items-center text-[13px] font-medium text-brand-deep">
-                      Find a recipe
-                    </Link>
-                  ) : null}
                 </div>
               )
             })}
@@ -276,12 +268,12 @@ export function MealsPlanner({
                   </button>
                   {count === 0 ? (
                     <div className="px-3 pb-3">
-                      <Link href={browseHref} className="inline-flex min-h-12 items-center text-[13px] font-medium text-brand-deep">
-                        Find a recipe
-                      </Link>
+                      <button type="button" className="min-h-12 text-left text-[13px] text-muted-foreground" onClick={() => openAdd(day, "dinner")}>
+                        + Add
+                      </button>
                     </div>
                   ) : null}
-                  {open ? (
+                  {open && count > 0 ? (
                     <div className="grid gap-2 px-3 pb-3">
                       <SlotColumn
                         day={day}

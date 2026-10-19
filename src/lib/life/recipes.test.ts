@@ -29,7 +29,12 @@ test("seeded sample recipes count as examples, and Browse copies count as saved"
   assert.equal(browseSavedCount(2), "2 saved")
   const board = readFileSync(join(root, "src/components/life/recipes-board.tsx"), "utf8")
   assert.match(board, /seededExampleCount\(visibleStarters\.length\)/)
+  assert.match(board, />Examples<\/h2>/)
+  assert.match(board, /"Example"/)
+  assert.doesNotMatch(board, />Starters</)
+  assert.doesNotMatch(board, /"Starter"/)
   assert.doesNotMatch(board, /starter\$\{/)
+  assert.match(readFileSync(join(root, "src/lib/life/recipes.ts"), "utf8"), /return `\$\{count\} saved`/)
 })
 
 test("starter recipes are catalog seed data, not rows written per household", () => {

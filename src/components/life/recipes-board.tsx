@@ -194,14 +194,14 @@ export function RecipesBoard({
             </div>
           </MoneyCard>
         ))}
-        {visibleStarters.length > 0 ? <h2 className="px-1 pt-2 text-[13px] font-medium text-muted-foreground">Starters</h2> : null}
+        {visibleStarters.length > 0 ? <h2 className="px-1 pt-2 text-[13px] font-medium text-muted-foreground">Examples</h2> : null}
         {visibleStarters.map((starter) => (
           <MoneyCard key={starter.id}>
             <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
               <button type="button" className="min-w-0 text-left" onClick={() => setPreviewing(starter)}>
                 <p className="text-[15px] font-medium text-ink">{starter.name}</p>
                 <p className="mt-0.5 text-[13px] text-muted-foreground">
-                  {[starter.category, servingsLabel(starter.servings), "Starter"].filter(Boolean).join(" · ")}
+                  {[starter.category, servingsLabel(starter.servings), "Example"].filter(Boolean).join(" · ")}
                 </p>
               </button>
               {canWrite && !starter.copiedId ? (
