@@ -17,6 +17,7 @@ import {
   scaledGrams,
   type CatalogRecipe,
 } from "@/lib/life/catalog"
+import { seedPhotoSrc } from "@/lib/life/catalog-photos"
 import { slotLabel, type MealSlot, SLOTS } from "@/lib/life/planner"
 import { cn } from "cn"
 
@@ -96,7 +97,11 @@ export function RecipeCatalogDetail({
       </Link>
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="grid min-w-0 gap-4">
-          <RecipePhoto name={recipe.name} src={recipeCatalogImageUrl(recipe.slug, supabaseUrl)} variant="detail" />
+          <RecipePhoto
+            name={recipe.name}
+            src={preview ? seedPhotoSrc(recipe.slug) : recipeCatalogImageUrl(recipe.slug, supabaseUrl)}
+            variant="detail"
+          />
           <header>
             <h1 className="font-display text-[28px] font-semibold tracking-[-0.02em] text-ink">{recipe.name}</h1>
             <p className="mt-1 text-sm text-muted-foreground">{cardMeta(recipe)}</p>

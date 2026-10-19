@@ -28,6 +28,7 @@ export function RecipePhoto({
           src={src as string}
           alt={name}
           fill
+          unoptimized
           sizes={variant === "card" ? "(min-width: 768px) 220px, 160px" : "(min-width: 960px) 960px, 100vw"}
           className="object-cover"
           style={{ maxWidth: CATALOG_PHOTO_WIDTH, maxHeight: CATALOG_PHOTO_HEIGHT }}

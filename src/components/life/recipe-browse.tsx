@@ -23,6 +23,7 @@ import {
   type CatalogRecipe,
   type CatalogSort,
 } from "@/lib/life/catalog"
+import { seedPhotoSrc } from "@/lib/life/catalog-photos"
 import { cn } from "cn"
 
 export function RecipeBrowse({
@@ -31,12 +32,14 @@ export function RecipeBrowse({
   filters,
   supabaseUrl = null,
   base,
+  preview = false,
 }: {
   recipes: CatalogRecipe[]
   error?: boolean
   filters: CatalogFilters
   supabaseUrl?: string | null
   base: string
+  preview?: boolean
 }) {
   const router = useRouter()
   const browse = `${base}/browse`
@@ -116,7 +119,7 @@ export function RecipeBrowse({
               <ul className="flex gap-3 overflow-x-auto pb-1">
                 {shelf.recipes.map((recipe) => (
                   <li key={recipe.slug} className="w-40 shrink-0 md:w-[220px]">
-                    <RecipeCard recipe={recipe} href={`${browse}/${recipe.slug}`} supabaseUrl={supabaseUrl} />
+                    <RecipeCard recipe={recipe} href={`${browse}/${recipe.slug}`} supabaseUrl={supabaseUrl} preview={preview} />
                   </li>
                 ))}
               </ul>
@@ -125,7 +128,7 @@ export function RecipeBrowse({
         </div>
       ) : null}
       {!error && grid.length > 0 ? (
-        <CatalogGrid key={grid.map((recipe) => recipe.slug).join("\n")} recipes={grid} browse={browse} supabaseUrl={supabaseUrl} />
+        <CatalogGrid key={grid.map((recipe) => recipe.slug).join("\n")} recipes={grid} browse={browse} supabaseUrl={supabaseUrl} preview={preview} />
       ) : null}
     </div>
   )
@@ -158,10 +161,12 @@ function CatalogGrid({
   recipes,
   browse,
   supabaseUrl,
+  preview,
 }: {
   recipes: CatalogRecipe[]
   browse: string
   supabaseUrl: string | null
+  preview: boolean
 }) {
   const [count, setCount] = useState(CATALOG_PAGE_SIZE)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -188,7 +193,7 @@ function CatalogGrid({
       <ul className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
         {shown.map((recipe) => (
           <li key={recipe.slug}>
-            <RecipeCard recipe={recipe} href={`${browse}/${recipe.slug}`} supabaseUrl={supabaseUrl} />
+            <RecipeCard recipe={recipe} href={`${browse}/${recipe.slug}`} supabaseUrl={supabaseUrl} preview={preview} />
           </li>
         ))}
       </ul>
@@ -203,10 +208,21 @@ function CatalogGrid({
   )
 }
 
-function RecipeCard({ recipe, href, supabaseUrl }: { recipe: CatalogRecipe; href: string; supabaseUrl: string | null }) {
+function RecipeCard({
+  recipe,
+  href,
+  supabaseUrl,
+  preview,
+}: {
+  recipe: CatalogRecipe
+  href: string
+  supabaseUrl: string | null
+  preview: boolean
+}) {
+  const src = preview ? seedPhotoSrc(recipe.slug) : recipeCatalogImageUrl(recipe.slug, supabaseUrl)
   return (
     <Link href={href} className="block min-h-12">
-      <RecipePhoto name={recipe.name} src={recipeCatalogImageUrl(recipe.slug, supabaseUrl)} variant="card" />
+      <RecipePhoto name={recipe.name} src={src} variant="card" />
       <p className="mt-2 line-clamp-2 text-[15px] font-medium text-ink">{recipe.name}</p>
       <p className="mt-0.5 text-[13px] text-muted-foreground">{cardMeta(recipe)}</p>
     </Link>
