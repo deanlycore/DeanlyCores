@@ -14,6 +14,7 @@ type Result = { ok: true; id?: string; message?: string } | { ok: false; message
 
 function refresh() {
   revalidatePath("/life/meals")
+  revalidatePath("/life/meal-planner")
   revalidatePath("/life/shopping")
   revalidatePath("/home")
 }

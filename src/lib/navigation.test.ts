@@ -36,17 +36,20 @@ test("household controls are found on Family, and Family stays in the Life rail"
   assert.equal(life?.children?.some((child) => child.href === "/life/family" && child.rail), true)
 })
 
-test("life expands to calendar, tasks, meals, recipes, shopping, and family", () => {
+test("life expands to calendar, tasks, meal planner, shopping, and family", () => {
   const life = primaryNav.find((item) => item.href === "/life")
   assert.equal(life?.expandOnly, true)
   assert.deepEqual(
     railChildren(life!).map((child) => child.href),
-    ["/life/calendar", "/life/tasks", "/life/meals", "/life/recipes", "/life/shopping", "/life/family"],
+    ["/life/calendar", "/life/tasks", "/life/meal-planner", "/life/shopping", "/life/family"],
   )
   assert.deepEqual(
     segmentChildren(life!).map((child) => child.href),
-    ["/life/calendar", "/life/tasks", "/life/meals", "/life/recipes", "/life/shopping"],
+    ["/life/calendar", "/life/tasks", "/life/meal-planner", "/life/shopping"],
   )
+  const planner = life?.children?.find((child) => child.href === "/life/meal-planner")
+  assert.equal(planner?.label, "Meal Planner")
+  assert.equal(life?.children?.some((child) => child.href === "/life/meals" || child.href === "/life/recipes"), false)
 })
 
 test("rail children are unique and skip budget, debt, and vault", () => {
@@ -60,8 +63,7 @@ test("rail children are unique and skip budget, debt, and vault", () => {
     "/money/people",
     "/life/calendar",
     "/life/tasks",
-    "/life/meals",
-    "/life/recipes",
+    "/life/meal-planner",
     "/life/shopping",
     "/life/family",
   ])

@@ -10,7 +10,8 @@
     "build": "next build",
     "start": "next start --hostname 0.0.0.0 --port 43123",
     "lint": "eslint",
-    "test": "node --experimental-strip-types --import ./scripts/register-alias.mjs --test src/lib/dashboard/layout.test.ts src/lib/supabase/env.test.ts src/lib/supabase/proxy.test.ts src/lib/home/metrics.test.ts src/lib/visibility.test.ts src/lib/push/shared.test.ts src/lib/push/env.test.ts src/lib/theme.test.ts src/lib/invite.test.ts src/lib/invite-rate-limit.test.ts src/lib/navigation.test.ts src/lib/money/board.test.ts src/lib/money/snapshot.test.ts src/lib/money/flow.test.ts src/lib/money/insights.test.ts src/lib/money/overview.test.ts src/lib/life/board.test.ts src/lib/life/shopping.test.ts src/lib/life/shopping-migration.test.ts src/lib/life/recipes.test.ts src/lib/life/planner.test.ts src/lib/notes/board.test.ts src/lib/family/profile.test.ts"
+    "seed:recipe-catalog": "node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/seed-recipe-catalog.ts",
+    "test": "node --experimental-strip-types --import ./scripts/register-alias.mjs --test src/lib/dashboard/layout.test.ts src/lib/supabase/env.test.ts src/lib/supabase/proxy.test.ts src/lib/home/metrics.test.ts src/lib/visibility.test.ts src/lib/push/shared.test.ts src/lib/push/env.test.ts src/lib/theme.test.ts src/lib/invite.test.ts src/lib/invite-rate-limit.test.ts src/lib/navigation.test.ts src/lib/money/board.test.ts src/lib/money/snapshot.test.ts src/lib/money/flow.test.ts src/lib/money/insights.test.ts src/lib/money/overview.test.ts src/lib/life/board.test.ts src/lib/life/shopping.test.ts src/lib/life/shopping-migration.test.ts src/lib/life/recipes.test.ts src/lib/life/planner.test.ts src/lib/life/catalog.test.ts src/lib/life/catalog-migration.test.ts src/lib/notes/board.test.ts src/lib/family/profile.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

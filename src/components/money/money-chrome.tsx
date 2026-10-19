@@ -76,6 +76,7 @@ export function MoneyFrame({
   chips,
   overview,
   pulse,
+  afterHeader,
   children,
   phoneTouch = false,
   phoneLayout = false,
@@ -92,6 +93,7 @@ export function MoneyFrame({
   /** Bills landing only. Other money boards leave this unset. */
   overview?: React.ReactNode
   pulse: React.ReactNode
+  afterHeader?: React.ReactNode
   children: React.ReactNode
   /** Life phone boards raise the visibility control to a 44px target. Money stays as-is unless phoneTouch is set. */
   phoneTouch?: boolean
@@ -132,6 +134,7 @@ export function MoneyFrame({
             {action}
           </div>
         </header>
+        {afterHeader}
         {overview}
         {chips ? (
           <div className={cn("flex flex-wrap gap-2", phoneLayout && "max-md:min-w-0 max-md:flex-nowrap max-md:overflow-x-auto max-md:pb-1", compact && "max-md:grid max-md:min-w-0 max-md:grid-cols-3")}>{chips}</div>

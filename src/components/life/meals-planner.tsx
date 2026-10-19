@@ -1,8 +1,11 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+
+import { MealPlannerTabs } from "@/components/life/meal-planner-tabs"
 
 import { useLifeVisibility } from "@/components/life/life-chrome"
 import { Button } from "@/components/ui/button"
@@ -65,6 +68,10 @@ export function MealsPlanner({
   estimate,
   stillNeeded,
   boughtLabel,
+  showTabs = false,
+  addedDay = null,
+  browseHref = "/life/meal-planner/browse",
+  tabBase = "/life/meal-planner",
 }: {
   meals: PlannerMeal[]
   recipes: PlannerRecipe[]
@@ -76,6 +83,10 @@ export function MealsPlanner({
   estimate: string
   stillNeeded: number
   boughtLabel: string
+  showTabs?: boolean
+  addedDay?: string | null
+  browseHref?: string
+  tabBase?: string
 }) {
   const router = useRouter()
   const { filter, setFilter } = useLifeVisibility()
@@ -180,7 +191,18 @@ export function MealsPlanner({
   }
 
   return (
-    <MoneyFrame phoneTouch title="Meals" subtitle="" action={null} chips={null} pulse={null} filter={filter} onFilter={setFilter}>
+    <MoneyFrame
+      phoneTouch
+      title="Meal Planner"
+      subtitle=""
+      action={null}
+      chips={null}
+      pulse={null}
+      filter={filter}
+      onFilter={setFilter}
+      afterHeader={showTabs ? <MealPlannerTabs base={tabBase} current="week" /> : null}
+    >
+      {addedDay ? <p className="text-sm text-ink">{`Added to ${addedDay}.`}</p> : null}
       {error ? <WidgetError /> : null}
       <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
         <Tile label="Planned" value={`${plannedCount} meal${plannedCount === 1 ? "" : "s"}`} />
@@ -231,6 +253,11 @@ export function MealsPlanner({
                   onOpen={setSelectedId}
                   onAdd={(slot) => openAdd(day, slot)}
                 />
+                {visible.some((meal) => meal.meal_on === day) ? null : (
+                  <Link href={browseHref} className="inline-flex min-h-12 items-center text-[13px] font-medium text-brand-deep">
+                    Find a recipe
+                  </Link>
+                )}
               </div>
             ))}
           </div>
@@ -244,6 +271,13 @@ export function MealsPlanner({
                   <button type="button" className="flex min-h-12 w-full items-center px-3 text-left text-sm text-ink" onClick={() => setOpenDays((current) => ({ ...current, [day]: !open }))}>
                     {open ? weekdayLabel(day) : `${weekdayLabel(day)} · ${count} meal${count === 1 ? "" : "s"} · ${needed} item${needed === 1 ? "" : "s"} needed`}
                   </button>
+                  {count === 0 ? (
+                    <div className="px-3 pb-3">
+                      <Link href={browseHref} className="inline-flex min-h-12 items-center text-[13px] font-medium text-brand-deep">
+                        Find a recipe
+                      </Link>
+                    </div>
+                  ) : null}
                   {open ? (
                     <div className="grid gap-2 px-3 pb-3">
                       <SlotColumn

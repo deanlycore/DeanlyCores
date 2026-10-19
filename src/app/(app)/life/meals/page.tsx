@@ -3,12 +3,18 @@ import type { Metadata } from "next"
 import { MealsPlanner, type PlannerMeal, type PlannerRecipe } from "@/components/life/meals-planner"
 import { listMealNeedCounts, listMeals, listPantry, listRecipes, listShopping } from "@/lib/data/lists"
 import { pageClock } from "@/lib/data/timezone"
+import { addedDayLabel } from "@/lib/life/catalog"
 import { neededEstimate } from "@/lib/life/planner"
 import { ingredientNamesMatch } from "@/lib/life/normalize"
 
-export const metadata: Metadata = { title: "Meals" }
+export const metadata: Metadata = { title: "Meal Planner" }
 
-export default async function Page() {
+export default async function Page({
+  searchParams,
+}: {
+  searchParams?: Promise<{ added?: string }>
+}) {
+  const params = await searchParams
   const [clock, meals, library, pantry, shopping, needs] = await Promise.all([
     pageClock(),
     listMeals(),
@@ -61,6 +67,10 @@ export default async function Page() {
       estimate={neededEstimate(priced.map((item) => ({ price_cents: item.price_cents ?? null })))}
       stillNeeded={openShopping.length}
       boughtLabel={total === 0 ? "0 of 0" : `${bought} of ${total}`}
+      showTabs
+      addedDay={addedDayLabel(params?.added)}
+      browseHref="/life/meal-planner/browse"
+      tabBase="/life/meal-planner"
     />
   )
 }

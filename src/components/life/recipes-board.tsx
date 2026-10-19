@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { VisibilityPill, WidgetError } from "@/components/ui/pills"
 import { copyCatalogRecipe, deleteRecipe, loadRecipe, saveRecipe } from "@/lib/actions/recipes"
 import { filterLife, LIFE_COPY, lifeSubtitle } from "@/lib/life/board"
+import { MealPlannerTabs } from "@/components/life/meal-planner-tabs"
 import { ingredientLine, OTHERS_ADDED, RECIPE_STALE, servingsLabel, STARTER_NOTE, type RecipeRow, type StarterRecipe } from "@/lib/life/recipes"
 import { calmShoppingMessage } from "@/lib/life/shopping"
 
@@ -23,6 +24,8 @@ export function RecipesBoard({
   canWrite = true,
   preview = false,
   hrefBase = "/life/recipes",
+  title = "Recipes",
+  tabBase = null,
   staleOpen = false,
   blockedOpen = false,
   starterOpen = false,
@@ -33,6 +36,8 @@ export function RecipesBoard({
   canWrite?: boolean
   preview?: boolean
   hrefBase?: string
+  title?: string
+  tabBase?: string | null
   staleOpen?: boolean
   blockedOpen?: boolean
   starterOpen?: boolean
@@ -124,8 +129,9 @@ export function RecipesBoard({
     <>
       <MoneyFrame
         phoneTouch
-        title="Recipes"
-        subtitle={lifeSubtitle("recipes")}
+        title={title}
+        subtitle={title === "Meal Planner" ? "" : lifeSubtitle("recipes")}
+        afterHeader={tabBase ? <MealPlannerTabs base={tabBase} current="mine" /> : null}
         filter={filter}
         onFilter={setFilter}
         action={
