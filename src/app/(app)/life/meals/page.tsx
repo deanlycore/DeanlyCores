@@ -64,7 +64,6 @@ export default async function Page({
       shoppingLines={shoppingLines}
       showTabs
       addedDay={addedDayLabel(params?.added)}
-      browseHref="/life/meal-planner/browse"
       tabBase="/life/meal-planner"
     />
   )
