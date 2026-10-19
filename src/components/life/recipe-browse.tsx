@@ -19,11 +19,11 @@ import {
   NO_RESULTS_COPY,
   recipeCatalogImageUrl,
   SEARCH_PLACEHOLDER,
+  seedPhotoSrc,
   type CatalogFilters,
   type CatalogRecipe,
   type CatalogSort,
 } from "@/lib/life/catalog"
-import { seedPhotoSrc } from "@/lib/life/catalog-photos"
 import { cn } from "cn"
 
 export function RecipeBrowse({

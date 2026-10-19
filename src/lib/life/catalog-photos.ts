@@ -1,8 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 
-import { isCatalogSlug } from "@/lib/life/catalog"
-
 export const CATALOG_PHOTO_MAX_BYTES = 1048576
 export const CATALOG_PHOTO_WIDTH = 960
 export const CATALOG_PHOTO_HEIGHT = 720
@@ -14,12 +12,6 @@ export type CatalogPhotoFile = {
 
 export function catalogPhotoObjectPath(slug: string) {
   return `recipes/${slug}.webp`
-}
-
-/** Checked-in photo for the preview catalog. A missing file stays a null src so the frame can fall back. */
-export function seedPhotoSrc(slug: string) {
-  if (!isCatalogSlug(slug)) return null
-  return `/recipe-photos/${slug}.webp`
 }
 
 export function assertLocalCatalogTarget(url: string) {
