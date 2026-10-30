@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url"
 
 import { createClient } from "@supabase/supabase-js"
 
-import { assertLocalCatalogTarget, catalogPhotoObjectPath, readCatalogPhotos } from "@/lib/life/catalog-photos"
+import { assertLocalCatalogTarget, assertProdCatalogTarget, catalogPhotoObjectPath, readCatalogPhotos } from "@/lib/life/catalog-photos"
 import { toCatalogRecipes, type CatalogSourceFile } from "@/lib/life/catalog-seed"
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..")
@@ -27,10 +27,13 @@ const file = JSON.parse(readFileSync(join(root, "data/recipes.json"), "utf8")) a
 const rows = toCatalogRecipes(file)
 const imageDir = process.env.RECIPE_CATALOG_IMAGE_DIR?.trim() || join(root, "supabase/seed/recipe-photos")
 
+const prod = process.argv.includes("--prod")
+
 let photos
 try {
   photos = readCatalogPhotos(imageDir, rows.map((row) => row.slug))
-  assertLocalCatalogTarget(supabaseUrl)
+  if (prod) assertProdCatalogTarget(supabaseUrl, process.env.CONFIRM_PROJECT_REF)
+  else assertLocalCatalogTarget(supabaseUrl)
 } catch (error) {
   fail(error instanceof Error ? error.message : "Recipe photos are not valid.")
 }

@@ -1,5 +1,7 @@
 import assert from "node:assert/strict"
+import { spawn, spawnSync } from "node:child_process"
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { createServer } from "node:http"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import test from "node:test"
@@ -21,7 +23,7 @@ import {
   SHELF_MIN,
   textSimilarity,
 } from "./catalog.ts"
-import { assertLocalCatalogTarget, catalogPhotoObjectPath, readCatalogPhotos } from "./catalog-photos.ts"
+import { assertLocalCatalogTarget, assertProdCatalogTarget, catalogPhotoObjectPath, catalogPhotoProblem, PROD_CATALOG_PROJECT_REF, readCatalogPhotos } from "./catalog-photos.ts"
 import { toCatalogRecipes, type CatalogSourceFile } from "./catalog-seed.ts"
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "../../..")
@@ -145,7 +147,17 @@ test("the seed reads the service role and no app route writes the catalog", () =
   assert.match(detail, /PHOTO_ILLUSTRATION_LINE/)
   assert.match(detail, /‹ Browse/)
   assert.doesNotMatch(detail, /ILLUSTRATION_LABEL/)
-  assert.match(browse, /flex flex-wrap gap-2/)
+  assert.match(browse, /id !== "vegetarian"[\s\S]*mx-3 h-6 w-px shrink-0 bg-border[\s\S]*goal\.id === "vegetarian"/)
+  assert.match(browse, /overflow-x-auto pb-1/)
+  assert.match(browse, /aria-hidden="true"/)
+  assert.doesNotMatch(browse, /flex flex-wrap gap-2/)
+  assert.match(seed, /process\.argv\.includes\("--prod"\)/)
+  assert.match(seed, /assertProdCatalogTarget\(supabaseUrl, process\.env\.CONFIRM_PROJECT_REF\)/)
+  assert.match(seed, /upsert:\s*true/)
+  assert.doesNotMatch(seed, /console\.(log|error|info|debug)\([^)\n]*serviceKey/)
+  assert.doesNotMatch(seed, /\$\{serviceKey\}/)
+  const clientAt = seed.indexOf("createClient(")
+  assert.ok(clientAt > localAt)
   assert.match(detail, /Nutrition per serving/)
   assert.match(browse, /SEARCH_PLACEHOLDER/)
   assert.match(browse, /NO_RESULTS_COPY/)
@@ -164,6 +176,50 @@ function sampleWebp(width: number, height: number) {
   bytes.writeUIntLE(height - 1, 27, 3)
   return bytes
 }
+
+test("prod catalog seed runs only when the confirmed ref matches the Supabase URL", () => {
+  const prodUrl = `https://${PROD_CATALOG_PROJECT_REF}.supabase.co`
+  assert.equal(PROD_CATALOG_PROJECT_REF, "dpjzlitklsjtfrfrxvhl")
+  assert.doesNotThrow(() => assertProdCatalogTarget(prodUrl, PROD_CATALOG_PROJECT_REF))
+  assert.doesNotThrow(() => assertProdCatalogTarget(`${prodUrl}/`, `  ${PROD_CATALOG_PROJECT_REF}  `))
+  assert.throws(() => assertProdCatalogTarget(prodUrl, undefined), /CONFIRM_PROJECT_REF/)
+  assert.throws(() => assertProdCatalogTarget(prodUrl, "other-project"), /CONFIRM_PROJECT_REF/)
+  assert.throws(() => assertProdCatalogTarget("https://otherref.supabase.co", PROD_CATALOG_PROJECT_REF), /does not match/)
+  assert.throws(() => assertProdCatalogTarget("https://example.com", PROD_CATALOG_PROJECT_REF), /does not match/)
+  assert.throws(() => assertLocalCatalogTarget(prodUrl), /local Supabase/)
+
+  const remote = runSeed([], { SUPABASE_URL: "https://example.supabase.co", CONFIRM_PROJECT_REF: PROD_CATALOG_PROJECT_REF })
+  assert.equal(remote.status, 1)
+  assert.match(remote.stderr, /local Supabase/)
+  assert.equal(remote.stderr.includes("local-service-role"), false)
+
+  const missing = runSeed(["--prod"], { SUPABASE_URL: "https://example.supabase.co", CONFIRM_PROJECT_REF: "" })
+  assert.equal(missing.status, 1)
+  assert.match(missing.stderr, /Set CONFIRM_PROJECT_REF/)
+  assert.equal(missing.stderr.includes("local-service-role"), false)
+
+  const mismatch = runSeed(["--prod"], { SUPABASE_URL: "https://otherref.supabase.co", CONFIRM_PROJECT_REF: PROD_CATALOG_PROJECT_REF })
+  assert.equal(mismatch.status, 1)
+  assert.match(mismatch.stderr, /does not match/)
+  assert.equal(mismatch.stderr.includes("local-service-role"), false)
+})
+
+test("catalog photo checks reject anything other than 200 image/webp at 960x720", async () => {
+  const good = sampleWebp(960, 720)
+  assert.equal(catalogPhotoProblem({ status: 200, contentType: "image/webp", bytes: good }), null)
+  assert.equal(catalogPhotoProblem({ status: 200, contentType: "image/webp; charset=binary", bytes: good }), null)
+  assert.match(catalogPhotoProblem({ status: 404, contentType: "image/webp", bytes: good }) ?? "", /status 404/)
+  assert.match(catalogPhotoProblem({ status: 200, contentType: "image/jpeg", bytes: good }) ?? "", /content-type/)
+  assert.match(catalogPhotoProblem({ status: 200, contentType: "image/webp", bytes: Buffer.from("nope") }) ?? "", /not a WebP/)
+  assert.match(catalogPhotoProblem({ status: 200, contentType: "image/webp", bytes: sampleWebp(100, 100) }) ?? "", /size 100x100/)
+
+  const failed = await runVerifyAgainst("chicken-tinga-tacos")
+  assert.notEqual(failed.status, 0)
+  assert.match(failed.stderr, /chicken-tinga-tacos/)
+  const passed = await runVerifyAgainst("")
+  assert.equal(passed.status, 0, passed.stderr)
+  assert.match(passed.stdout, /Verified 50 catalog photos/)
+})
 
 test("catalog photo upload accepts only the recipes.json webp set", () => {
   assert.equal(catalogPhotoObjectPath("chicken-tinga-tacos"), "recipes/chicken-tinga-tacos.webp")
@@ -213,3 +269,78 @@ test("checked-in recipe photos cover every catalog slug at 960x720", () => {
   assert.equal(photos.length, 50)
   assert.equal(new Set(photos.map((photo) => photo.slug)).size, 50)
 })
+
+function runNodeScript(script: string, args: string[], env: Record<string, string>) {
+  const result = spawnSync(
+    process.execPath,
+    ["--experimental-strip-types", "--import", "./scripts/register-alias.mjs", script, ...args],
+    {
+      cwd: root,
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        SUPABASE_SERVICE_ROLE_KEY: "local-service-role",
+        NEXT_PUBLIC_SUPABASE_URL: "",
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: "",
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "",
+        ...env,
+      },
+    },
+  )
+  return { status: result.status, stderr: result.stderr ?? "", stdout: result.stdout ?? "" }
+}
+
+function runSeed(args: string[], env: { SUPABASE_URL: string; CONFIRM_PROJECT_REF: string }) {
+  return runNodeScript("scripts/seed-recipe-catalog.ts", args, env)
+}
+
+function runVerifyAgainst(failSlug: string) {
+  return new Promise<{ status: number | null; stderr: string; stdout: string }>((resolve, reject) => {
+    const server = createServer((req, res) => {
+      const slug = req.url?.split("/").pop()?.replace(/\.webp$/, "") ?? ""
+      if (failSlug && slug === failSlug) {
+        res.writeHead(500, { "content-type": "text/plain" })
+        res.end("nope")
+        return
+      }
+      res.writeHead(200, { "content-type": "image/webp" })
+      res.end(sampleWebp(960, 720))
+    })
+    server.on("error", reject)
+    server.listen(0, "127.0.0.1", () => {
+      const address = server.address()
+      const port = typeof address === "object" && address ? address.port : 0
+      const child = spawn(process.execPath, [
+        "--experimental-strip-types",
+        "--import",
+        "./scripts/register-alias.mjs",
+        "scripts/verify-catalog-photos.ts",
+      ], {
+        cwd: root,
+        env: {
+          ...process.env,
+          SUPABASE_SERVICE_ROLE_KEY: "local-service-role",
+          NEXT_PUBLIC_SUPABASE_URL: "",
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: "",
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "",
+          SUPABASE_URL: `http://127.0.0.1:${port}`,
+          CONFIRM_PROJECT_REF: "",
+        },
+      })
+      let stdout = ""
+      let stderr = ""
+      child.stdout.on("data", (chunk: Buffer) => { stdout += chunk.toString() })
+      child.stderr.on("data", (chunk: Buffer) => { stderr += chunk.toString() })
+      child.on("error", (error) => {
+        server.closeAllConnections()
+        server.close()
+        reject(error)
+      })
+      child.on("close", (status) => {
+        server.closeAllConnections()
+        server.close()
+        resolve({ status, stdout, stderr })
+      })
+    })
+  })
+}

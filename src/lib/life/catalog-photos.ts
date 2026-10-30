@@ -27,6 +27,46 @@ export function assertLocalCatalogTarget(url: string) {
   }
 }
 
+/** Production catalog project. `--prod` refuses to run unless the operator confirms this ref. */
+export const PROD_CATALOG_PROJECT_REF = "dpjzlitklsjtfrfrxvhl"
+
+export function supabaseProjectRef(url: string) {
+  const host = new URL(url).hostname.toLowerCase()
+  const suffix = ".supabase.co"
+  if (!host.endsWith(suffix)) throw new Error("The Supabase URL has no project ref.")
+  const ref = host.slice(0, -suffix.length)
+  if (!ref || ref.includes(".")) throw new Error("The Supabase URL has no project ref.")
+  return ref
+}
+
+/** `--prod` only. The confirm value and the URL ref must both be the production project. */
+export function assertProdCatalogTarget(url: string, confirmRef: string | undefined) {
+  const confirm = confirmRef?.trim()
+  if (confirm !== PROD_CATALOG_PROJECT_REF) {
+    throw new Error("Refusing to seed production. Set CONFIRM_PROJECT_REF to the production project ref.")
+  }
+  let ref: string
+  try {
+    ref = supabaseProjectRef(url)
+  } catch {
+    throw new Error("Refusing to seed production. The Supabase URL project ref does not match CONFIRM_PROJECT_REF.")
+  }
+  if (ref !== confirm) {
+    throw new Error("Refusing to seed production. The Supabase URL project ref does not match CONFIRM_PROJECT_REF.")
+  }
+}
+
+/** Null when a fetched catalog photo is a 960x720 image/webp. */
+export function catalogPhotoProblem(input: { status: number; contentType: string | null; bytes: Buffer }) {
+  if (input.status !== 200) return `status ${input.status}`
+  const type = (input.contentType ?? "").split(";")[0]?.trim().toLowerCase()
+  if (type !== "image/webp") return `content-type ${input.contentType ?? "missing"}`
+  const size = webpSize(input.bytes)
+  if (!size) return "not a WebP image"
+  if (size.width !== CATALOG_PHOTO_WIDTH || size.height !== CATALOG_PHOTO_HEIGHT) return `size ${size.width}x${size.height}`
+  return null
+}
+
 export function webpSize(bytes: Buffer) {
   if (bytes.length < 30) return null
   if (bytes.toString("ascii", 0, 4) !== "RIFF" || bytes.toString("ascii", 8, 12) !== "WEBP") return null

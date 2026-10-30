@@ -69,23 +69,26 @@ export function RecipeBrowse({
           className="min-h-12 w-full rounded-[12px] border border-border bg-surface px-3 text-sm text-ink"
         />
       </form>
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Goals">
-        {CATALOG_GOALS.map((goal) => {
-          const selected = filters.goal === goal.id
-          return (
-            <Link
+      <div className="flex min-w-0 items-center overflow-x-auto pb-1" role="group" aria-label="Goals">
+        <div className="flex shrink-0 gap-2">
+          {CATALOG_GOALS.filter((goal) => goal.id !== "vegetarian").map((goal) => (
+            <GoalLink
               key={goal.id}
-              href={href({ goal: selected ? null : goal.id })}
-              aria-pressed={selected}
-              className={cn(
-                "inline-flex min-h-12 shrink-0 items-center rounded-full px-4 text-sm font-medium",
-                selected ? "bg-brand-soft text-on-brand-soft" : "bg-surface-muted text-muted-foreground",
-              )}
-            >
-              {goal.label}
-            </Link>
-          )
-        })}
+              label={goal.label}
+              selected={filters.goal === goal.id}
+              href={href({ goal: filters.goal === goal.id ? null : goal.id })}
+            />
+          ))}
+        </div>
+        <span aria-hidden="true" className="mx-3 h-6 w-px shrink-0 bg-border" />
+        {CATALOG_GOALS.filter((goal) => goal.id === "vegetarian").map((goal) => (
+          <GoalLink
+            key={goal.id}
+            label={goal.label}
+            selected={filters.goal === goal.id}
+            href={href({ goal: filters.goal === goal.id ? null : goal.id })}
+          />
+        ))}
       </div>
       {error ? (
         <div className="grid gap-3" role="alert">
@@ -131,6 +134,21 @@ export function RecipeBrowse({
         <CatalogGrid key={grid.map((recipe) => recipe.slug).join("\n")} recipes={grid} browse={browse} supabaseUrl={supabaseUrl} preview={preview} />
       ) : null}
     </div>
+  )
+}
+
+function GoalLink({ label, selected, href }: { label: string; selected: boolean; href: string }) {
+  return (
+    <Link
+      href={href}
+      aria-pressed={selected}
+      className={cn(
+        "inline-flex min-h-12 shrink-0 items-center rounded-full px-4 text-sm font-medium",
+        selected ? "bg-brand-soft text-on-brand-soft" : "bg-surface-muted text-muted-foreground",
+      )}
+    >
+      {label}
+    </Link>
   )
 }
 
