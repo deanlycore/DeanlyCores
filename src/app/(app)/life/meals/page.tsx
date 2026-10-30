@@ -1,21 +1,27 @@
 import type { Metadata } from "next"
 
 import { MealsPlanner, type PlannerMeal, type PlannerRecipe } from "@/components/life/meals-planner"
-import { listMealNeedCounts, listMeals, listPantry, listRecipes, listShopping } from "@/lib/data/lists"
+import { listMealNeedCounts, listMealShoppingLines, listMeals, listPantry, listRecipes, listShopping } from "@/lib/data/lists"
 import { pageClock } from "@/lib/data/timezone"
-import { neededEstimate } from "@/lib/life/planner"
+import { addedDayLabel } from "@/lib/life/catalog"
 import { ingredientNamesMatch } from "@/lib/life/normalize"
 
-export const metadata: Metadata = { title: "Meals" }
+export const metadata: Metadata = { title: "Meal Planner" }
 
-export default async function Page() {
-  const [clock, meals, library, pantry, shopping, needs] = await Promise.all([
+export default async function Page({
+  searchParams,
+}: {
+  searchParams?: Promise<{ added?: string }>
+}) {
+  const params = await searchParams
+  const [clock, meals, library, pantry, shopping, needs, shoppingLines] = await Promise.all([
     pageClock(),
     listMeals(),
     listRecipes(),
     listPantry(),
     listShopping(),
     listMealNeedCounts(),
+    listMealShoppingLines(),
   ])
   const openShopping = shopping.rows.filter((item) => !item.checked_at)
   const rows: PlannerMeal[] = meals.rows.map((meal) => ({
@@ -48,9 +54,6 @@ export default async function Page() {
       costCents: null,
     }
   })
-  const priced = openShopping.filter((item) => "for_meal" in item && item.for_meal)
-  const bought = shopping.rows.filter((item) => item.checked_at).length
-  const total = shopping.rows.length
   return (
     <MealsPlanner
       meals={rows}
@@ -58,9 +61,10 @@ export default async function Page() {
       today={clock.today}
       canWrite={library.canWrite}
       error={meals.error || library.error}
-      estimate={neededEstimate(priced.map((item) => ({ price_cents: item.price_cents ?? null })))}
-      stillNeeded={openShopping.length}
-      boughtLabel={total === 0 ? "0 of 0" : `${bought} of ${total}`}
+      shoppingLines={shoppingLines}
+      showTabs
+      addedDay={addedDayLabel(params?.added)}
+      tabBase="/life/meal-planner"
     />
   )
 }

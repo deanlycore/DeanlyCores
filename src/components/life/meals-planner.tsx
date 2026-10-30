@@ -4,6 +4,8 @@ import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
+import { MealPlannerTabs } from "@/components/life/meal-planner-tabs"
+
 import { useLifeVisibility } from "@/components/life/life-chrome"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -21,9 +23,11 @@ import {
   updateListButton,
   weekdayLabel,
   weekOf,
+  weekShoppingStats,
   type MealSlot,
+  type WeekShoppingLine,
 } from "@/lib/life/planner"
-import { LIST_ALREADY_HAS_MEAL, STARTER_NOTE } from "@/lib/life/recipes"
+import { ALREADY_ON_LIST, LIST_ALREADY_HAS_MEAL, STARTER_NOTE } from "@/lib/life/recipes"
 import type { Visibility } from "@/lib/visibility"
 import { cn } from "cn"
 
@@ -62,9 +66,10 @@ export function MealsPlanner({
   error = false,
   preview = false,
   initialSheet = null,
-  estimate,
-  stillNeeded,
-  boughtLabel,
+  shoppingLines = [],
+  showTabs = false,
+  addedDay = null,
+  tabBase = "/life/meal-planner",
 }: {
   meals: PlannerMeal[]
   recipes: PlannerRecipe[]
@@ -73,14 +78,15 @@ export function MealsPlanner({
   error?: boolean
   preview?: boolean
   initialSheet?: "detail" | "confirm" | "already" | null
-  estimate: string
-  stillNeeded: number
-  boughtLabel: string
+  shoppingLines?: WeekShoppingLine[]
+  showTabs?: boolean
+  addedDay?: string | null
+  tabBase?: string
 }) {
   const router = useRouter()
   const { filter, setFilter } = useLifeVisibility()
   const [offset, setOffset] = useState(0)
-  const [tab, setTab] = useState<"week" | "pantry" | "recipes">("week")
+  const [useWhatWeHave, setUseWhatWeHave] = useState(false)
   const [openDays, setOpenDays] = useState<Record<string, boolean>>({})
   const [selectedId, setSelectedId] = useState<string | null>(initialSheet ? meals.find((meal) => meal.recipe_id)?.id ?? meals[0]?.id ?? null : null)
   const [confirm, setConfirm] = useState(initialSheet === "confirm")
@@ -96,7 +102,12 @@ export function MealsPlanner({
   const visible = filterLife(plannedMeals, filter).filter((meal) => meal.meal_on >= week.start && meal.meal_on <= week.end)
   const selected = plannedMeals.find((meal) => meal.id === selectedId) ?? null
   const listAction = selected ? updateListButton({ recipeId: selected.recipe_id }, canWrite) : "hidden"
+  const alreadyOnList = notice === LIST_ALREADY_HAS_MEAL
   const plannedCount = visible.length
+  const stats = weekShoppingStats(
+    visible.map((meal) => meal.id),
+    shoppingLines,
+  )
   const recent = useMemo(() => recipes.slice(0, 6), [recipes])
   const searched = recipes.filter((recipe) => recipe.name.toLowerCase().includes(query.trim().toLowerCase()))
 
@@ -180,38 +191,40 @@ export function MealsPlanner({
   }
 
   return (
-    <MoneyFrame phoneTouch title="Meals" subtitle="" action={null} chips={null} pulse={null} filter={filter} onFilter={setFilter}>
+    <MoneyFrame
+      phoneTouch
+      title="Meal Planner"
+      subtitle=""
+      action={null}
+      chips={null}
+      pulse={null}
+      filter={filter}
+      onFilter={setFilter}
+      afterHeader={showTabs ? <MealPlannerTabs base={tabBase} current="week" /> : null}
+    >
+      {addedDay ? <p className="text-sm text-ink">{`Added to ${addedDay}.`}</p> : null}
       {error ? <WidgetError /> : null}
       <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
         <Tile label="Planned" value={`${plannedCount} meal${plannedCount === 1 ? "" : "s"}`} />
-        <Tile label="Still needed" value={`${stillNeeded} item${stillNeeded === 1 ? "" : "s"}`} />
-        <Tile label="Bought" value={boughtLabel} />
-        <Tile label="Estimated" value={estimate} />
+        <Tile label="Still needed" value={`${stats.stillNeeded} item${stats.stillNeeded === 1 ? "" : "s"}`} />
+        <Tile label="Bought" value={stats.boughtLabel} />
+        <Tile label="Estimated" value={stats.estimate} />
       </div>
-      <div className="flex min-w-0 gap-2 overflow-x-auto">
-        {(
-          [
-            ["week", "This week"],
-            ["pantry", "Use what we have"],
-            ["recipes", "Recipes"],
-          ] as const
-        ).map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            aria-pressed={tab === id}
-            onClick={() => setTab(id)}
-            className={cn(
-              "inline-flex h-10 shrink-0 items-center rounded-full border px-3 text-[13px]",
-              tab === id ? "border-border bg-surface-muted text-ink" : "border-border bg-surface text-muted-foreground",
-            )}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-      {tab === "week" ? (
-        <section className="grid min-w-0 gap-3" aria-label="This week">
+      <button
+        type="button"
+        aria-pressed={useWhatWeHave}
+        onClick={() => setUseWhatWeHave((open) => !open)}
+        className={cn(
+          "inline-flex min-h-12 w-fit items-center rounded-full border px-4 text-sm",
+          useWhatWeHave ? "border-border bg-surface-muted text-ink" : "border-border bg-surface text-muted-foreground",
+        )}
+      >
+        Use what we have
+      </button>
+      {useWhatWeHave ? (
+        <UseWhatWeHave recipes={recipes} chip={chip} onChip={setChip} emptyPantry={recipes.every((recipe) => recipe.atHome === 0)} />
+      ) : null}
+      <section className="grid min-w-0 gap-3" aria-label="This week">
           <div className="flex items-center justify-between gap-2">
             <button type="button" className="inline-flex min-h-12 min-w-12 items-center justify-center text-muted-foreground" aria-label="Previous week" onClick={() => setOffset((value) => value - 1)}>
               ‹
@@ -222,17 +235,26 @@ export function MealsPlanner({
             </button>
           </div>
           <div className="hidden md:grid md:grid-cols-7 md:gap-2">
-            {week.days.map((day) => (
-              <div key={day} className={cn("rounded-[12px] border border-border p-2", day === today && "bg-surface-muted")}>
-                <p className="text-[13px] text-ink">{weekdayLabel(day)}</p>
-                <SlotColumn
-                  day={day}
-                  meals={visible}
-                  onOpen={setSelectedId}
-                  onAdd={(slot) => openAdd(day, slot)}
-                />
-              </div>
-            ))}
+            {week.days.map((day) => {
+              const dayMeals = visible.filter((meal) => meal.meal_on === day)
+              return (
+                <div key={day} className={cn("rounded-[12px] border border-border p-2", day === today && "bg-surface-muted")}>
+                  <p className="text-[13px] text-ink">{weekdayLabel(day)}</p>
+                  {dayMeals.length === 0 ? (
+                    <button type="button" className="min-h-12 text-left text-[13px] text-muted-foreground" onClick={() => openAdd(day, "dinner")}>
+                      + Add
+                    </button>
+                  ) : (
+                    <SlotColumn
+                      day={day}
+                      meals={visible}
+                      onOpen={setSelectedId}
+                      onAdd={(slot) => openAdd(day, slot)}
+                    />
+                  )}
+                </div>
+              )
+            })}
           </div>
           <div className="grid gap-2 md:hidden">
             {week.days.map((day) => {
@@ -244,7 +266,14 @@ export function MealsPlanner({
                   <button type="button" className="flex min-h-12 w-full items-center px-3 text-left text-sm text-ink" onClick={() => setOpenDays((current) => ({ ...current, [day]: !open }))}>
                     {open ? weekdayLabel(day) : `${weekdayLabel(day)} · ${count} meal${count === 1 ? "" : "s"} · ${needed} item${needed === 1 ? "" : "s"} needed`}
                   </button>
-                  {open ? (
+                  {count === 0 ? (
+                    <div className="px-3 pb-3">
+                      <button type="button" className="min-h-12 text-left text-[13px] text-muted-foreground" onClick={() => openAdd(day, "dinner")}>
+                        + Add
+                      </button>
+                    </div>
+                  ) : null}
+                  {open && count > 0 ? (
                     <div className="grid gap-2 px-3 pb-3">
                       <SlotColumn
                         day={day}
@@ -259,21 +288,6 @@ export function MealsPlanner({
             })}
           </div>
         </section>
-      ) : null}
-      {tab === "pantry" ? (
-        <UseWhatWeHave recipes={recipes} chip={chip} onChip={setChip} emptyPantry={recipes.every((recipe) => recipe.atHome === 0)} />
-      ) : null}
-      {tab === "recipes" ? (
-        <div className="grid gap-2">
-          {recipes.length === 0 ? <p className="text-sm text-muted-foreground">No recipes yet.</p> : null}
-          {recipes.map((recipe) => (
-            <div key={recipe.id} className="rounded-[12px] border border-border bg-surface px-3 py-3">
-              <p className="text-[15px] font-medium text-ink">{recipe.name}</p>
-              <p className="text-[13px] text-muted-foreground">{[recipe.minutes ? `${recipe.minutes} min` : null, `${recipe.servings} servings`].filter(Boolean).join(" · ")}</p>
-            </div>
-          ))}
-        </div>
-      ) : null}
       <Dialog open={Boolean(selected)} onOpenChange={(open) => { if (!open) { setSelectedId(null); setConfirm(false); setNotice("") } }}>
         <DialogContent className={cn("sm:max-w-[440px]", phoneSheetClass)}>
           <DialogHeader>
@@ -283,7 +297,16 @@ export function MealsPlanner({
             <div className="grid gap-3">
               <p className="text-[13px] text-muted-foreground">Servings</p>
               <p className="text-sm text-ink">{selected.servings}</p>
-              {listAction === "hidden" || confirm ? null : (
+              {listAction === "hidden" || confirm ? null : alreadyOnList ? (
+                <button
+                  type="button"
+                  disabled
+                  aria-disabled="true"
+                  className="inline-flex min-h-12 w-full cursor-not-allowed items-center justify-center rounded-lg bg-surface-muted px-3 text-sm font-medium text-muted-foreground opacity-60"
+                >
+                  {ALREADY_ON_LIST}
+                </button>
+              ) : (
                 <Button
                   type="button"
                   variant="outline"

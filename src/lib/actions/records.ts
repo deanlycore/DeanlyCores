@@ -1305,7 +1305,7 @@ export async function searchRecords(query: string): Promise<SearchHit[]> {
     ...(people.data ?? []).map((row) => ({ href: "/money/people", label: row.name, group: "People" })),
     ...(tasks.data ?? []).map((row) => ({ href: "/life/tasks", label: row.title, group: "Tasks" })),
     ...(notes.data ?? []).map((row) => ({ href: `/notes/${row.id}`, label: row.title, group: "Notes" })),
-    ...(meals.data ?? []).map((row) => ({ href: "/life/meals", label: row.title, group: "Meals" })),
+    ...(meals.data ?? []).map((row) => ({ href: "/life/meal-planner", label: row.title, group: "Meal Planner" })),
     ...(events.data ?? []).map((row) => ({ href: "/life/calendar", label: row.title, group: "Calendar" })),
   ]
 }

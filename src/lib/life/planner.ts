@@ -73,6 +73,25 @@ export function neededEstimate(items: { price_cents?: number | null }[]) {
   return estimateLabel(cents, missing && items.length > 0)
 }
 
+export type WeekShoppingLine = {
+  mealId: string
+  checked: boolean
+  priceCents: number | null
+}
+
+/** Still needed, bought, and cost for the meals on screen. An empty week is all zeros. */
+export function weekShoppingStats(mealIds: string[], lines: WeekShoppingLine[]) {
+  const ids = new Set(mealIds)
+  const weekLines = lines.filter((line) => ids.has(line.mealId))
+  const open = weekLines.filter((line) => !line.checked)
+  const bought = weekLines.length - open.length
+  return {
+    stillNeeded: open.length,
+    boughtLabel: weekLines.length === 0 ? "0 of 0" : `${bought} of ${weekLines.length}`,
+    estimate: neededEstimate(open.map((line) => ({ price_cents: line.priceCents }))),
+  }
+}
+
 export function updateListButton(meal: { recipeId: string | null }, canWrite: boolean) {
   if (!meal.recipeId) return "hidden" as const
   if (!canWrite) return "disabled" as const

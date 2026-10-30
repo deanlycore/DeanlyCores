@@ -13,7 +13,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { VisibilityPill, WidgetError } from "@/components/ui/pills"
 import { copyCatalogRecipe, deleteRecipe, loadRecipe, saveRecipe } from "@/lib/actions/recipes"
 import { filterLife, LIFE_COPY, lifeSubtitle } from "@/lib/life/board"
-import { ingredientLine, OTHERS_ADDED, RECIPE_STALE, servingsLabel, STARTER_NOTE, type RecipeRow, type StarterRecipe } from "@/lib/life/recipes"
+import { MealPlannerTabs } from "@/components/life/meal-planner-tabs"
+import { ingredientLine, OTHERS_ADDED, RECIPE_STALE, seededExampleCount, servingsLabel, STARTER_NOTE, type RecipeRow, type StarterRecipe } from "@/lib/life/recipes"
 import { calmShoppingMessage } from "@/lib/life/shopping"
 
 export function RecipesBoard({
@@ -23,6 +24,8 @@ export function RecipesBoard({
   canWrite = true,
   preview = false,
   hrefBase = "/life/recipes",
+  title = "Recipes",
+  tabBase = null,
   staleOpen = false,
   blockedOpen = false,
   starterOpen = false,
@@ -33,6 +36,8 @@ export function RecipesBoard({
   canWrite?: boolean
   preview?: boolean
   hrefBase?: string
+  title?: string
+  tabBase?: string | null
   staleOpen?: boolean
   blockedOpen?: boolean
   starterOpen?: boolean
@@ -124,8 +129,9 @@ export function RecipesBoard({
     <>
       <MoneyFrame
         phoneTouch
-        title="Recipes"
-        subtitle={lifeSubtitle("recipes")}
+        title={title}
+        subtitle={title === "Meal Planner" ? "" : lifeSubtitle("recipes")}
+        afterHeader={tabBase ? <MealPlannerTabs base={tabBase} current="mine" /> : null}
         filter={filter}
         onFilter={setFilter}
         action={
@@ -138,7 +144,7 @@ export function RecipesBoard({
         chips={
           <>
             <MetricChip tone={visible.length > 0 ? "brand" : "muted"}>{`${visible.length} recipe${visible.length === 1 ? "" : "s"}`}</MetricChip>
-            <MetricChip>{`${visibleStarters.length} starter${visibleStarters.length === 1 ? "" : "s"}`}</MetricChip>
+            <MetricChip>{seededExampleCount(visibleStarters.length)}</MetricChip>
           </>
         }
         pulse={
@@ -188,14 +194,14 @@ export function RecipesBoard({
             </div>
           </MoneyCard>
         ))}
-        {visibleStarters.length > 0 ? <h2 className="px-1 pt-2 text-[13px] font-medium text-muted-foreground">Starters</h2> : null}
+        {visibleStarters.length > 0 ? <h2 className="px-1 pt-2 text-[13px] font-medium text-muted-foreground">Examples</h2> : null}
         {visibleStarters.map((starter) => (
           <MoneyCard key={starter.id}>
             <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
               <button type="button" className="min-w-0 text-left" onClick={() => setPreviewing(starter)}>
                 <p className="text-[15px] font-medium text-ink">{starter.name}</p>
                 <p className="mt-0.5 text-[13px] text-muted-foreground">
-                  {[starter.category, servingsLabel(starter.servings), "Starter"].filter(Boolean).join(" · ")}
+                  {[starter.category, servingsLabel(starter.servings), "Example"].filter(Boolean).join(" · ")}
                 </p>
               </button>
               {canWrite && !starter.copiedId ? (

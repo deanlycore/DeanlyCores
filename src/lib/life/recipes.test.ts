@@ -4,7 +4,7 @@ import { dirname, join } from "node:path"
 import test from "node:test"
 import { fileURLToPath } from "node:url"
 
-import { ADDED_JUST_ME, ingredientLine, justMeListLine, parseRecipeForm, planIngredients, planLabel, RECIPE_REFERENCE, RECIPE_STALE, RECIPE_UNAVAILABLE, RECIPE_VIEW_ONLY, recipeDbMessage, servingsLabel } from "./recipes.ts"
+import { ADDED_JUST_ME, browseSavedCount, ingredientLine, justMeListLine, parseRecipeForm, planIngredients, planLabel, RECIPE_REFERENCE, RECIPE_STALE, RECIPE_UNAVAILABLE, RECIPE_VIEW_ONLY, recipeDbMessage, seededExampleCount, servingsLabel } from "./recipes.ts"
 import { addRecipeToShoppingWith, copyCatalogRecipeWith, deleteRecipeWith, saveRecipeWith, type RecipeWriter } from "./recipes-save.ts"
 import type { ShoppingWriter } from "./shopping-save.ts"
 
@@ -20,6 +20,21 @@ test("anon loses every shopping privilege, including truncate, without touching 
   assert.doesNotMatch(revokeSql, /grant /i)
   assert.doesNotMatch(revokeSql, /policy/i)
   assert.doesNotMatch(revokeSql, /to authenticated/i)
+})
+
+test("seeded sample recipes count as examples, and Browse copies count as saved", () => {
+  assert.equal(seededExampleCount(1), "1 example")
+  assert.equal(seededExampleCount(2), "2 examples")
+  assert.equal(browseSavedCount(1), "1 saved")
+  assert.equal(browseSavedCount(2), "2 saved")
+  const board = readFileSync(join(root, "src/components/life/recipes-board.tsx"), "utf8")
+  assert.match(board, /seededExampleCount\(visibleStarters\.length\)/)
+  assert.match(board, />Examples<\/h2>/)
+  assert.match(board, /"Example"/)
+  assert.doesNotMatch(board, />Starters</)
+  assert.doesNotMatch(board, /"Starter"/)
+  assert.doesNotMatch(board, /starter\$\{/)
+  assert.match(readFileSync(join(root, "src/lib/life/recipes.ts"), "utf8"), /return `\$\{count\} saved`/)
 })
 
 test("starter recipes are catalog seed data, not rows written per household", () => {

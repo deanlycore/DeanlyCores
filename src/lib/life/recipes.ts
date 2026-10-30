@@ -10,7 +10,7 @@ export const RECIPE_STALE = "This recipe changed. Reload to see the latest."
 
 export const RECIPE_REFERENCE = "That didn’t save. Reload the recipe and try again."
 
-export const OTHERS_ADDED = "Others added to this recipe, so it stays Shared."
+export const OTHERS_ADDED = "Others have added to this recipe, so it stays Shared."
 
 export const ADDS_TO_JUST_ME = "Adds to your Just me list."
 
@@ -23,7 +23,18 @@ export function justMeListLine(added: boolean) {
 
 export const STARTER_NOTE = "Editing saves a copy for your household. The original stays the same."
 
+/** Seeded catalog samples on My recipes. Browse copies are household rows and use a different count. */
+export function seededExampleCount(count: number) {
+  return count === 1 ? "1 example" : `${count} examples`
+}
+
+/** Household rows copied from Browse. The word stays "saved" for one and for many. */
+export function browseSavedCount(count: number) {
+  return `${count} saved`
+}
+
 export const LIST_ALREADY_HAS_MEAL = "Your list already has this meal."
+export const ALREADY_ON_LIST = "Already on your list"
 
 const CATALOG_RECIPE_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 

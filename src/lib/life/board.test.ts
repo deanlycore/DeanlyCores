@@ -129,7 +129,7 @@ test("tasks put overdue first, keep due copy calm, and count done this week", ()
 
 test("meals count cook nights and leftover nights without nutrition language", () => {
   const meals = [
-    { id: "mon", title: "Grill chicken", meal_on: "2026-09-28", slot: "dinner", notes: null, visibility: "shared" as const },
+    { id: "mon", title: "Grilled chicken", meal_on: "2026-09-28", slot: "dinner", notes: null, visibility: "shared" as const },
     { id: "tue", title: "Leftover", meal_on: "2026-09-29", slot: "dinner", notes: "From Monday", visibility: "shared" as const },
     { id: "wed", title: "Creamy pasta", meal_on: "2026-09-30", slot: "dinner", notes: "Leftovers for Thu", visibility: "shared" as const },
     { id: "thu", title: "Leftover", meal_on: "2026-10-01", slot: "dinner", notes: null, visibility: "shared" as const },

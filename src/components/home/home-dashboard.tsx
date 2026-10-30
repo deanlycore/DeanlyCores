@@ -125,7 +125,7 @@ export function HomeDashboard({
           label="Meals This Week"
           value={data ? String(data.meals.length) : "—"}
           hint="planned meals"
-          href="/life/meals"
+          href="/life/meal-planner"
           link="View meal plan"
           error={data?.errors.meals}
           empty={data ? data.meals.length === 0 : false}
@@ -465,7 +465,7 @@ function MealsCard({
         : "This week"
   return (
     <Card className={className}>
-      <CardHead title="Dinner tonight" href="/life/meals" />
+      <CardHead title="Dinner tonight" href="/life/meal-planner" />
       {data?.errors.meals ? <WidgetError /> : null}
       <div className="mt-4 flex min-h-36 flex-col justify-end rounded-2xl bg-brand-soft p-4">
         <UtensilsCrossed className="mb-3 size-5 text-brand" aria-hidden="true" />
