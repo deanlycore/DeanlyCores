@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
@@ -10,7 +10,7 @@ import { ConfirmRemove, MoneyAddButton, MoneyCard } from "@/components/money/mon
 import { Button } from "@/components/ui/button"
 import { VisibilityPill, WidgetError } from "@/components/ui/pills"
 import { addRecipeToShopping, deleteRecipe, loadRecipe, saveRecipe } from "@/lib/actions/recipes"
-import { ingredientCategoryLabel, ingredientLine, planIngredients, planLabel, servingsLabel, type RecipeRow } from "@/lib/life/recipes"
+import { ADDED_JUST_ME, ingredientCategoryLabel, ingredientLine, justMeListLine, planIngredients, planLabel, servingsLabel, type RecipeRow } from "@/lib/life/recipes"
 import { calmShoppingMessage } from "@/lib/life/shopping"
 
 export function RecipeDetail({
@@ -21,6 +21,7 @@ export function RecipeDetail({
   canWrite = true,
   preview = false,
   reviewOpen = false,
+  addedNotice = "",
   backHref = "/life/recipes",
 }: {
   recipe: RecipeRow | null
@@ -30,6 +31,7 @@ export function RecipeDetail({
   canWrite?: boolean
   preview?: boolean
   reviewOpen?: boolean
+  addedNotice?: string
   backHref?: string
 }) {
   const router = useRouter()
@@ -40,7 +42,10 @@ export function RecipeDetail({
   const [pendingRemove, setPendingRemove] = useState(false)
   const [review, setReview] = useState(reviewOpen)
   const [added, setAdded] = useState<string[] | null>(null)
+  const [notice, setNotice] = useState(addedNotice)
   const [pendingAdd, setPendingAdd] = useState(false)
+  const batchId = useRef<string | null>(null)
+  const adding = useRef(false)
   if (error) {
     return (
       <div className="grid min-w-0 gap-3">
@@ -53,6 +58,7 @@ export function RecipeDetail({
   const shown = loaded ?? recipe
   const planned = planIngredients(recipe.ingredients, shopping, pantry)
   const toAdd = planned.filter((item) => item.plan === "add")
+  const settled = recipe.visibility === "private" && (added !== null || notice === ADDED_JUST_ME)
 
   return (
     <div className="grid min-w-0 gap-4">
@@ -89,29 +95,44 @@ export function RecipeDetail({
                   <p className="text-[15px] font-medium text-ink">{ingredientLine(item)}</p>
                   {ingredientCategoryLabel(item.category) ? <p className="text-[13px] text-muted-foreground">{ingredientCategoryLabel(item.category)}</p> : null}
                 </div>
-                <p className="shrink-0 text-[13px] text-muted-foreground">{planLabel(item.plan)}</p>
+                <p className="shrink-0 text-[13px] text-muted-foreground">
+                  {settled && (item.plan === "add" || added?.includes(item.name)) ? "On your list" : planLabel(item.plan)}
+                </p>
               </div>
             </MoneyCard>
           ))}
-          {added ? <p className="text-sm text-ink">{added.length ? `Added ${added.join(", ")}.` : "Nothing new to add."}</p> : null}
-          {canWrite ? (
+          {recipe.visibility === "private" ? (
+            <p className="text-sm text-ink">{justMeListLine(settled)}</p>
+          ) : notice ? (
+            <p className="text-sm text-ink">{notice}</p>
+          ) : null}
+          {recipe.visibility !== "private" && added ? <p className="text-sm text-ink">{added.length ? `Added ${added.join(", ")}.` : "Nothing new to add."}</p> : null}
+          {canWrite && !settled ? (
             <Button
               type="button"
               className="h-11 w-fit rounded-button md:h-10"
               disabled={pendingAdd || toAdd.length === 0}
               onClick={() => {
+                if (pendingAdd || adding.current) return
                 if (preview) {
                   setAdded(toAdd.map((item) => item.name))
+                  if (recipe.visibility === "private") setNotice(ADDED_JUST_ME)
                   return
                 }
+                batchId.current ??= crypto.randomUUID()
+                const requestId = batchId.current
+                adding.current = true
                 setPendingAdd(true)
-                void addRecipeToShopping(recipe.id).then((result) => {
+                void addRecipeToShopping(recipe.id, requestId).then((result) => {
+                  adding.current = false
                   setPendingAdd(false)
                   if (!result.ok) {
                     toast(calmShoppingMessage(result.message))
                     return
                   }
+                  batchId.current = null
                   setAdded(result.added ?? [])
+                  if (result.message) setNotice(result.message)
                   router.refresh()
                 })
               }}

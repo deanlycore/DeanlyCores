@@ -4,7 +4,7 @@ import { dirname, join } from "node:path"
 import test from "node:test"
 import { fileURLToPath } from "node:url"
 
-import { ingredientLine, parseRecipeForm, planIngredients, planLabel, RECIPE_REFERENCE, RECIPE_STALE, RECIPE_UNAVAILABLE, RECIPE_VIEW_ONLY, recipeDbMessage, servingsLabel } from "./recipes.ts"
+import { ADDED_JUST_ME, ingredientLine, justMeListLine, parseRecipeForm, planIngredients, planLabel, RECIPE_REFERENCE, RECIPE_STALE, RECIPE_UNAVAILABLE, RECIPE_VIEW_ONLY, recipeDbMessage, servingsLabel } from "./recipes.ts"
 import { addRecipeToShoppingWith, copyCatalogRecipeWith, deleteRecipeWith, saveRecipeWith, type RecipeWriter } from "./recipes-save.ts"
 import type { ShoppingWriter } from "./shopping-save.ts"
 
@@ -80,6 +80,7 @@ test("ingredient plans skip the current list and what is already at home", () =>
   assert.equal(planLabel("add"), "Add")
   assert.equal(planLabel("list"), "Already on the list")
   assert.equal(planLabel("home"), "At home")
+  assert.equal(ingredientLine({ name: "Eggs", quantity: "3", unit: "each" }), "3 Eggs")
   assert.equal(ingredientLine({ name: "Vegetable stock", quantity: "1", unit: "l" }), "1 L Vegetable stock")
   assert.equal(servingsLabel(1), "1 serving")
   assert.equal(servingsLabel(4), "4 servings")
@@ -97,7 +98,7 @@ test("view-only cannot save, delete, copy, or add ingredients", async () => {
     await saveRecipeWith(ctx, form, () => undefined),
     await deleteRecipeWith(ctx, "recipe-1", () => undefined),
     await copyCatalogRecipeWith(ctx, CATALOG_ID, "shared", () => undefined),
-    await addRecipeToShoppingWith(ctx, "recipe-1", () => undefined),
+    await addRecipeToShoppingWith(ctx, "recipe-1", () => undefined, "b8b8b8b8-b8b8-48b8-88b8-b8b8b8b8b8b8"),
   ]) {
     assert.deepEqual(result, { ok: false, message: RECIPE_VIEW_ONLY })
   }
@@ -123,61 +124,78 @@ test("a recipe save and a catalog copy stay inside the caller's household", asyn
   assert.equal(store.recipes.filter((row) => row.household_id === "house-b").length, 1)
 })
 
-test("add ingredients to shopping reuses the save path and skips duplicates", async () => {
+test("add ingredients to shopping skips the list and pantry and never sends manual fields", async () => {
   const store = memory()
   store.recipes.push({ id: "recipe-1", household_id: "house-a", created_by: "user-a", visibility: "shared", name: "Tacos" })
   store.ingredients.push(
-    { recipe_id: "recipe-1", household_id: "house-a", name: "Chicken thighs", quantity: "500", unit: "g", category: "meat", sort_order: 0 },
-    { recipe_id: "recipe-1", household_id: "house-a", name: "Tortillas", quantity: "8", unit: "each", category: "bakery", sort_order: 1 },
-    { recipe_id: "recipe-1", household_id: "house-a", name: "Lime", quantity: "1", unit: "each", category: "produce", sort_order: 2 },
+    { id: "line-chicken", recipe_id: "recipe-1", household_id: "house-a", name: "Chicken thighs", quantity: "500", unit: "g", category: "meat", sort_order: 0 },
+    { id: "line-tortilla", recipe_id: "recipe-1", household_id: "house-a", name: "Tortillas", quantity: "8", unit: "each", category: "bakery", sort_order: 1 },
+    { id: "line-lime", recipe_id: "recipe-1", household_id: "house-a", name: "Lime", quantity: "1", unit: "each", category: "produce", sort_order: 2 },
   )
   store.shopping.push({ household_id: "house-a", name: "Tortilla", checked_at: null })
   store.pantry.push({ household_id: "house-a", name: "Lime" })
-  const saved: Record<string, string | null>[] = []
-  const result = await addRecipeToShoppingWith(writer(store.supabase, "house-a", "user-a"), "recipe-1", () => undefined, async (_ctx, formData) => {
-    saved.push(shoppingFields(formData))
-    return { ok: true, id: "item" }
-  })
+  const result = await addRecipeToShoppingWith(writer(store.supabase, "house-a", "user-a"), "recipe-1", () => undefined, "b8b8b8b8-b8b8-48b8-88b8-b8b8b8b8b8b8")
   assert.equal(result.ok, true)
   if (result.ok) {
     assert.deepEqual(result.added, ["Chicken thighs"])
     assert.deepEqual(result.skipped, ["Tortillas", "Lime"])
   }
-  assert.deepEqual(saved, [
-    {
-      name: "Chicken thighs",
-      category: "meat",
-      source: "auto",
-      auto_qty: "500",
-      auto_unit: "g",
-      manual_amount_raw: null,
-      manual_unit_raw: null,
-      manual_qty: null,
-      manual_unit: null,
-      visibility: "shared",
-    },
-  ])
+  const call = (store.bound as { last?: { fn: string; args: { p_lines?: { name: string; match_key: string }[] } } }).last
+  assert.equal(call?.fn, "add_recipe_to_shopping")
+  assert.deepEqual(call?.args.p_lines?.map((line) => line.name), ["Chicken thighs"])
+  assert.equal(JSON.stringify(call?.args.p_lines).includes("manual_"), false)
 })
 
-test("berries keep their recipe spelling and land on auto amount fields", async () => {
+test("a repeated shopping batch does not double auto_qty or the links", async () => {
   const store = memory()
-  store.recipes.push({ id: "recipe-berries", household_id: "house-a", created_by: "user-a", visibility: "shared", name: "Oats" })
-  store.ingredients.push({ recipe_id: "recipe-berries", household_id: "house-a", name: "Berries", quantity: "150", unit: "g", category: "produce", sort_order: 0 })
-  const saved: Record<string, string | null>[] = []
-  const result = await addRecipeToShoppingWith(writer(store.supabase, "house-a", "user-a"), "recipe-berries", () => undefined, async (_ctx, formData) => {
-    saved.push(shoppingFields(formData))
-    return { ok: true, id: "item" }
-  })
+  store.recipes.push({ id: "recipe-onion", household_id: "house-a", created_by: "user-a", visibility: "shared", name: "Onion bowl", servings: 2 })
+  store.ingredients.push({ id: "line-onion", recipe_id: "recipe-onion", household_id: "house-a", name: "Onion", quantity: "2", unit: "each", category: "produce", sort_order: 0 })
+  const batch = "b8b8b8b8-b8b8-48b8-88b8-b8b8b8b8b8b8"
+  const home = writer(store.supabase, "house-a", "user-a")
+  const first = await addRecipeToShoppingWith(home, "recipe-onion", () => undefined, batch)
+  const second = await addRecipeToShoppingWith(home, "recipe-onion", () => undefined, batch)
+  assert.equal(first.ok, true)
+  assert.equal(second.ok, true)
+  const saved = store.bound.batches.get(batch)
+  assert.equal(saved?.links, 1)
+  assert.equal(saved?.qty, 2)
+  const calls = (store.bound as { last?: { args: { p_add_batch_id?: string } } }).last
+  assert.equal(calls?.args.p_add_batch_id, batch)
+  assert.equal(store.bound.batches.size, 1)
+  assert.doesNotMatch(readFileSync(join(root, "src/lib/life/recipes-save.ts"), "utf8"), /randomUUID/)
+  assert.match(readFileSync(join(root, "src/components/life/recipe-detail.tsx"), "utf8"), /disabled=\{pendingAdd/)
+})
+
+test("just me confirm copy stays future tense until the add succeeds", () => {
+  assert.equal(justMeListLine(false), "Adds to your Just me list.")
+  assert.equal(justMeListLine(true), "Added to your Just me list.")
+  assert.equal(ADDED_JUST_ME, "Added to your Just me list.")
+  const detail = readFileSync(join(root, "src/components/life/recipe-detail.tsx"), "utf8")
+  assert.match(detail, /const settled = recipe\.visibility === "private" && \(added !== null \|\| notice === ADDED_JUST_ME\)/)
+  assert.match(detail, /justMeListLine\(settled\)/)
+  assert.match(detail, /On your list/)
+  assert.match(detail, /canWrite && !settled/)
+  assert.match(detail, /visibility !== "private" && added/)
+  const form = readFileSync(join(root, "src/components/life/recipe-form.tsx"), "utf8")
+  assert.match(form, /min-h-12 shrink-0/)
+  assert.match(form, /disabled=\{locked\}/)
+  assert.match(readFileSync(join(root, "src/components/life/meals-planner.tsx"), "utf8"), /listAction === "hidden" \|\| confirm/)
+})
+
+test("berries keep their recipe spelling on the shopping line", async () => {
+  const store = memory()
+  store.recipes.push({ id: "recipe-berries", household_id: "house-a", created_by: "user-a", visibility: "private", name: "Oats" })
+  store.ingredients.push({ id: "line-berries", recipe_id: "recipe-berries", household_id: "house-a", name: "Berries", quantity: "150", unit: "g", category: "produce", sort_order: 0 })
+  const result = await addRecipeToShoppingWith(writer(store.supabase, "house-a", "user-a"), "recipe-berries", () => undefined, "b8b8b8b8-b8b8-48b8-88b8-b8b8b8b8b8b8")
   assert.equal(result.ok, true)
-  if (result.ok) assert.deepEqual(result.added, ["Berries"])
-  assert.equal(saved[0]?.name, "Berries")
-  assert.equal(saved[0]?.auto_qty, "150")
-  assert.equal(saved[0]?.auto_unit, "g")
-  assert.equal(saved[0]?.source, "auto")
-  assert.equal(saved[0]?.manual_amount_raw, null)
-  assert.equal(saved[0]?.manual_unit_raw, null)
-  assert.equal(saved[0]?.manual_qty, null)
-  assert.equal(saved[0]?.manual_unit, null)
+  if (result.ok) {
+    assert.deepEqual(result.added, ["Berries"])
+    assert.equal(result.message, "Added to your Just me list.")
+  }
+  const call = (store.bound as { last?: { args: { p_lines?: { name: string; qty_base: number; unit_group: string }[] } } }).last
+  assert.equal(call?.args.p_lines?.[0]?.name, "Berries")
+  assert.equal(call?.args.p_lines?.[0]?.qty_base, 150)
+  assert.equal(call?.args.p_lines?.[0]?.unit_group, "mass")
 })
 
 test("an old recipe stamp conflicts and a failed save leaves ingredients", async () => {
@@ -290,21 +308,6 @@ test("a recipe form rejects a missing name and keeps an optional category empty"
 
 const CATALOG_ID = "11111111-1111-4111-8111-111111111111"
 
-function shoppingFields(formData: FormData) {
-  return {
-    name: String(formData.get("name")),
-    category: formData.get("category") ? String(formData.get("category")) : null,
-    source: formData.get("source") ? String(formData.get("source")) : null,
-    auto_qty: formData.get("auto_qty") ? String(formData.get("auto_qty")) : null,
-    auto_unit: formData.get("auto_unit") ? String(formData.get("auto_unit")) : null,
-    manual_amount_raw: formData.get("manual_amount_raw") == null ? null : String(formData.get("manual_amount_raw")),
-    manual_unit_raw: formData.get("manual_unit_raw") == null ? null : String(formData.get("manual_unit_raw")),
-    manual_qty: formData.get("manual_qty") == null ? null : String(formData.get("manual_qty")),
-    manual_unit: formData.get("manual_unit") == null ? null : String(formData.get("manual_unit")),
-    visibility: formData.get("visibility") ? String(formData.get("visibility")) : null,
-  }
-}
-
 function ingredient(name: string) {
   return { id: name, name, quantity: null, unit: null, category: null, sort_order: 0 }
 }
@@ -343,7 +346,13 @@ function memory() {
   const ingredients: Row[] = []
   const shopping: Row[] = []
   const pantry: Row[] = []
-  const bound = { householdId: "house-a", userId: "user-a", calls: 0, failNext: null as string | null }
+  const bound = {
+    householdId: "house-a",
+    userId: "user-a",
+    calls: 0,
+    failNext: null as string | null,
+    batches: new Map<string, { links: number; qty: number }>(),
+  }
   const catalog = [
     { id: CATALOG_ID, name: "Pancakes", category: "Breakfast", servings: 4, steps: ["Mix the batter."], notes: null },
   ]
@@ -358,15 +367,28 @@ function memory() {
     catalog_recipes: catalog,
     catalog_recipe_ingredients: catalogIngredients,
   }
-  const supabase: ShoppingWriter["supabase"] & { bound: typeof bound; rpc: (fn: string, args: { p_recipe: Row }) => Promise<{ data: Row | null; error: { code?: string; message: string; details?: string } | null }> } = {
+  const supabase: ShoppingWriter["supabase"] & { bound: typeof bound; rpc: (fn: string, args: { p_household_id?: string; p_recipe?: Row; p_lines?: Row[] }) => Promise<{ data: Row | null; error: { code?: string; message: string; details?: string } | null }> } = {
     bound,
-    async rpc(_fn: string, args: { p_recipe: Row }) {
+    async rpc(fn: string, args: { p_household_id?: string; p_recipe?: Row; p_lines?: Row[]; p_add_batch_id?: string }) {
       bound.calls += 1
-      const draft = args.p_recipe
+      ;(bound as { last?: unknown }).last = { fn, args }
+      if (fn === "add_recipe_to_shopping") {
+        const manual = JSON.stringify(args.p_lines ?? []).match(/manual_/)
+        if (manual) return { data: null, error: { message: "manual field" } }
+        const batch = String(args.p_add_batch_id ?? "")
+        if (!bound.batches.has(batch)) {
+          const qty = (args.p_lines ?? []).reduce((sum, line) => sum + Number(line.qty_base ?? 0), 0)
+          bound.batches.set(batch, { links: args.p_lines?.length ?? 0, qty })
+        }
+        const saved = bound.batches.get(batch)
+        return { data: { ok: true, added: 0, updated: 0, removed: 0, links: saved?.links, auto_qty: saved?.qty }, error: null }
+      }
+      const draft = args.p_recipe ?? {}
+      const householdId = args.p_household_id ?? bound.householdId
       const nextIngredients = (recipeId: string) =>
         (Array.isArray(draft.ingredients) ? (draft.ingredients as Row[]) : []).map((item, index) => ({
           recipe_id: recipeId,
-          household_id: bound.householdId,
+          household_id: householdId,
           created_by: bound.userId,
           visibility: draft.visibility,
           name: item.name,
@@ -408,7 +430,7 @@ function memory() {
       const id = `recipes-${recipes.length + 1}`
       recipes.push({
         id,
-        household_id: bound.householdId,
+        household_id: householdId,
         created_by: bound.userId,
         updated_at: "stamp-1",
         catalog_recipe_id: draft.catalog_recipe_id ?? null,

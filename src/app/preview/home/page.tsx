@@ -1,6 +1,8 @@
 import { cookies } from "next/headers"
 import { notFound } from "next/navigation"
 
+import { previewIsProduction } from "@/lib/preview-access"
+
 import { HomeDashboard } from "@/components/home/home-dashboard"
 import { AppearanceControl } from "@/components/settings/appearance-control"
 import { AppShell } from "@/components/shell/app-shell"
@@ -70,7 +72,7 @@ const data: HomePayload = {
 }
 
 export default async function PreviewHome() {
-  if (process.env.NODE_ENV === "production") notFound()
+  if (previewIsProduction()) notFound()
   const appearance = parseAppearance((await cookies()).get(APPEARANCE_COOKIE)?.value)
   return (
     <AppShell session={session}>

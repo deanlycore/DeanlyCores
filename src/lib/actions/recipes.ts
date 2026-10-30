@@ -45,8 +45,8 @@ export async function copyCatalogRecipe(catalogRecipeId: string, visibility: Vis
   return copyCatalogRecipeWith(ready.ctx, catalogRecipeId, visibility, refresh)
 }
 
-export async function addRecipeToShopping(recipeId: string): Promise<RecipeActionResult> {
+export async function addRecipeToShopping(recipeId: string, batchId: string): Promise<RecipeActionResult> {
   const ready = await gate()
   if (!ready.ctx) return ready
-  return addRecipeToShoppingWith(ready.ctx, recipeId, refresh)
+  return addRecipeToShoppingWith(ready.ctx, recipeId, refresh, batchId)
 }

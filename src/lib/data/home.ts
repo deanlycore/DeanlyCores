@@ -35,6 +35,11 @@ export type MealRow = {
   slot: string
   notes: string | null
   visibility: Visibility
+  servings?: number
+  recipe_id?: string | null
+  catalog_recipe_id?: string | null
+  updated_at?: string | null
+  owner_id?: string | null
 }
 
 export type EventRow = {
