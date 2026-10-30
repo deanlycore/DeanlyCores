@@ -69,7 +69,7 @@ export function RecipeBrowse({
           className="min-h-12 w-full rounded-[12px] border border-border bg-surface px-3 text-sm text-ink"
         />
       </form>
-      <div className="flex min-w-0 items-center overflow-x-auto pb-1" role="group" aria-label="Goals">
+      <div className="flex min-w-0 items-center overflow-x-auto pb-1 max-md:-mr-4" role="group" aria-label="Goals">
         <div className="flex shrink-0 gap-2">
           {CATALOG_GOALS.filter((goal) => goal.id !== "vegetarian").map((goal) => (
             <GoalLink

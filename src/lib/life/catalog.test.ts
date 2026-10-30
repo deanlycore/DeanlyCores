@@ -148,7 +148,7 @@ test("the seed reads the service role and no app route writes the catalog", () =
   assert.match(detail, /‹ Browse/)
   assert.doesNotMatch(detail, /ILLUSTRATION_LABEL/)
   assert.match(browse, /id !== "vegetarian"[\s\S]*mx-3 h-6 w-px shrink-0 bg-border[\s\S]*goal\.id === "vegetarian"/)
-  assert.match(browse, /overflow-x-auto pb-1/)
+  assert.match(browse, /overflow-x-auto pb-1 max-md:-mr-4/)
   assert.match(browse, /aria-hidden="true"/)
   assert.doesNotMatch(browse, /flex flex-wrap gap-2/)
   assert.match(seed, /process\.argv\.includes\("--prod"\)/)
